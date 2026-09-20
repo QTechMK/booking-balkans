@@ -278,3 +278,8 @@ project.min.css
 vendors.js
 *.min.js
 *.min.js.map
+
+# Runtime vendor bundles required by the Django templates.
+!booking/static/js/vendors.js
+!booking/static/js/vendors.min.js
+!booking/static/js/vendors.min.js.map
