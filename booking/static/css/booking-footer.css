@@ -1,0 +1,96 @@
+.booking-footer {
+  clear: both;
+  width: 100%;
+  overflow: hidden;
+}
+
+.booking-footer .container {
+  min-width: 0;
+}
+
+.booking-footer img {
+  max-width: 100%;
+  height: auto;
+}
+
+.booking-footer .nav-link {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.booking-footer .text-body-secondary {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.booking-footer a.text-body-secondary:hover,
+.booking-footer .nav-link:hover {
+  color: #ffffff !important;
+}
+
+.booking-footer-compact .nav-link {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+@media (max-width: 767.98px) {
+  .booking-footer .row > [class*="col-"] {
+    min-width: 0;
+  }
+
+  .booking-footer .list-inline-item {
+    margin-bottom: 0.35rem;
+  }
+}
+
+.auth-card form p {
+  margin-bottom: 1rem;
+}
+
+.auth-card form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.auth-card form input,
+.auth-card form select,
+.auth-card form textarea {
+  display: block;
+  width: 100%;
+  min-height: calc(1.5em + 1rem + 2px);
+  padding: 0.5rem 0.75rem;
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+}
+
+.auth-card form input:focus,
+.auth-card form select:focus,
+.auth-card form textarea:focus {
+  border-color: var(--bs-primary);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.auth-card form .helptext {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+}
+
+.auth-card form .helptext ul {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.auth-card form .errorlist {
+  margin: 0 0 0.5rem;
+  padding-left: 1.15rem;
+  color: var(--bs-danger);
+  font-size: 0.875rem;
+}
