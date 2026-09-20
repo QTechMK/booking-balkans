@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="bg-light py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="auth-card card border-0 shadow-sm p-4">
+          <h1 class="h3 mb-3">Kayıt Ol</h1>
+          <p class="text-body-secondary">Rezervasyonlarınızı yönetmek için hesabınızı oluşturun.</p>
+          <form method="post" action="{% url 'account_signup' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            {{ redirect_field }}
+            <button class="btn btn-primary w-100" type="submit">Kayıt Ol</button>
+          </form>
+          <div class="d-flex align-items-center gap-2 my-3"><hr class="flex-grow-1"><span class="small text-body-secondary">veya</span><hr class="flex-grow-1"></div>
+          <div class="d-grid gap-2">
+            <a class="btn btn-outline-danger" href="/accounts/google/login/"><i class="fab fa-google me-2"></i>Google ile kayıt ol</a>
+            <a class="btn btn-outline-primary" href="/accounts/facebook/login/"><i class="fab fa-facebook-f me-2"></i>Facebook ile kayıt ol</a>
+            <a class="btn btn-outline-primary" href="/accounts/linkedin_oauth2/login/"><i class="fab fa-linkedin-in me-2"></i>LinkedIn ile kayıt ol</a>
+          </div>
+          <p class="mt-4 mb-0">Zaten hesabınız var mı? <a href="{% url 'account_login' %}">Giriş Yap</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

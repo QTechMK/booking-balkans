@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% load static i18n %}
+
+{% block extra_css %}{% endblock extra_css %}
+
+{% block body_attribute %}{% endblock body_attribute %}
+
+{% block content %}
+
+<main>
+    {% include 'partials/admin-sidebar.html' %}
+
+    <div class="page-content">
+
+        {% include 'partials/admin-topbar.html' %}
+
+        <div class="page-content-wrapper p-xxl-4">
+
+            {% block page_content %}{% endblock page_content %}
+
+        </div>
+
+    </div>
+</main>
+
+{% endblock content %}
+
+{% block extra_javascript %}{% endblock extra_javascript %}

@@ -1,0 +1,11 @@
+# PRECAUTION: avoid production dependencies that aren't in development
+
+-r base.txt
+
+gunicorn==23.0.0  # https://github.com/benoitc/gunicorn
+hiredis==3.1.0  # https://github.com/redis/hiredis-py
+
+# Django
+# ------------------------------------------------------------------------------
+django-storages[s3]==1.14.6  # https://github.com/jschneier/django-storages
+django-anymail==13.0  # https://github.com/anymail/django-anymail

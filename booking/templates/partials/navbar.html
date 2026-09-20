@@ -1,0 +1,63 @@
+{% load static %}
+
+<header class="navbar-light header-sticky">
+    <nav class="navbar navbar-expand-xl">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img class="light-mode-item navbar-brand-item" src="{% static '/images/logo.svg' %}" alt="Booking Balkans">
+                <img class="dark-mode-item navbar-brand-item" src="{% static '/images/logo-light.svg' %}" alt="Booking Balkans">
+            </a>
+
+            <button class="navbar-toggler ms-auto mx-3 p-0 p-sm-2" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-animation"><span></span><span></span><span></span></span>
+            </button>
+
+            <div class="navbar-collapse collapse" id="navbarCollapse">
+                <ul class="navbar-nav navbar-nav-scroll mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Ana Sayfa</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="staysMenu" data-bs-toggle="dropdown" aria-expanded="false">Konaklamalar</a>
+                        <ul class="dropdown-menu" aria-labelledby="staysMenu">
+                            <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='hotel-grid' %}">Tüm Oteller</a></li>
+                            <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='hotel-list' %}">Liste Görünümü</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'pages:dynamic_pages' template_name='offer-detail' %}">Kampanyalar</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'pages:dynamic_pages' template_name='blog' %}">Seyahat Rehberi</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="helpMenu" data-bs-toggle="dropdown" aria-expanded="false">Yardım</a>
+                        <ul class="dropdown-menu" aria-labelledby="helpMenu">
+                            <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='help-center' %}">Yardım Merkezi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='faq' %}">Sık Sorulan Sorular</a></li>
+                            <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='contact' %}">İletişim</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <ul class="nav flex-row align-items-center list-unstyled ms-xl-auto">
+                <li class="nav-item dropdown nav-search me-2 d-none d-sm-block">
+                    <a class="nav-link mb-0 py-0" role="button" href="#" id="navSearch" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ara"><i class="bi bi-search fs-5"></i></a>
+                    <div class="dropdown-menu dropdown-menu-end shadow rounded p-2" aria-labelledby="navSearch">
+                        <form class="input-group" action="{% url 'pages:dynamic_pages' template_name='hotel-list' %}" method="get">
+                            <input class="form-control border-primary" type="search" name="q" placeholder="Otel veya destinasyon ara" aria-label="Otel veya destinasyon ara">
+                            <button class="btn btn-primary m-0" type="submit">Ara</button>
+                        </form>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" href="#" id="accountMenu" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Hesabım"><i class="bi bi-person-circle fs-5"></i></a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
+                        <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='account-bookings' %}">Rezervasyonlarım</a></li>
+                        <li><a class="dropdown-item" href="{% url 'pages:dynamic_pages' template_name='account-profile' %}">Profilim</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'account_login' %}">Giriş Yap</a></li>
+                        <li><a class="dropdown-item" href="{% url 'account_signup' %}">Kayıt Ol</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>

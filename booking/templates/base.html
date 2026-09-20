@@ -1,0 +1,55 @@
+{% load static i18n %}
+<!DOCTYPE html >
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}" {% block html_attribute %}{% endblock html_attribute %}>
+
+<head>
+  <title>Booking Balkans | Konaklama ve Seyahat</title>
+
+  <!-- Meta Tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="author" content="Q Technology">
+  <meta name="description" content="Booking Balkans ile konaklama ve seyahat rezervasyonlarınızı yönetin.">
+
+  <link rel="icon" href="{% static '/images/favicon.ico' %}" />
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap">
+
+  <link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
+  <link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
+  <link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
+
+  {% block css %}
+
+  {% block extra_css %}{% endblock extra_css %}
+
+  {% include 'partials/head-css.html' %}
+
+  {% endblock css %}
+
+</head>
+
+<body {% block body_attribute %}{% endblock body_attribute %}>
+
+  {% block content %}{% endblock content %}
+
+  <div class="back-top"></div>
+
+  {% block javascript %}
+
+  <script src="{% static '/js/vendors.js' %}"></script>
+
+  <script src="{% static '/js/functions.js' %}"></script>
+
+  {% block extra_javascript %}{% endblock extra_javascript %}
+
+  {% endblock javascript %}  
+
+</body>
+
+</html>

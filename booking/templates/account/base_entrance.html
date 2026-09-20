@@ -1,0 +1,26 @@
+{% extends "allauth/layouts/entrance.html" %}
+{% load i18n %}
+
+{% block body %}
+  {% include 'partials/navbar.html' %}
+  <main class="bg-light py-4">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5 py-4">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+          <div class="card border-0 shadow-sm p-4">
+            {% block content %}{% endblock content %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  {% include 'partials/footer.html' %}
+{% endblock body %}

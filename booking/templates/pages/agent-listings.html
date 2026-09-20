@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+
+{% load static i18n %}
+
+{% block content %}
+
+{% include 'partials/account-navbar.html' %}
+
+<main>
+
+	<section class="pt-4">
+		<div class="container">
+			<div class="card rounded-3 border p-3 pb-2">
+				<!-- Avatar and info START -->
+				<div class="d-sm-flex align-items-center">
+					<div class="avatar avatar-xl mb-2 mb-sm-0">
+						<img class="avatar-img rounded-circle" src="{% static '/images/avatar/01.jpg' %}" alt="">
+					</div>
+					<h4 class="mb-2 mb-sm-0 ms-sm-3"><span class="fw-light">Hi</span> Jacqueline Miller</h4>
+					<a href="{% url 'pages:dynamic_pages' template_name='add-listing' %}"
+						class="btn btn-sm btn-primary-soft mb-0 ms-auto flex-shrink-0"><i
+							class="bi bi-plus-lg fa-fw me-2"></i>Add New Listing</a>
+				</div>
+				<!-- Avatar and info START -->
+
+				<!-- Responsive navbar toggler -->
+				<button class="btn btn-primary w-100 d-block d-xl-none mt-2" type="button" data-bs-toggle="offcanvas"
+					data-bs-target="#dashboardMenu" aria-controls="dashboardMenu">
+					<i class="bi bi-list"></i> Dashboard Menu
+				</button>
+
+				<!-- Nav links START -->
+				<div class="offcanvas-xl offcanvas-end mt-xl-3" tabindex="-1" id="dashboardMenu">
+					<div class="offcanvas-header border-bottom p-3">
+						<h5 class="offcanvas-title">Menu</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+							data-bs-target="#dashboardMenu" aria-label="Close"></button>
+					</div>
+					<!-- Offcanvas body -->
+					<div class="offcanvas-body p-3 p-xl-0">
+						<!-- Nav item -->
+						<div class="navbar navbar-expand-xl">
+							<ul class="navbar-nav navbar-offcanvas-menu">
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-dashboard' %}"><i
+											class="bi bi-house-door fa-fw me-1"></i>Dashboard</a> </li>
+
+								<li class="nav-item"> <a class="nav-link active"
+										href="{% url 'pages:dynamic_pages' template_name='agent-listings' %}"><i
+											class="bi bi-journals fa-fw me-1"></i>Listings</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-bookings' %}"><i
+											class="bi bi-bookmark-heart fa-fw me-1"></i>Bookings</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-activities' %}"><i
+											class="bi bi-bell fa-fw me-1"></i>Activities</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-earnings' %}"><i
+											class="bi bi-graph-up-arrow fa-fw me-1"></i>Earnings</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-reviews' %}"><i
+											class="bi bi-star fa-fw me-1"></i>Reviews</a></li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-settings' %}"><i
+											class="bi bi-gear fa-fw me-1"></i>Settings</a></li>
+
+								<li class="nav-item dropdown">
+									<a class="nav-link dropdown-toggle" href="#" id="dropdoanMenu"
+										data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<i class="bi bi-list-ul fa-fw me-1"></i>Dropdown
+									</a>
+									<ul class="dropdown-menu" aria-labelledby="dropdoanMenu">
+										<!-- Dropdown menu -->
+										<li> <a class="dropdown-item" href="#">Item 1</a></li>
+										<li> <a class="dropdown-item" href="#">Item 2</a></li>
+									</ul>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<!-- Nav links END -->
+			</div>
+		</div>
+	</section>
+
+	<section class="pt-0">
+		<div class="container vstack gap-4">
+			<!-- Title START -->
+			<div class="row">
+				<div class="col-12">
+					<h1 class="fs-4 mb-0"><i class="bi bi-journals fa-fw me-1"></i>Listings</h1>
+				</div>
+			</div>
+			<!-- Title END -->
+
+			<!-- Counter START -->
+			<div class="row g-4">
+
+				<!-- Earning item -->
+				<div class="col-md-6 col-xl-4">
+					<div class="card card-body border p-4 h-100">
+						<h6>Earning
+							<a tabindex="0" class="h6 mb-0" role="button" data-bs-toggle="popover"
+								data-bs-trigger="focus" data-bs-placement="top"
+								data-bs-content="After US royalty withholding tax" data-bs-original-title="" title="">
+								<i class="bi bi-info-circle-fill small"></i>
+							</a>
+						</h6>
+						<h2 class="text-success">$25,869</h2>
+						<p class="mb-2"><span class="text-primary me-1">0.20%<i class="bi bi-arrow-up"></i></span>vs
+							last month</p>
+						<div class="mt-auto text-primary-hover"><a href="#"
+								class="text-decoration-underline p-0 mb-0">View statement</a></div>
+					</div>
+				</div>
+
+				<!-- Booked Rooms item -->
+				<div class="col-md-6 col-xl-4">
+					<div class="card card-body border p-4 h-100">
+						<h6>Booked Rooms</h6>
+						<h2 class="text-info">58</h2>
+						<p class="mb-2"><span class="text-danger me-1">102</span>Total Rooms</p>
+						<div class="mt-auto text-primary-hover"><a href="#"
+								class="text-decoration-underline p-0 mb-0">View Bookings</a></div>
+					</div>
+				</div>
+
+				<!-- Available Rooms item -->
+				<div class="col-md-6 col-xl-4">
+					<div class="card card-body border p-4 h-100">
+						<h6>Available Rooms</h6>
+						<h2 class="text-warning">42</h2>
+						<p class="mb-2"><span class="text-danger me-1">102</span>Total Rooms</p>
+						<div class="mt-auto text-primary-hover"><a href="#"
+								class="text-decoration-underline p-0 mb-0">View Rooms</a></div>
+					</div>
+				</div>
+
+			</div>
+			<!-- Counter END -->
+
+			<!-- Listing table START -->
+			<div class="row">
+				<div class="col-12">
+
+					<div class="card border">
+						<!-- Card header -->
+						<div class="card-header border-bottom">
+							<h5 class="card-header-title">My Listings <span
+									class="badge bg-primary bg-opacity-10 text-primary ms-2">5 Items</span></h5>
+						</div>
+
+						<!-- Card body START -->
+						<div class="card-body vstack gap-3">
+							<!-- Listing item START -->
+							<div class="card border p-2">
+								<div class="row g-4">
+									<!-- Card img -->
+									<div class="col-md-3 col-lg-2">
+										<img src="{% static '/images/category/hotel/4by3/10.jpg' %}"
+											class="card-img rounded-2" alt="Card image">
+									</div>
+
+									<!-- Card body -->
+									<div class="col-md-9 col-lg-10">
+										<div class="card-body position-relative d-flex flex-column p-0 h-100">
+
+											<!-- Buttons -->
+											<div class="list-inline-item dropdown position-absolute top-0 end-0">
+												<!-- Share button -->
+												<a href="#" class="btn btn-sm btn-round btn-light" role="button"
+													id="dropdownAction2" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="bi bi-three-dots-vertical"></i>
+												</a>
+												<!-- dropdown button -->
+												<ul class="dropdown-menu dropdown-menu-end min-w-auto shadow rounded"
+													aria-labelledby="dropdownAction2">
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-info-circle me-1"></i>Report</a></li>
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-slash-circle me-1"></i>Disable</a></li>
+												</ul>
+											</div>
+
+											<!-- Title -->
+											<h5 class="card-title mb-0 me-5"><a
+													href="{% url 'pages:dynamic_pages' template_name='hotel-detail' %}">Pride
+													moon
+													Village Resort & Spa</a></h5>
+											<small><i class="bi bi-geo-alt me-2"></i>31J W Spark Street, California -
+												24578</small>
+
+											<!-- Price and Button -->
+											<div
+												class="d-sm-flex justify-content-sm-between align-items-center mt-3 mt-md-auto">
+												<!-- Button -->
+												<div class="d-flex align-items-center">
+													<h5 class="fw-bold mb-0 me-1">$1586</h5>
+													<span class="mb-0 me-2">/day</span>
+												</div>
+												<!-- Price -->
+												<div class="hstack gap-2 mt-3 mt-sm-0">
+													<a href="#" class="btn btn-sm btn-primary mb-0"><i
+															class="bi bi-pencil-square fa-fw me-1"></i>Edit</a>
+													<a href="#" class="btn btn-sm btn-danger mb-0"><i
+															class="bi bi-trash3 fa-fw me-1"></i>Delete</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Listing item END -->
+
+							<!-- Listing item START -->
+							<div class="card border p-2">
+								<div class="row g-4">
+									<!-- Card img -->
+									<div class="col-md-3 col-lg-2">
+										<img src="{% static '/images/category/hotel/4by3/05.jpg' %}"
+											class="card-img rounded-2" alt="Card image">
+									</div>
+
+									<!-- Card body -->
+									<div class="col-md-9 col-lg-10">
+										<div class="card-body position-relative d-flex flex-column p-0 h-100">
+
+											<!-- Buttons -->
+											<div class="list-inline-item dropdown position-absolute top-0 end-0">
+												<!-- Share button -->
+												<a href="#" class="btn btn-sm btn-round btn-light" role="button"
+													id="dropdownAction3" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="bi bi-three-dots-vertical"></i>
+												</a>
+												<!-- dropdown button -->
+												<ul class="dropdown-menu dropdown-menu-end min-w-auto shadow rounded"
+													aria-labelledby="dropdownAction3">
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-info-circle me-1"></i>Report</a></li>
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-slash-circle me-1"></i>Disable</a></li>
+												</ul>
+											</div>
+
+											<!-- Title -->
+											<h5 class="card-title mb-0 me-5"><a
+													href="{% url 'pages:dynamic_pages' template_name='hotel-detail' %}">Royal
+													Beach
+													Resort</a></h5>
+											<small><i class="bi bi-geo-alt me-2"></i>Manhattan street, London -
+												24578</small>
+
+											<!-- Price and Button -->
+											<div
+												class="d-sm-flex justify-content-sm-between align-items-center mt-3 mt-md-auto">
+												<!-- Button -->
+												<div class="d-flex align-items-center">
+													<h5 class="fw-bold mb-0 me-1">$856</h5>
+													<span class="mb-0 me-2">/day</span>
+												</div>
+												<!-- Price -->
+												<div class="hstack gap-2 mt-3 mt-sm-0">
+													<a href="#" class="btn btn-sm btn-primary mb-0"><i
+															class="bi bi-pencil-square fa-fw me-1"></i>Edit</a>
+													<a href="#" class="btn btn-sm btn-danger mb-0"><i
+															class="bi bi-trash3 fa-fw me-1"></i>Delete</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Listing item END -->
+
+							<!-- Listing item START -->
+							<div class="card border p-2">
+								<div class="row g-4">
+									<!-- Card img -->
+									<div class="col-md-3 col-lg-2">
+										<img src="{% static '/images/category/hotel/4by3/04.jpg' %}"
+											class="card-img rounded-2" alt="Card image">
+									</div>
+
+									<!-- Card body -->
+									<div class="col-md-9 col-lg-10">
+										<div class="card-body position-relative d-flex flex-column p-0 h-100">
+
+											<!-- Buttons -->
+											<div class="list-inline-item dropdown position-absolute top-0 end-0">
+												<!-- Share button -->
+												<a href="#" class="btn btn-sm btn-round btn-light" role="button"
+													id="dropdownAction4" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="bi bi-three-dots-vertical"></i>
+												</a>
+												<!-- dropdown button -->
+												<ul class="dropdown-menu dropdown-menu-end min-w-auto shadow rounded"
+													aria-labelledby="dropdownAction4">
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-info-circle me-1"></i>Report</a></li>
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-slash-circle me-1"></i>Disable</a></li>
+												</ul>
+											</div>
+
+											<!-- Title -->
+											<h5 class="card-title mb-0 me-5"><a
+													href="{% url 'pages:dynamic_pages' template_name='hotel-detail' %}">Carina
+													Beach
+													Resort</a></h5>
+											<small><i class="bi bi-geo-alt me-2"></i>5855 W Century Blvd, Los Angeles -
+												90045</small>
+
+											<!-- Price and Button -->
+											<div
+												class="d-sm-flex justify-content-sm-between align-items-center mt-3 mt-md-auto">
+												<!-- Button -->
+												<div class="d-flex align-items-center">
+													<h5 class="fw-bold mb-0 me-1">$1025</h5>
+													<span class="mb-0 me-2">/day</span>
+												</div>
+												<!-- Price -->
+												<div class="hstack gap-2 mt-3 mt-sm-0">
+													<a href="#" class="btn btn-sm btn-primary mb-0"><i
+															class="bi bi-pencil-square fa-fw me-1"></i>Edit</a>
+													<a href="#" class="btn btn-sm btn-danger mb-0"><i
+															class="bi bi-trash3 fa-fw me-1"></i>Delete</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Listing item END -->
+
+							<!-- Listing item START -->
+							<div class="card border p-2">
+								<div class="row g-4">
+									<!-- Card img -->
+									<div class="col-md-3 col-lg-2">
+										<img src="{% static '/images/category/hotel/4by3/06.jpg' %}"
+											class="card-img rounded-2" alt="Card image">
+									</div>
+
+									<!-- Card body -->
+									<div class="col-md-9 col-lg-10">
+										<div class="card-body position-relative d-flex flex-column p-0 h-100">
+
+											<!-- Buttons -->
+											<div class="list-inline-item dropdown position-absolute top-0 end-0">
+												<!-- Share button -->
+												<a href="#" class="btn btn-sm btn-round btn-light" role="button"
+													id="dropdownAction5" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="bi bi-three-dots-vertical"></i>
+												</a>
+												<!-- dropdown button -->
+												<ul class="dropdown-menu dropdown-menu-end min-w-auto shadow rounded"
+													aria-labelledby="dropdownAction5">
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-info-circle me-1"></i>Report</a></li>
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-slash-circle me-1"></i>Disable</a></li>
+												</ul>
+											</div>
+
+											<!-- Title -->
+											<h5 class="card-title mb-0 me-5"><a
+													href="{% url 'pages:dynamic_pages' template_name='hotel-detail' %}">Courtyard
+													by
+													Marriott New York</a></h5>
+											<small><i class="bi bi-geo-alt me-2"></i>Manhattan street, London -
+												24578</small>
+
+											<!-- Price and Button -->
+											<div
+												class="d-sm-flex justify-content-sm-between align-items-center mt-3 mt-md-auto">
+												<!-- Button -->
+												<div class="d-flex align-items-center">
+													<h5 class="fw-bold mb-0 me-1">$1125</h5>
+													<span class="mb-0 me-2">/day</span>
+												</div>
+												<!-- Price -->
+												<div class="hstack gap-2 mt-3 mt-sm-0">
+													<a href="#" class="btn btn-sm btn-primary mb-0"><i
+															class="bi bi-pencil-square fa-fw me-1"></i>Edit</a>
+													<a href="#" class="btn btn-sm btn-danger mb-0"><i
+															class="bi bi-trash3 fa-fw me-1"></i>Delete</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Listing item END -->
+
+							<!-- Listing item START -->
+							<div class="card border p-2">
+								<div class="row g-4">
+									<!-- Card img -->
+									<div class="col-md-3 col-lg-2">
+										<img src="{% static '/images/category/hotel/4by3/08.jpg' %}"
+											class="card-img rounded-2" alt="Card image">
+									</div>
+
+									<!-- Card body -->
+									<div class="col-md-9 col-lg-10">
+										<div class="card-body position-relative d-flex flex-column p-0 h-100">
+
+											<!-- Buttons -->
+											<div class="list-inline-item dropdown position-absolute top-0 end-0">
+												<!-- Share button -->
+												<a href="#" class="btn btn-sm btn-round btn-light" role="button"
+													id="dropdownAction6" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="bi bi-three-dots-vertical"></i>
+												</a>
+												<!-- dropdown button -->
+												<ul class="dropdown-menu dropdown-menu-end min-w-auto shadow rounded"
+													aria-labelledby="dropdownAction6">
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-info-circle me-1"></i>Report</a></li>
+													<li><a class="dropdown-item" href="#"><i
+																class="bi bi-slash-circle me-1"></i>Disable</a></li>
+												</ul>
+											</div>
+
+											<!-- Title -->
+											<h5 class="card-title mb-0 me-5"><a
+													href="{% url 'pages:dynamic_pages' template_name='hotel-detail' %}">Beverly
+													Hills
+													Marriott</a></h5>
+											<small><i class="bi bi-geo-alt me-2"></i>31J W Spark Street, California -
+												24578</small>
+
+											<!-- Price and Button -->
+											<div
+												class="d-sm-flex justify-content-sm-between align-items-center mt-3 mt-md-auto">
+												<!-- Button -->
+												<div class="d-flex align-items-center">
+													<h5 class="fw-bold mb-0 me-1">$1005</h5>
+													<span class="mb-0 me-2">/day</span>
+												</div>
+												<!-- Price -->
+												<div class="hstack gap-2 mt-3 mt-sm-0">
+													<a href="#" class="btn btn-sm btn-primary mb-0"><i
+															class="bi bi-pencil-square fa-fw me-1"></i>Edit</a>
+													<a href="#" class="btn btn-sm btn-danger mb-0"><i
+															class="bi bi-trash3 fa-fw me-1"></i>Delete</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Listing item END -->
+						</div>
+						<!-- Card body END -->
+					</div>
+				</div>
+			</div>
+			<!-- Listing table END -->
+		</div>
+	</section>
+
+</main>
+
+{% include 'partials/footer2.html' %}
+
+{% endblock content %}

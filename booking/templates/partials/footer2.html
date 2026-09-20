@@ -1,0 +1,23 @@
+{% load static %}
+
+<footer class="booking-footer booking-footer-compact bg-dark p-3">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="text-center text-md-start mb-3 mb-md-0">
+                    <a href="/"><img class="h-30px" src="{% static '/images/logo-light.svg' %}" alt="Booking Balkans"></a>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="text-body-secondary text-primary-hover">Copyright ©2026 Booking Balkans · Powered by Q Technology</div>
+            </div>
+            <div class="col-md-4">
+                <ul class="list-inline mb-0 text-center text-md-end">
+                    <li class="list-inline-item"><a class="text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='about' %}">Hakkımızda</a></li>
+                    <li class="list-inline-item ms-2"><a class="text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='contact' %}">İletişim</a></li>
+                    <li class="list-inline-item ms-2"><a class="text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='privacy-policy' %}">Gizlilik</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>

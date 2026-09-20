@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% load static i18n %}
+
+{% block content %}
+
+{% include 'partials/account-navbar.html' %}
+
+<main>
+
+	<!-- =======================
+Menu item START -->
+	<section class="pt-4">
+		<div class="container">
+			<div class="card rounded-3 border p-3 pb-2">
+				<!-- Avatar and info START -->
+				<div class="d-sm-flex align-items-center">
+					<div class="avatar avatar-xl mb-2 mb-sm-0">
+						<img class="avatar-img rounded-circle" src="{% static '/images/avatar/01.jpg' %}" alt="">
+					</div>
+					<h4 class="mb-2 mb-sm-0 ms-sm-3"><span class="fw-light">Hi</span> Jacqueline Miller</h4>
+					<a href="{% url 'pages:dynamic_pages' template_name='add-listing' %}"
+						class="btn btn-sm btn-primary-soft mb-0 ms-auto flex-shrink-0"><i
+							class="bi bi-plus-lg fa-fw me-2"></i>Add New Listing</a>
+				</div>
+				<!-- Avatar and info START -->
+
+				<!-- Responsive navbar toggler -->
+				<button class="btn btn-primary w-100 d-block d-xl-none mt-2" type="button" data-bs-toggle="offcanvas"
+					data-bs-target="#dashboardMenu" aria-controls="dashboardMenu">
+					<i class="bi bi-list"></i> Dashboard Menu
+				</button>
+
+				<!-- Nav links START -->
+				<div class="offcanvas-xl offcanvas-end mt-xl-3" tabindex="-1" id="dashboardMenu">
+					<div class="offcanvas-header border-bottom p-3">
+						<h5 class="offcanvas-title">Menu</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+							data-bs-target="#dashboardMenu" aria-label="Close"></button>
+					</div>
+					<!-- Offcanvas body -->
+					<div class="offcanvas-body p-3 p-xl-0">
+						<!-- Nav item -->
+						<div class="navbar navbar-expand-xl">
+							<ul class="navbar-nav navbar-offcanvas-menu">
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-dashboard' %}"><i
+											class="bi bi-house-door fa-fw me-1"></i>Dashboard</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-listings' %}"><i
+											class="bi bi-journals fa-fw me-1"></i>Listings</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-bookings' %}"><i
+											class="bi bi-bookmark-heart fa-fw me-1"></i>Bookings</a> </li>
+
+								<li class="nav-item"> <a class="nav-link active"
+										href="{% url 'pages:dynamic_pages' template_name='agent-activities' %}"><i
+											class="bi bi-bell fa-fw me-1"></i>Activities</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-earnings' %}"><i
+											class="bi bi-graph-up-arrow fa-fw me-1"></i>Earnings</a> </li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-reviews' %}"><i
+											class="bi bi-star fa-fw me-1"></i>Reviews</a></li>
+
+								<li class="nav-item"> <a class="nav-link"
+										href="{% url 'pages:dynamic_pages' template_name='agent-settings' %}"><i
+											class="bi bi-gear fa-fw me-1"></i>Settings</a></li>
+
+								<li class="nav-item dropdown">
+									<a class="nav-link dropdown-toggle" href="#" id="dropdoanMenu"
+										data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<i class="bi bi-list-ul fa-fw me-1"></i>Dropdown
+									</a>
+									<ul class="dropdown-menu" aria-labelledby="dropdoanMenu">
+										<!-- Dropdown menu -->
+										<li> <a class="dropdown-item" href="#">Item 1</a></li>
+										<li> <a class="dropdown-item" href="#">Item 2</a></li>
+									</ul>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<!-- Nav links END -->
+			</div>
+		</div>
+	</section>
+	<!-- =======================
+Menu item END -->
+
+
+	<!-- =======================
+Content START -->
+	<section class="pt-0">
+		<div class="container vstack gap-4">
+			<!-- Title START -->
+			<div class="row">
+				<div class="col-12">
+					<h1 class="fs-4 mb-0"><i class="bi bi-bell fa-fw me-1"></i>Activities</h1>
+				</div>
+			</div>
+			<!-- Title END -->
+
+			<!-- Activities START -->
+			<div class="row">
+				<div class="col-12">
+
+					<div class="card border">
+						<!-- Card header -->
+						<div class="card-header border-bottom">
+							<h5 class="card-header-title">Recent Activities</h5>
+						</div>
+
+						<!-- Card body START -->
+						<div class="card-body">
+
+							<!-- Activity item START -->
+							<div class="d-sm-flex justify-content-between align-items-center">
+								<div class="d-flex align-items-sm-center me-4 ms-sm-0">
+									<!-- Avatar -->
+									<div class="avatar flex-shrink-0">
+										<div class="avatar-img rounded-circle text-bg-success">
+											<span class="position-absolute top-50 start-50 translate-middle fw-bold"><i
+													class="bi bi-check-lg fs-5"></i></span>
+										</div>
+									</div>
+									<!-- Title -->
+									<div class="ms-3">
+										<h6 class="fw-light m-0">Your listing <a href="#" class="text-primary">Courtyard
+												by Marriott New York </a>has been
+											approved</h6>
+										<small>2 Days ago</small>
+									</div>
+								</div>
+								<!-- Buttons -->
+								<div class="d-flex gap-2 mt-2 mt-sm-0">
+									<a href="#" class="btn btn-sm btn-primary-soft">View</a>
+									<a href="#" class="btn btn-sm btn-danger-soft"><i class="bi bi-trash"></i></a>
+								</div>
+							</div>
+							<!-- Activity item END -->
+
+							<hr> <!-- Divider -->
+
+							<!-- Activity item START -->
+							<div class="d-sm-flex justify-content-between align-items-center">
+								<!-- Avatar image -->
+								<div class="d-flex align-items-sm-center me-4 ms-sm-0">
+									<div class="avatar flex-shrink-0">
+										<img class="avatar-img rounded-circle"
+											src="{% static '/images/avatar/04.jpg' %}" alt="">
+									</div>
+									<!-- Title -->
+									<div class="ms-3">
+										<h6 class="fw-light m-0">Louis Ferguson booked your <span class="fw-bold">Hotel
+												Baljees Regency </span>Hotel room</h6>
+										<small class="me-3">15 Nov 2022</small>
+									</div>
+								</div>
+								<!-- Buttons -->
+								<div class="d-flex gap-2 mt-2 mt-sm-0">
+									<a href="#" class="btn btn-sm btn-primary-soft">View</a>
+									<a href="#" class="btn btn-sm btn-danger-soft"><i class="bi bi-trash"></i></a>
+								</div>
+							</div>
+							<!-- Activity item END -->
+
+							<hr> <!-- Divider -->
+
+							<!-- Activity item START -->
+							<div class="d-sm-flex justify-content-between align-items-center">
+								<div class="d-flex align-items-sm-center me-4 ms-sm-0">
+									<!-- Avatar -->
+									<div class="avatar flex-shrink-0">
+										<div class="avatar-img rounded-circle text-bg-info">
+											<span class="position-absolute top-50 start-50 translate-middle fw-bold"><i
+													class="bi bi-chat fs-5"></i></span>
+										</div>
+									</div>
+									<!-- Title -->
+									<div class="ms-3">
+										<h6 class="fw-light m-0">Someone left a review on <span class="fw-bold">Park
+												Plaza Lodge Hotel </span> listing</h6>
+										<small class="me-3">13 Nov 2022</small>
+									</div>
+								</div>
+								<!-- Buttons -->
+								<div class="d-flex gap-2 mt-2 mt-sm-0">
+									<a href="#" class="btn btn-sm btn-primary-soft">View</a>
+									<a href="#" class="btn btn-sm btn-danger-soft"><i class="bi bi-trash"></i></a>
+								</div>
+							</div>
+							<!-- Activity item END -->
+
+							<hr> <!-- Divider -->
+
+							<!-- Activity item START -->
+							<div class="d-sm-flex justify-content-between align-items-center">
+								<div class="d-flex align-items-sm-center me-4 ms-sm-0">
+									<!-- Avatar -->
+									<div class="avatar flex-shrink-0">
+										<div class="avatar-img rounded-circle text-bg-success">
+											<span class="position-absolute top-50 start-50 translate-middle fw-bold"><i
+													class="bi bi-check-lg fs-5"></i></span>
+										</div>
+									</div>
+									<!-- Title -->
+									<div class="ms-3">
+										<h6 class="fw-light m-0">Your payment received successfully</h6>
+										<small class="me-3">13 Nov 2022</small>
+									</div>
+								</div>
+								<!-- Buttons -->
+								<div class="d-flex gap-2 mt-2 mt-sm-0">
+									<a href="#" class="btn btn-sm btn-primary-soft">View</a>
+									<a href="#" class="btn btn-sm btn-danger-soft"><i class="bi bi-trash"></i></a>
+								</div>
+							</div>
+							<!-- Activity item END -->
+
+							<hr> <!-- Divider -->
+
+							<!-- Activity item START -->
+							<div class="d-sm-flex justify-content-between align-items-center">
+								<div class="d-flex align-items-sm-center me-4 ms-sm-0">
+									<!-- Avatar image -->
+									<div class="avatar flex-shrink-0">
+										<img class="avatar-img rounded-circle"
+											src="{% static '/images/avatar/05.jpg' %}" alt="">
+									</div>
+									<!-- Title -->
+									<div class="ms-3">
+										<h6 class="fw-light m-0">Amanda Reed Cancel booking in <a href="#"
+												class="text-primary">Courtyard by Marriott New York </a>hotel</h6>
+										<small class="me-3">11 Nov 2022</small>
+									</div>
+								</div>
+								<!-- Buttons -->
+								<div class="d-flex gap-2 mt-2 mt-sm-0">
+									<a href="#" class="btn btn-sm btn-primary-soft">View</a>
+									<a href="#" class="btn btn-sm btn-danger-soft"><i class="bi bi-trash"></i></a>
+								</div>
+							</div>
+							<!-- Activity item END -->
+
+							<hr> <!-- Divider -->
+
+							<!-- Activity item START -->
+							<div class="d-sm-flex justify-content-between align-items-center">
+								<!-- Avatar image -->
+								<div class="d-flex align-items-sm-center me-4 ms-sm-0">
+									<div class="avatar flex-shrink-0">
+										<img class="avatar-img rounded-circle"
+											src="{% static '/images/avatar/09.jpg' %}" alt="">
+									</div>
+									<!-- Title -->
+									<div class="ms-3">
+										<h6 class="fw-light m-0">Lori Stevens booked your <span class="fw-bold">Pride
+												moon Village Resort & Spa </span>Hotel room
+										</h6>
+										<small class="me-3">10 Nov 2022</small>
+									</div>
+								</div>
+								<!-- Buttons -->
+								<div class="d-flex gap-2 mt-2 mt-sm-0">
+									<a href="#" class="btn btn-sm btn-primary-soft">View</a>
+									<a href="#" class="btn btn-sm btn-danger-soft"><i class="bi bi-trash"></i></a>
+								</div>
+							</div>
+							<!-- Activity item END -->
+
+						</div>
+						<!-- Card body END -->
+					</div>
+				</div>
+			</div>
+			<!-- Activities END -->
+		</div>
+	</section>
+	<!-- =======================
+Content END -->
+
+</main>
+
+{% include 'partials/footer2.html' %}
+
+{% endblock content %}

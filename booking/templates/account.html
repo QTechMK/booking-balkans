@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+
+{% include 'partials/account-navbar.html' %}
+
+<main>
+
+    <section class="pt-3">
+        <div class="container">
+            <div class="row">
+
+                {% include 'partials/account-sidebar.html' %}
+
+                {% block page_content %}{% endblock page_content %}
+
+            </div>
+        </div>
+    </section>
+
+</main>
+
+{% include 'partials/footer2.html' %}
+
+{% endblock content %}
+
+{% block extra_javascript %}{% endblock extra_javascript %}

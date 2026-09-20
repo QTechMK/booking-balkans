@@ -1,0 +1,55 @@
+{% load static %}
+
+<footer class="booking-footer bg-dark pt-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <a href="/"><img class="h-40px" src="{% static '/images/logo-light.svg' %}" alt="Booking Balkans"></a>
+                <p class="my-3 text-body-secondary">Balkanlar'daki konaklamanızı güvenle keşfedin ve kolayca rezerve edin.</p>
+                <p class="mb-0"><a href="{% url 'pages:dynamic_pages' template_name='contact' %}" class="text-body-secondary text-primary-hover"><i class="bi bi-envelope me-2"></i>İletişim</a></p>
+            </div>
+            <div class="col-lg-8 ms-auto">
+                <div class="row g-4">
+                    <div class="col-6 col-md-4">
+                        <h5 class="text-white mb-2 mb-md-4">Booking Balkans</h5>
+                        <ul class="nav flex-column text-primary-hover">
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='about' %}">Hakkımızda</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='contact' %}">İletişim</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='blog' %}">Seyahat Rehberi</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='help-center' %}">Yardım Merkezi</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <h5 class="text-white mb-2 mb-md-4">Hesabım</h5>
+                        <ul class="nav flex-column text-primary-hover">
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'account_signup' %}">Kayıt Ol</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'account_login' %}">Giriş Yap</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='account-bookings' %}">Rezervasyonlarım</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='account-profile' %}">Profilim</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <h5 class="text-white mb-2 mb-md-4">Konaklamalar</h5>
+                        <ul class="nav flex-column text-primary-hover">
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='hotel-grid' %}"><i class="fa-solid fa-hotel me-2"></i>Tüm Oteller</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='hotel-list' %}">Liste Görünümü</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='offer-detail' %}">Kampanyalar</a></li>
+                            <li class="nav-item"><a class="nav-link text-body-secondary" href="{% url 'pages:dynamic_pages' template_name='faq' %}">Sık Sorulan Sorular</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="mt-5 mb-0">
+        <div class="d-lg-flex justify-content-between align-items-center py-3 text-center text-lg-start">
+            <div class="text-body-secondary text-primary-hover">Copyright ©2026 Booking Balkans · Powered by Q Technology</div>
+            <div class="nav mt-2 mt-lg-0">
+                <ul class="list-inline text-primary-hover mx-auto mb-0">
+                    <li class="list-inline-item me-0"><a class="nav-link text-body-secondary py-1" href="{% url 'pages:dynamic_pages' template_name='privacy-policy' %}">Gizlilik Politikası</a></li>
+                    <li class="list-inline-item me-0"><a class="nav-link text-body-secondary py-1" href="{% url 'pages:dynamic_pages' template_name='terms-of-service' %}">Kullanım Koşulları</a></li>
+                    <li class="list-inline-item me-0"><a class="nav-link text-body-secondary py-1 pe-0" href="{% url 'pages:dynamic_pages' template_name='privacy-policy' %}">Çerez Politikası</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
