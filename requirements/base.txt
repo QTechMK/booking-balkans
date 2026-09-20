@@ -10,6 +10,8 @@ django==5.1.8  # pyup: < 5.2 # https://www.djangoproject.com/
 django-environ==0.12.0  # https://github.com/joke2k/django-environ
 django-model-utils==5.0.0  # https://github.com/jazzband/django-model-utils
 django-allauth[mfa]==65.7.0  # https://github.com/pennersr/django-allauth
+fido2==1.1.3  # django-allauth 65.7 MFA compatibility
+PyJWT==2.10.1  # Google social provider
 django-crispy-forms==2.3  # https://github.com/django-crispy-forms/django-crispy-forms
 crispy-bootstrap5==2025.4  # https://github.com/django-crispy-forms/crispy-bootstrap5
 django-redis==5.4.0  # https://github.com/jazzband/django-redis
