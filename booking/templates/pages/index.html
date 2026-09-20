@@ -3,7 +3,7 @@
 {% load static i18n %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static '/vendor/tiny-slider/tiny-slider.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/tiny-slider/tiny-slider.css' %}">
 {% endblock extra_css %}
 
 {% block content %}
@@ -16,8 +16,8 @@
         <div class="container">
             <!-- Logo START -->
             <a class="navbar-brand" href="/">
-                <img class="light-mode-item navbar-brand-item" src="{% static '/images/logo.svg' %}" alt="logo">
-                <img class="dark-mode-item navbar-brand-item" src="{% static '/images/logo-light.svg' %}" alt="logo">
+                <img class="light-mode-item navbar-brand-item" src="{% static 'images/logo.svg' %}" alt="logo">
+                <img class="dark-mode-item navbar-brand-item" src="{% static 'images/logo-light.svg' %}" alt="logo">
             </a>
             <!-- Logo END -->
 
@@ -343,7 +343,7 @@
                     <a class="avatar avatar-sm p-0" href="#" id="profileDropdown" role="button"
                         data-bs-auto-close="outside" data-bs-display="static" data-bs-toggle="dropdown"
                         aria-expanded="false">
-                        <img class="avatar-img rounded-2" src="{% static '/images/avatar/01.jpg' %}" alt="avatar">
+                        <img class="avatar-img rounded-2" src="{% static 'images/avatar/01.jpg' %}" alt="avatar">
                     </a>
 
                     <ul class="dropdown-menu dropdown-animation dropdown-menu-end shadow pt-3"
@@ -354,7 +354,7 @@
                                 <!-- Avatar -->
                                 <div class="avatar me-3">
                                     <img class="avatar-img rounded-circle shadow"
-                                        src="{% static '/images/avatar/01.jpg' %}" alt="avatar">
+                                        src="{% static 'images/avatar/01.jpg' %}" alt="avatar">
                                 </div>
                                 <div>
                                     <a class="h6 mt-2 mt-sm-0" href="#">Lori Ferguson</a>
@@ -465,7 +465,7 @@
                             class="d-block">
                             <!-- Avatar -->
                             <div class="avatar avatar-md z-index-1 position-relative me-2">
-                                <img class="avatar-img rounded-circle" src="{% static '/images/avatar/12.jpg' %}"
+                                <img class="avatar-img rounded-circle" src="{% static 'images/avatar/12.jpg' %}"
                                     alt="avatar">
                                 <!-- Video button -->
                                 <div
@@ -483,7 +483,7 @@
                 <!-- Image -->
                 <div class="col-lg-6 position-relative">
 
-                    <img src="{% static '/images/bg/06.jpg' %}" class="rounded" alt="">
+                    <img src="{% static 'images/bg/06.jpg' %}" class="rounded" alt="">
 
                     <!-- Svg decoration -->
                     <figure class="position-absolute end-0 bottom-0">
@@ -535,9 +535,9 @@
                     <div
                         class="vstack gap-5 align-items-center position-absolute top-0 start-0 d-none d-md-flex mt-4 ms-n3">
                         <img class="icon-lg shadow-lg border border-3 border-white rounded-circle"
-                            src="{% static '/images/category/hotel/4by3/11.jpg' %}" alt="avatar">
+                            src="{% static 'images/category/hotel/4by3/11.jpg' %}" alt="avatar">
                         <img class="icon-xl shadow-lg border border-3 border-white rounded-circle"
-                            src="{% static '/images/category/hotel/4by3/12.jpg' %}" alt="avatar">
+                            src="{% static 'images/category/hotel/4by3/12.jpg' %}" alt="avatar">
                     </div>
                 </div>
             </div>
@@ -686,7 +686,7 @@
                             <div class="row g-0 align-items-center">
                                 <!-- Image -->
                                 <div class="col-sm-6">
-                                    <img src="{% static '/images/offer/01.jpg' %}" class="card-img rounded-0" alt="">
+                                    <img src="{% static 'images/offer/01.jpg' %}" class="card-img rounded-0" alt="">
                                 </div>
 
                                 <!-- Title and content -->
@@ -707,7 +707,7 @@
                             <div class="row g-0 align-items-center">
                                 <!-- Image -->
                                 <div class="col-sm-6">
-                                    <img src="{% static '/images/offer/04.jpg' %}" class="card-img rounded-0" alt="">
+                                    <img src="{% static 'images/offer/04.jpg' %}" class="card-img rounded-0" alt="">
                                 </div>
 
                                 <!-- Title and content -->
@@ -728,7 +728,7 @@
                             <div class="row g-0 align-items-center">
                                 <!-- Image -->
                                 <div class="col-sm-6">
-                                    <img src="{% static '/images/offer/03.jpg' %}" class="card-img rounded-0" alt="">
+                                    <img src="{% static 'images/offer/03.jpg' %}" class="card-img rounded-0" alt="">
                                 </div>
 
                                 <!-- Title and content -->
@@ -749,7 +749,7 @@
                             <div class="row g-0 align-items-center">
                                 <!-- Image -->
                                 <div class="col-sm-6">
-                                    <img src="{% static '/images/offer/02.jpg' %}" class="card-img rounded-0" alt="">
+                                    <img src="{% static 'images/offer/02.jpg' %}" class="card-img rounded-0" alt="">
                                 </div>
 
                                 <!-- Title and content -->
@@ -1014,14 +1014,14 @@
                     </figure>
 
                     <!-- Image -->
-                    <img src="{% static '/images/about/01.jpg' %}" class="rounded-3 position-relative" alt="">
+                    <img src="{% static 'images/about/01.jpg' %}" class="rounded-3 position-relative" alt="">
 
                     <!-- Client rating START -->
                     <div class="position-absolute bottom-0 start-0 z-index-1 mb-4 ms-5">
                         <div class="bg-body d-flex d-inline-block rounded-3 position-relative p-3">
 
                             <!-- Element -->
-                            <img src="{% static '/images/element/01.svg' %}"
+                            <img src="{% static 'images/element/01.svg' %}"
                                 class="position-absolute top-0 start-0 translate-middle w-40px" alt="">
 
                             <!-- Avatar group -->
@@ -1031,19 +1031,19 @@
                                 <ul class="avatar-group mb-0">
                                     <li class="avatar avatar-sm">
                                         <img class="avatar-img rounded-circle"
-                                            src="{% static '/images/avatar/01.jpg' %}" alt="avatar">
+                                            src="{% static 'images/avatar/01.jpg' %}" alt="avatar">
                                     </li>
                                     <li class="avatar avatar-sm">
                                         <img class="avatar-img rounded-circle"
-                                            src="{% static '/images/avatar/02.jpg' %}" alt="avatar">
+                                            src="{% static 'images/avatar/02.jpg' %}" alt="avatar">
                                     </li>
                                     <li class="avatar avatar-sm">
                                         <img class="avatar-img rounded-circle"
-                                            src="{% static '/images/avatar/03.jpg' %}" alt="avatar">
+                                            src="{% static 'images/avatar/03.jpg' %}" alt="avatar">
                                     </li>
                                     <li class="avatar avatar-sm">
                                         <img class="avatar-img rounded-circle"
-                                            src="{% static '/images/avatar/04.jpg' %}" alt="avatar">
+                                            src="{% static 'images/avatar/04.jpg' %}" alt="avatar">
                                     </li>
                                     <li class="avatar avatar-sm">
                                         <div class="avatar-img rounded-circle bg-primary">
@@ -1116,27 +1116,27 @@
             <div class="row g-4 g-lg-7 justify-content-center align-items-center">
                 <!-- Image -->
                 <div class="col-5 col-sm-3 col-xl-2">
-                    <img src="{% static '/images/client/01.svg' %}" class="grayscale" alt="">
+                    <img src="{% static 'images/client/01.svg' %}" class="grayscale" alt="">
                 </div>
                 <!-- Image -->
                 <div class="col-5 col-sm-3 col-xl-2">
-                    <img src="{% static '/images/client/02.svg' %}" class="grayscale" alt="">
+                    <img src="{% static 'images/client/02.svg' %}" class="grayscale" alt="">
                 </div>
                 <!-- Image -->
                 <div class="col-5 col-sm-3 col-xl-2">
-                    <img src="{% static '/images/client/03.svg' %}" class="grayscale" alt="">
+                    <img src="{% static 'images/client/03.svg' %}" class="grayscale" alt="">
                 </div>
                 <!-- Image -->
                 <div class="col-5 col-sm-3 col-xl-2">
-                    <img src="{% static '/images/client/04.svg' %}" class="grayscale" alt="">
+                    <img src="{% static 'images/client/04.svg' %}" class="grayscale" alt="">
                 </div>
                 <!-- Image -->
                 <div class="col-5 col-sm-3 col-xl-2">
-                    <img src="{% static '/images/client/05.svg' %}" class="grayscale" alt="">
+                    <img src="{% static 'images/client/05.svg' %}" class="grayscale" alt="">
                 </div>
                 <!-- Image -->
                 <div class="col-5 col-sm-3 col-xl-2">
-                    <img src="{% static '/images/client/06.svg' %}" class="grayscale" alt="">
+                    <img src="{% static 'images/client/06.svg' %}" class="grayscale" alt="">
                 </div>
             </div>
         </div>
@@ -1158,7 +1158,7 @@
                                         <!-- Element -->
                                         <div
                                             class="position-absolute top-0 start-0 translate-middle z-index-9 mt-7 ms-4">
-                                            <img src="{% static '/images/element/02.svg' %}"
+                                            <img src="{% static 'images/element/02.svg' %}"
                                                 class="h-60px bg-orange rounded p-2" alt="">
                                         </div>
 
@@ -1172,7 +1172,7 @@
                                         </figure>
 
                                         <!-- Image -->
-                                        <img src="{% static '/images/team/01.jpg' %}"
+                                        <img src="{% static 'images/team/01.jpg' %}"
                                             class="rounded-3 position-relative" alt="">
                                     </div>
 
@@ -1212,7 +1212,7 @@
                                         <!-- Element -->
                                         <div
                                             class="position-absolute top-0 start-0 translate-middle mt-7 ms-4 z-index-9">
-                                            <img src="{% static '/images/element/03.svg' %}"
+                                            <img src="{% static 'images/element/03.svg' %}"
                                                 class="h-60px bg-orange p-2 rounded" alt="">
                                         </div>
 
@@ -1226,7 +1226,7 @@
                                         </figure>
 
                                         <!-- Image -->
-                                        <img src="{% static '/images/team/02.jpg' %}"
+                                        <img src="{% static 'images/team/02.jpg' %}"
                                             class="rounded-3 position-relative" alt="">
                                     </div>
 
@@ -1279,7 +1279,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/01.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/01.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">San Francisco</a></h5>
@@ -1293,7 +1293,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/02.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/02.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Los Angeles</a></h5>
@@ -1307,7 +1307,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/03.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/03.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Miami</a></h5>
@@ -1321,7 +1321,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/04.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/04.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Sanjosh</a></h5>
@@ -1335,7 +1335,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/05.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/05.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">New York</a></h5>
@@ -1349,7 +1349,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/06.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/06.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">North Justen</a></h5>
@@ -1363,7 +1363,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/07.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/07.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Rio</a></h5>
@@ -1377,7 +1377,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/08.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/08.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Las Vegas</a></h5>
@@ -1391,7 +1391,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/09.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/09.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Texas</a></h5>
@@ -1405,7 +1405,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/10.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/10.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Chicago</a></h5>
@@ -1419,7 +1419,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/11.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/11.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">New Keagan</a></h5>
@@ -1433,7 +1433,7 @@
                 <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
                     <div class="card bg-transparent text-center p-1 h-100">
                         <!-- Image -->
-                        <img src="{% static '/images/category/hotel/nearby/01.jpg' %}" class="rounded-circle" alt="">
+                        <img src="{% static 'images/category/hotel/nearby/01.jpg' %}" class="rounded-circle" alt="">
 
                         <div class="card-body p-0 pt-3">
                             <h5 class="card-title"><a href="#" class="stretched-link">Oslo</a></h5>
@@ -1478,11 +1478,11 @@
                     <div class="row g-3">
                         <!-- Google play store button -->
                         <div class="col-6 col-sm-4 col-md-3 col-lg-6">
-                            <a href="#"> <img src="{% static '/images/element/google-play.svg' %}" alt=""> </a>
+                            <a href="#"> <img src="{% static 'images/element/google-play.svg' %}" alt=""> </a>
                         </div>
                         <!-- App store button -->
                         <div class="col-6 col-sm-4 col-md-3 col-lg-6">
-                            <a href="#"> <img src="{% static '/images/element/app-store.svg' %}" alt=""> </a>
+                            <a href="#"> <img src="{% static 'images/element/app-store.svg' %}" alt=""> </a>
                         </div>
                     </div>
                 </div>
