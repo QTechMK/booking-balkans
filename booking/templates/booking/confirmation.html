@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="py-5"><div class="container"><div class="row justify-content-center"><div class="col-lg-7"><div class="card border shadow-sm text-center"><div class="card-body p-5">
+  <div class="display-6 text-success mb-3">✓</div><h1 class="h3">Rezervasyonunuz alındı</h1><p class="text-body-secondary">Rezervasyon numaranız:</p><div class="fs-4 fw-semibold mb-4">{{ reservation.reference }}</div>
+  <div class="text-start bg-light rounded p-3 mb-4"><div class="d-flex justify-content-between"><span>Misafir</span><strong>{{ reservation.guest }}</strong></div><div class="d-flex justify-content-between mt-2"><span>Tarih</span><strong>{{ reservation.check_in }} – {{ reservation.check_out }}</strong></div><div class="d-flex justify-content-between mt-2"><span>Toplam</span><strong>{{ reservation.total_amount }} {{ reservation.currency }}</strong></div><div class="d-flex justify-content-between mt-2"><span>Ödeme</span><strong>Tesiste ödeme</strong></div></div>
+  <a class="btn btn-primary" href="{% url 'reservations:search' %}">Yeni arama yap</a>
+</div></div></div></div></div></main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

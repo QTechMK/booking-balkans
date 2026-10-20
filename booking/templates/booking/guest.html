@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="py-5"><div class="container"><div class="row g-4 justify-content-center">
+  <div class="col-lg-7"><div class="card border shadow-sm"><div class="card-body p-4">
+    <h1 class="h4 mb-1">Misafir bilgileri</h1><p class="text-body-secondary mb-4">Rezervasyonunuzu tamamlamak için bilgilerinizi girin.</p>
+    <form method="post">{% csrf_token %}
+      {{ search_form.property_id }}{{ search_form.rate_plan_id }}{{ search_form.check_in.as_hidden }}{{ search_form.check_out.as_hidden }}{{ search_form.quantity.as_hidden }}
+      {% for field in guest_form %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}</div>{% endfor %}
+      <button class="btn btn-primary w-100" type="submit">Rezervasyonu onayla</button>
+    </form>
+  </div></div></div>
+  <div class="col-lg-4"><div class="card border shadow-sm"><div class="card-body p-4"><h2 class="h5">Rezervasyon özeti</h2><p class="mb-1">{{ rate_plan.name }}</p><p class="small text-body-secondary">{{ availability.check_in }} – {{ availability.check_out }}</p><hr><div class="d-flex justify-content-between fw-semibold"><span>Toplam</span><span>{{ availability.total_amount }} {{ rate_plan.currency }}</span></div><p class="small text-body-secondary mt-3 mb-0">Ödeme yöntemi: Tesiste ödeme</p></div></div></div>
+</div></div></main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

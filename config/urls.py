@@ -14,6 +14,7 @@ urlpatterns = [
     path("users/", include("booking.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     path("api/", include("booking.tenancy.urls", namespace="tenancy")),
+    path("booking/", include("booking.reservations.urls", namespace="reservations")),
     # Your stuff: custom urls includes go here
     path("", include("booking.pages.urls", namespace="pages")),
     # ...
