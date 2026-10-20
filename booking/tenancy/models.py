@@ -1,0 +1,586 @@
+from django.conf import settings
+from django.db import models
+from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
+
+
+class BusinessType(models.TextChoices):
+    OTL_S = "OTL-S", _("Boutique or small hotel")
+    OTL_L = "OTL-L", _("Resort or large hotel")
+    APT = "APT", _("Apartment, pension or hostel")
+    VIL = "VIL", _("Villa or rental accommodation")
+    ACN = "ACN", _("Tour agency")
+    BGS = "BGS", _("Independent website business")
+    ZNC = "ZNC", _("Chain or multi-property")
+
+
+class Organization(models.Model):
+    """Tenant root shared by one or more properties."""
+
+    name = models.CharField(_("name"), max_length=255)
+    slug = models.SlugField(_("slug"), max_length=120, unique=True)
+    business_type_default = models.CharField(
+        _("default business type"),
+        max_length=10,
+        choices=BusinessType.choices,
+        default=BusinessType.OTL_S,
+    )
+    country = models.CharField(_("country"), max_length=2, default="TR")
+    default_currency = models.CharField(
+        _("default currency"),
+        max_length=3,
+        default="TRY",
+    )
+    timezone = models.CharField(
+        _("time zone"),
+        max_length=64,
+        default="Europe/Istanbul",
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Property(models.Model):
+    """A bookable or managed property belonging to an organization."""
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="properties",
+    )
+    name = models.CharField(_("name"), max_length=255)
+    slug = models.SlugField(_("slug"), max_length=120)
+    business_type = models.CharField(
+        _("business type"),
+        max_length=10,
+        choices=BusinessType.choices,
+        default=BusinessType.OTL_S,
+    )
+    address = models.TextField(_("address"), blank=True)
+    city = models.CharField(_("city"), max_length=120, blank=True)
+    country = models.CharField(_("country"), max_length=2, default="TR")
+    document_number = models.CharField(
+        _("license or document number"),
+        max_length=120,
+        blank=True,
+    )
+    timezone = models.CharField(
+        _("time zone"),
+        max_length=64,
+        default="Europe/Istanbul",
+    )
+    currency = models.CharField(_("currency"), max_length=3, default="TRY")
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "slug"],
+                name="unique_property_slug_per_organization",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.organization.name} - {self.name}"
+
+
+class UnitTypeKind(models.TextChoices):
+    ROOM = "room", _("Hotel room")
+    APARTMENT = "apartment", _("Apartment")
+    VILLA = "villa", _("Villa")
+    DORM = "dorm", _("Dormitory")
+
+
+class InventoryMode(models.TextChoices):
+    UNIT = "unit", _("Physical units")
+    CAPACITY = "capacity", _("Capacity")
+    BED = "bed", _("Beds")
+
+
+class UnitStatus(models.TextChoices):
+    ACTIVE = "active", _("Active")
+    OUT_OF_SERVICE = "out_of_service", _("Out of service")
+    MAINTENANCE = "maintenance", _("Maintenance")
+
+
+class BedStatus(models.TextChoices):
+    ACTIVE = "active", _("Active")
+    OUT_OF_SERVICE = "out_of_service", _("Out of service")
+    MAINTENANCE = "maintenance", _("Maintenance")
+
+
+class UnitType(models.Model):
+    """Sellable inventory category such as a room or an apartment type."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="unit_types",
+    )
+    name = models.CharField(_("name"), max_length=160)
+    code = models.SlugField(_("code"), max_length=80)
+    kind = models.CharField(
+        _("kind"),
+        max_length=20,
+        choices=UnitTypeKind.choices,
+        default=UnitTypeKind.ROOM,
+    )
+    inventory_mode = models.CharField(
+        _("inventory mode"),
+        max_length=20,
+        choices=InventoryMode.choices,
+        default=InventoryMode.UNIT,
+    )
+    capacity_per_unit = models.PositiveIntegerField(
+        _("capacity per unit"),
+        default=1,
+    )
+    max_adults = models.PositiveIntegerField(_("maximum adults"), default=2)
+    max_children = models.PositiveIntegerField(_("maximum children"), default=0)
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "code"],
+                name="unique_unit_type_code_per_property",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(capacity_per_unit__gt=0),
+                name="unit_type_capacity_positive",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.name}"
+
+
+class Unit(models.Model):
+    """A physical room, villa, apartment or dorm room."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="units",
+    )
+    unit_type = models.ForeignKey(
+        UnitType,
+        on_delete=models.PROTECT,
+        related_name="units",
+    )
+    code = models.CharField(_("code"), max_length=80)
+    name = models.CharField(_("name"), max_length=160, blank=True)
+    status = models.CharField(
+        _("status"),
+        max_length=20,
+        choices=UnitStatus.choices,
+        default=UnitStatus.ACTIVE,
+    )
+    floor = models.CharField(_("floor"), max_length=40, blank=True)
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "code"],
+                name="unique_unit_code_per_property",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["property", "status"]),
+            models.Index(fields=["unit_type", "status"]),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.unit_type_id and self.property_id:
+            if self.unit_type.property_id != self.property_id:
+                raise ValidationError(
+                    {"unit_type": _("Unit type must belong to the same property.")}
+                )
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.code}"
+
+
+class Bed(models.Model):
+    """A sellable bed belonging to a physical dormitory unit."""
+
+    unit = models.ForeignKey(
+        Unit,
+        on_delete=models.CASCADE,
+        related_name="beds",
+    )
+    code = models.CharField(_("code"), max_length=80)
+    status = models.CharField(
+        _("status"),
+        max_length=20,
+        choices=BedStatus.choices,
+        default=BedStatus.ACTIVE,
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["unit", "code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["unit", "code"],
+                name="unique_bed_code_per_unit",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.unit.code} - {self.code}"
+
+
+class Inventory(models.Model):
+    """Daily sellable capacity for a property and unit type."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="inventory_days",
+    )
+    unit_type = models.ForeignKey(
+        UnitType,
+        on_delete=models.CASCADE,
+        related_name="inventory_days",
+    )
+    date = models.DateField(_("date"))
+    total_capacity = models.PositiveIntegerField(_("total capacity"), default=0)
+    blocked_capacity = models.PositiveIntegerField(_("blocked capacity"), default=0)
+    is_closed = models.BooleanField(_("closed for sale"), default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["date", "property", "unit_type"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "unit_type", "date"],
+                name="unique_inventory_day_per_unit_type",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(blocked_capacity__lte=models.F("total_capacity")),
+                name="inventory_blocked_not_above_total",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["property", "date"]),
+            models.Index(fields=["unit_type", "date"]),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.unit_type_id and self.property_id:
+            if self.unit_type.property_id != self.property_id:
+                raise ValidationError(
+                    {"unit_type": _("Unit type must belong to the same property.")}
+                )
+        if self.blocked_capacity > self.total_capacity:
+            raise ValidationError(
+                {"blocked_capacity": _("Blocked capacity cannot exceed total capacity.")}
+            )
+
+    @cached_property
+    def sellable_capacity(self) -> int:
+        if self.is_closed:
+            return 0
+        return self.total_capacity - self.blocked_capacity
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.unit_type.name} - {self.date}"
+
+
+class MealPlan(models.TextChoices):
+    ROOM_ONLY = "room_only", _("Room only")
+    BREAKFAST = "breakfast", _("Breakfast")
+    HALF_BOARD = "half_board", _("Half board")
+    FULL_BOARD = "full_board", _("Full board")
+    ALL_INCLUSIVE = "all_inclusive", _("All inclusive")
+
+
+class RatePlan(models.Model):
+    """A sellable price product for one unit type."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="rate_plans",
+    )
+    unit_type = models.ForeignKey(
+        UnitType,
+        on_delete=models.PROTECT,
+        related_name="rate_plans",
+    )
+    name = models.CharField(_("name"), max_length=160)
+    code = models.SlugField(_("code"), max_length=80)
+    meal_plan = models.CharField(
+        _("meal plan"),
+        max_length=20,
+        choices=MealPlan.choices,
+        default=MealPlan.ROOM_ONLY,
+    )
+    cancellation_policy = models.CharField(
+        _("cancellation policy"),
+        max_length=120,
+        blank=True,
+    )
+    is_refundable = models.BooleanField(_("refundable"), default=True)
+    max_adults = models.PositiveIntegerField(_("maximum adults"), default=2)
+    max_children = models.PositiveIntegerField(_("maximum children"), default=0)
+    currency = models.CharField(_("currency"), max_length=3, default="TRY")
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "unit_type", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "code"],
+                name="unique_rate_plan_code_per_property",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["property", "is_active"]),
+            models.Index(fields=["unit_type", "is_active"]),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.unit_type_id and self.property_id:
+            if self.unit_type.property_id != self.property_id:
+                raise ValidationError(
+                    {"unit_type": _("Rate plan must belong to the same property.")}
+                )
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.name}"
+
+
+class Season(models.Model):
+    """A named date range used to organize pricing rules."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="seasons",
+    )
+    name = models.CharField(_("name"), max_length=120)
+    code = models.SlugField(_("code"), max_length=80)
+    start_date = models.DateField(_("start date"))
+    end_date = models.DateField(_("end date"))
+    priority = models.PositiveIntegerField(_("priority"), default=0)
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "start_date", "-priority"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "code"],
+                name="unique_season_code_per_property",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(end_date__gte=models.F("start_date")),
+                name="season_end_not_before_start",
+            ),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.end_date < self.start_date:
+            raise ValidationError({"end_date": _("Season end must not be before start.")})
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.name}"
+
+
+class DailyRate(models.Model):
+    """The dated base amount for a rate plan."""
+
+    rate_plan = models.ForeignKey(
+        RatePlan,
+        on_delete=models.CASCADE,
+        related_name="daily_rates",
+    )
+    date = models.DateField(_("date"))
+    amount = models.DecimalField(
+        _("amount"),
+        max_digits=12,
+        decimal_places=2,
+    )
+    min_nights = models.PositiveIntegerField(_("minimum nights"), default=1)
+    max_nights = models.PositiveIntegerField(
+        _("maximum nights"),
+        null=True,
+        blank=True,
+    )
+    is_closed = models.BooleanField(_("closed for sale"), default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["date", "rate_plan"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["rate_plan", "date"],
+                name="unique_daily_rate_per_plan_date",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name="daily_rate_amount_non_negative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(max_nights__isnull=True)
+                | models.Q(max_nights__gte=models.F("min_nights")),
+                name="daily_rate_max_nights_valid",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["rate_plan", "date"]),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.amount < 0:
+            raise ValidationError({"amount": _("Rate amount cannot be negative.")})
+        if self.max_nights is not None and self.max_nights < self.min_nights:
+            raise ValidationError(
+                {"max_nights": _("Maximum nights cannot be below minimum nights.")}
+            )
+
+    def __str__(self) -> str:
+        return f"{self.rate_plan.name} - {self.date}"
+
+
+class RateRestriction(models.Model):
+    """Date-specific sales restrictions for a rate plan."""
+
+    rate_plan = models.ForeignKey(
+        RatePlan,
+        on_delete=models.CASCADE,
+        related_name="restrictions",
+    )
+    date = models.DateField(_("date"))
+    stop_sell = models.BooleanField(_("stop sell"), default=False)
+    close_to_arrival = models.BooleanField(_("close to arrival"), default=False)
+    close_to_departure = models.BooleanField(_("close to departure"), default=False)
+    min_nights = models.PositiveIntegerField(_("minimum nights"), default=1)
+    max_nights = models.PositiveIntegerField(
+        _("maximum nights"),
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["date", "rate_plan"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["rate_plan", "date"],
+                name="unique_rate_restriction_per_plan_date",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(max_nights__isnull=True)
+                | models.Q(max_nights__gte=models.F("min_nights")),
+                name="rate_restriction_max_nights_valid",
+            ),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.max_nights is not None and self.max_nights < self.min_nights:
+            raise ValidationError(
+                {"max_nights": _("Maximum nights cannot be below minimum nights.")}
+            )
+
+    def __str__(self) -> str:
+        return f"{self.rate_plan.name} - restrictions - {self.date}"
+
+
+class MembershipRole(models.TextChoices):
+    OWNER = "owner", _("Owner")
+    ADMIN = "admin", _("Administrator")
+    MANAGER = "manager", _("Manager")
+    RECEPTION = "reception", _("Reception")
+    HOUSEKEEPING = "housekeeping", _("Housekeeping")
+    REVENUE = "revenue", _("Revenue")
+    ACCOUNTING = "accounting", _("Accounting")
+    SALES = "sales", _("Sales")
+    AGENCY = "agency", _("Agency")
+    PROPERTY_OWNER = "property_owner", _("Property owner")
+
+
+class Membership(models.Model):
+    """Connects a user to an organization, optionally at property scope."""
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="organization_memberships",
+    )
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+        null=True,
+        blank=True,
+    )
+    role = models.CharField(
+        _("role"),
+        max_length=32,
+        choices=MembershipRole.choices,
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["organization", "user", "role"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "user", "property", "role"],
+                name="unique_membership_scope_role",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "organization"]),
+            models.Index(fields=["organization", "property"]),
+        ]
+
+    def __str__(self) -> str:
+        scope = self.property.name if self.property else "organization"
+        return f"{self.user} - {self.organization} - {scope} ({self.role})"

@@ -13,6 +13,7 @@ urlpatterns = [
     # User management
     path("users/", include("booking.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
+    path("api/", include("booking.tenancy.urls", namespace="tenancy")),
     # Your stuff: custom urls includes go here
     path("", include("booking.pages.urls", namespace="pages")),
     # ...
