@@ -94,6 +94,106 @@ class Property(models.Model):
         return f"{self.organization.name} - {self.name}"
 
 
+class PropertySettings(models.Model):
+    """Hotel-level operational and contact settings."""
+
+    property = models.OneToOneField(Property, on_delete=models.CASCADE, related_name="settings")
+    hotel_group = models.CharField(max_length=160, blank=True)
+    sub_hotel = models.CharField(max_length=160, blank=True)
+    owner_name = models.CharField(max_length=160, blank=True)
+    contact_name = models.CharField(max_length=160, blank=True)
+    reservation_email = models.EmailField(blank=True)
+    accounting_email = models.EmailField(blank=True)
+    purchasing_email = models.EmailField(blank=True)
+    front_office_email = models.EmailField(blank=True)
+    general_manager_email = models.EmailField(blank=True)
+    website = models.URLField(blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    sms_phone = models.CharField(max_length=40, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    star_rating = models.PositiveSmallIntegerField(null=True, blank=True)
+    concept = models.CharField(max_length=120, blank=True)
+    description = models.TextField(blank=True)
+    check_in_time = models.TimeField(null=True, blank=True)
+    check_out_time = models.TimeField(null=True, blank=True)
+    system_date = models.DateField(null=True, blank=True)
+    pos_currency = models.CharField(max_length=3, blank=True)
+    standard_pax_formula = models.CharField(max_length=120, blank=True)
+    board_split_method = models.CharField(max_length=120, blank=True)
+    door_card_type = models.CharField(max_length=80, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.property.name} settings"
+
+
+class PropertyDictionaryBase(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE)
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=160)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["property", "name"]
+
+
+class RoomGroup(PropertyDictionaryBase):
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_room_group_code_per_property")]
+
+
+class BedType(PropertyDictionaryBase):
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_bed_type_code_per_property")]
+
+
+class RoomView(PropertyDictionaryBase):
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_room_view_code_per_property")]
+
+
+class RoomLocation(PropertyDictionaryBase):
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_room_location_code_per_property")]
+
+
+class BoardType(PropertyDictionaryBase):
+    extra_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    child_extra_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    baby_extra_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default="TRY")
+    show_online = models.BooleanField(default=True)
+
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_board_type_code_per_property")]
+
+
+class RateType(PropertyDictionaryBase):
+    is_refundable = models.BooleanField(default=True)
+    prepayment_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    price_factor = models.DecimalField(max_digits=8, decimal_places=4, default=1)
+    cancellation_until_hours = models.PositiveIntegerField(default=0)
+    cancellation_penalty_days = models.PositiveIntegerField(default=0)
+    min_nights = models.PositiveIntegerField(default=1)
+    max_nights = models.PositiveIntegerField(null=True, blank=True)
+    show_online = models.BooleanField(default=True)
+
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_rate_type_code_per_property")]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+        if self.max_nights is not None and self.max_nights < self.min_nights:
+            raise ValidationError({"max_nights": _("Maximum nights cannot be below minimum nights.")})
+        if self.prepayment_percent < 0 or self.prepayment_percent > 100:
+            raise ValidationError({"prepayment_percent": _("Prepayment percent must be between 0 and 100.")})
+        if self.price_factor <= 0:
+            raise ValidationError({"price_factor": _("Price factor must be greater than zero.")})
+
+
 class UnitTypeKind(models.TextChoices):
     ROOM = "room", _("Hotel room")
     APARTMENT = "apartment", _("Apartment")
@@ -127,6 +227,7 @@ class UnitType(models.Model):
         on_delete=models.CASCADE,
         related_name="unit_types",
     )
+    room_group = models.ForeignKey(RoomGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name="unit_types")
     name = models.CharField(_("name"), max_length=160)
     code = models.SlugField(_("code"), max_length=80)
     kind = models.CharField(
@@ -147,6 +248,8 @@ class UnitType(models.Model):
     )
     max_adults = models.PositiveIntegerField(_("maximum adults"), default=2)
     max_children = models.PositiveIntegerField(_("maximum children"), default=0)
+    bed_count = models.PositiveIntegerField(_("bed count"), default=1)
+    description = models.TextField(blank=True)
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -181,6 +284,9 @@ class Unit(models.Model):
         on_delete=models.PROTECT,
         related_name="units",
     )
+    bed_type = models.ForeignKey(BedType, on_delete=models.SET_NULL, null=True, blank=True, related_name="units")
+    room_view = models.ForeignKey(RoomView, on_delete=models.SET_NULL, null=True, blank=True, related_name="units")
+    room_location = models.ForeignKey(RoomLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name="units")
     code = models.CharField(_("code"), max_length=80)
     name = models.CharField(_("name"), max_length=160, blank=True)
     status = models.CharField(
@@ -190,6 +296,12 @@ class Unit(models.Model):
         default=UnitStatus.ACTIVE,
     )
     floor = models.CharField(_("floor"), max_length=40, blank=True)
+    description = models.TextField(blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    owner_name = models.CharField(max_length=160, blank=True)
+    is_locked = models.BooleanField(default=False)
+    out_of_service_from = models.DateField(null=True, blank=True)
+    out_of_service_to = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -333,6 +445,8 @@ class RatePlan(models.Model):
         on_delete=models.PROTECT,
         related_name="rate_plans",
     )
+    board_type = models.ForeignKey(BoardType, on_delete=models.SET_NULL, null=True, blank=True, related_name="rate_plans")
+    rate_type = models.ForeignKey(RateType, on_delete=models.SET_NULL, null=True, blank=True, related_name="rate_plans")
     name = models.CharField(_("name"), max_length=160)
     code = models.SlugField(_("code"), max_length=80)
     meal_plan = models.CharField(
@@ -347,6 +461,7 @@ class RatePlan(models.Model):
         blank=True,
     )
     is_refundable = models.BooleanField(_("refundable"), default=True)
+    deposit_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     max_adults = models.PositiveIntegerField(_("maximum adults"), default=2)
     max_children = models.PositiveIntegerField(_("maximum children"), default=0)
     currency = models.CharField(_("currency"), max_length=3, default="TRY")
@@ -375,6 +490,12 @@ class RatePlan(models.Model):
                 raise ValidationError(
                     {"unit_type": _("Rate plan must belong to the same property.")}
                 )
+        for field in ("board_type", "rate_type"):
+            value = getattr(self, f"{field}_id")
+            if value and getattr(getattr(self, field), "property_id") != self.property_id:
+                raise ValidationError({field: _("This definition must belong to the same property.")})
+        if self.deposit_percent < 0 or self.deposit_percent > 100:
+            raise ValidationError({"deposit_percent": _("Deposit percent must be between 0 and 100.")})
 
     def __str__(self) -> str:
         return f"{self.property.name} - {self.name}"

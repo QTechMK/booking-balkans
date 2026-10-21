@@ -8,7 +8,10 @@ from django.utils import timezone
 
 from booking.reservations.models import Guest
 from booking.reservations.views import _business_properties
-from booking.tenancy.models import Membership, Property, Unit
+from booking.tenancy.models import (
+    BedType, BoardType, Membership, Property, PropertySettings, RateType,
+    RoomGroup, RoomLocation, RoomView, Unit,
+)
 
 from .models import (
     GuestProfileExtension,
@@ -18,6 +21,10 @@ from .models import (
     MaintenanceTicket,
     OnlineBookingSettings,
     TaskPriority,
+)
+from .forms import (
+    BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
+    RoomGroupForm, RoomLocationForm, RoomViewForm,
 )
 
 
@@ -152,4 +159,47 @@ def access_control(request):
     return render(request, "booking/operations/access_control.html", {
         "properties": properties, "selected_property": selected,
         "memberships": list(memberships) + list(property_memberships),
+    })
+
+
+@login_required
+def property_settings(request):
+    properties, selected = _selected_property(request)
+    settings_obj = PropertySettings.objects.filter(property=selected).first() if selected else None
+    form = PropertySettingsForm(request.POST or None, instance=settings_obj)
+    if request.method == "POST" and selected and form.is_valid():
+        obj = form.save(commit=False)
+        obj.property = selected
+        obj.save()
+        messages.success(request, "Otel ayarları kaydedildi.")
+        return redirect(f"{reverse('operations:property_settings')}?property_id={selected.id}")
+    return render(request, "booking/operations/property_settings.html", {
+        "properties": properties, "selected_property": selected, "form": form,
+    })
+
+
+@login_required
+def hotel_dictionaries(request):
+    properties, selected = _selected_property(request)
+    form_map = {
+        "room_group": (RoomGroup, RoomGroupForm), "bed_type": (BedType, BedTypeForm),
+        "room_view": (RoomView, RoomViewForm), "room_location": (RoomLocation, RoomLocationForm),
+        "board_type": (BoardType, BoardTypeForm), "rate_type": (RateType, RateTypeForm),
+    }
+    active = request.POST.get("entity") or request.GET.get("entity", "board_type")
+    if active not in form_map:
+        active = "board_type"
+    model, form_class = form_map[active]
+    form = form_class(request.POST or None)
+    if request.method == "POST" and selected and form.is_valid():
+        obj = form.save(commit=False)
+        obj.property = selected
+        obj.save()
+        messages.success(request, "Tanım kaydedildi.")
+        return redirect(f"{reverse('operations:hotel_dictionaries')}?property_id={selected.id}&entity={active}")
+    lists = {key: model.objects.filter(property=selected) if selected else model.objects.none() for key, (model, _) in form_map.items()}
+    return render(request, "booking/operations/hotel_dictionaries.html", {
+        "properties": properties, "selected_property": selected, "active_entity": active,
+        "form": form, "lists": lists, "selected_items": lists[active],
+        "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "board_type": "Board Type", "rate_type": "Rate Type"},
     })

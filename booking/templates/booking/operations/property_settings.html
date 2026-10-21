@@ -1,0 +1,9 @@
+{% extends 'booking/operations/_shell.html' %}
+{% block operations_content %}
+<form method="post" class="card border shadow-sm">{% csrf_token %}
+  <div class="card-header bg-transparent"><h2 class="h5 mb-0">Property Settings · {{ selected_property.name }}</h2></div>
+  <div class="card-body"><div class="row g-3">
+    {% for field in form %}<div class="col-md-{% if field.name == 'description' %}12{% else %}4{% endif %}"><label class="form-label">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}
+  </div></div><div class="card-footer bg-transparent text-end"><button class="btn btn-primary">Ayarları kaydet</button></div>
+</form>
+{% endblock operations_content %}

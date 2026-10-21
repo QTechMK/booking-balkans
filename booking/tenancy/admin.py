@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import Bed
+from .models import BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomView
 from .models import ChannelRateRule
 from .models import DailyRate
 from .models import Inventory
@@ -31,6 +32,24 @@ class PropertyAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
 
 
+@admin.register(PropertySettings)
+class PropertySettingsAdmin(admin.ModelAdmin):
+    list_display = ["property", "reservation_email", "check_in_time", "check_out_time", "system_date"]
+    search_fields = ["property__name", "reservation_email", "accounting_email"]
+    autocomplete_fields = ["property"]
+
+
+class PropertyDictionaryAdmin(admin.ModelAdmin):
+    list_display = ["name", "code", "property", "is_active"]
+    list_filter = ["is_active", "property"]
+    search_fields = ["name", "code", "property__name"]
+    autocomplete_fields = ["property"]
+
+
+for _model in [RoomGroup, BedType, RoomView, RoomLocation, BoardType, RateType]:
+    admin.site.register(_model, PropertyDictionaryAdmin)
+
+
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
     list_display = ["user", "organization", "property", "role", "is_active"]
@@ -51,7 +70,7 @@ class UnitTypeAdmin(admin.ModelAdmin):
     ]
     list_filter = ["kind", "inventory_mode", "is_active"]
     search_fields = ["name", "code", "property__name", "property__organization__name"]
-    autocomplete_fields = ["property"]
+    autocomplete_fields = ["property", "room_group"]
     prepopulated_fields = {"code": ("name",)}
 
 
@@ -60,7 +79,7 @@ class UnitAdmin(admin.ModelAdmin):
     list_display = ["code", "name", "property", "unit_type", "status", "is_active"]
     list_filter = ["status", "is_active", "unit_type__kind"]
     search_fields = ["code", "name", "property__name", "unit_type__name"]
-    autocomplete_fields = ["property", "unit_type"]
+    autocomplete_fields = ["property", "unit_type", "bed_type", "room_view", "room_location"]
 
 
 @admin.register(Bed)
@@ -100,7 +119,7 @@ class RatePlanAdmin(admin.ModelAdmin):
     ]
     list_filter = ["meal_plan", "is_refundable", "is_active"]
     search_fields = ["name", "code", "property__name", "unit_type__name"]
-    autocomplete_fields = ["property", "unit_type"]
+    autocomplete_fields = ["property", "unit_type", "board_type", "rate_type"]
     prepopulated_fields = {"code": ("name",)}
 
 
