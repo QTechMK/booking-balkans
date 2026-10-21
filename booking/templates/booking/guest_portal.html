@@ -2,6 +2,7 @@
 {% block content %}
 {% include 'partials/navbar.html' %}
 <main class="booking-flow-main py-5"><div class="container"><div class="row justify-content-center"><div class="col-lg-8 col-xl-7"><div class="card border shadow-sm"><div class="card-body p-4 p-md-5">
+  {% if portal_active and settings.online_payment_active and settings.payment_provider != 'manual' %}<div class="border rounded p-3 mb-4"><div class="d-flex justify-content-between align-items-center"><div><strong>Online ödeme</strong><div class="small text-muted">Ödeme sağlayıcısına güvenli şekilde yönlendirilirsiniz.</div></div><a class="btn btn-primary" href="{% url 'reservations:payment_start' token=portal_access.token %}">Ödeme başlat</a></div></div>{% endif %}
   <h1 class="h3 mb-1">Misafir portalı</h1><p class="text-muted mb-4">{{ reservation.property.name }} · {{ reservation.reference }}</p>
   <div class="bg-light rounded p-3 mb-4"><div class="d-flex justify-content-between"><span>Konaklama</span><strong>{{ reservation.check_in }} – {{ reservation.check_out }}</strong></div><div class="d-flex justify-content-between mt-2"><span>Toplam</span><strong>{{ reservation.total_amount }} {{ reservation.currency }}</strong></div></div>
   {% if not portal_active %}<div class="alert alert-warning">Misafir portalı bu tesis için aktif değil.</div>

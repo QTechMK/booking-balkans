@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import Guest
 from .models import GuestPortalAccess
+from .models import PaymentTransaction
 from .models import Reservation
 from .models import ReservationChannel
 from .models import ReservationHold
@@ -14,6 +15,14 @@ class GuestPortalAccessAdmin(admin.ModelAdmin):
     list_filter = ["online_checkin_completed", "reservation__property"]
     search_fields = ["reservation__reference", "reservation__guest__email"]
     autocomplete_fields = ["reservation"]
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ["reservation", "provider", "amount", "currency", "status", "created_at", "paid_at"]
+    list_filter = ["provider", "status", "reservation__property"]
+    search_fields = ["reservation__reference", "external_id"]
+    readonly_fields = ["created_at", "updated_at", "paid_at", "provider_payload"]
 
 
 @admin.register(Guest)

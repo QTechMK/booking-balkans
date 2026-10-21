@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="booking-flow-main py-5"><div class="container"><div class="row justify-content-center"><div class="col-lg-7"><div class="card border shadow-sm"><div class="card-body p-4 p-md-5 text-center"><h1 class="h3">Ödeme durumu</h1>{% if result == 'success' %}<p class="text-success">Ödeme sağlayıcısı başarılı yanıt verdi. Stripe ödemeleri webhook doğrulamasından sonra kesinleşir.</p>{% elif result == 'cancelled' %}<p class="text-warning">Ödeme iptal edildi.</p>{% elif result == 'failed' %}<p class="text-danger">Ödeme doğrulanamadı. Rezervasyon ödenmiş sayılmadı.</p>{% else %}<p class="text-muted">Ödeme durumu beklemede.</p>{% endif %}<p class="small text-muted">Rezervasyon: {{ reservation.reference }}</p><a class="btn btn-primary" href="{% url 'reservations:guest_portal' token=reservation.portal_access.token %}">Portala dön</a></div></div></div></div></div></main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

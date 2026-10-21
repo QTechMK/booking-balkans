@@ -237,6 +237,38 @@ class GuestPortalAccess(models.Model):
         ordering = ["-created_at"]
 
 
+class PaymentTransaction(models.Model):
+    class Provider(models.TextChoices):
+        STRIPE = "stripe", _("Stripe")
+        PAYPAL = "paypal", _("PayPal")
+
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Pending")
+        PAID = "paid", _("Paid")
+        FAILED = "failed", _("Failed")
+        CANCELLED = "cancelled", _("Cancelled")
+        REFUNDED = "refunded", _("Refunded")
+
+    reservation = models.ForeignKey(Reservation, on_delete=models.PROTECT, related_name="payment_transactions")
+    provider = models.CharField(max_length=12, choices=Provider.choices)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    external_id = models.CharField(max_length=255, blank=True)
+    checkout_url = models.URLField(max_length=1000, blank=True)
+    provider_payload = models.JSONField(default=dict, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["reservation", "status"]),
+            models.Index(fields=["provider", "external_id"]),
+        ]
+
+
 class ReservationItem(models.Model):
     """A booked unit type/rate product within a reservation."""
 

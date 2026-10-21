@@ -9,6 +9,9 @@ urlpatterns = [
     path("guest/", views.guest_details, name="guest_details"),
     path("confirmation/", views.confirmation, name="confirmation"),
     path("guest/portal/<uuid:token>/", views.guest_portal, name="guest_portal"),
+    path("guest/portal/<uuid:token>/payment/start/", views.payment_start, name="payment_start"),
+    path("guest/portal/<uuid:token>/payment/result/", views.payment_result, name="payment_result"),
+    path("webhooks/stripe/", views.stripe_webhook, name="stripe_webhook"),
     path("widget/<uuid:widget_key>/", views.widget_search, name="widget_search"),
     path(
         "business/reservations/",

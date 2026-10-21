@@ -274,6 +274,13 @@ LOGGING = {
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 REDIS_SSL = REDIS_URL.startswith("rediss://")
 
+# Online payment providers. Secrets are never stored in tenant database fields.
+PAYMENT_STRIPE_SECRET_KEY = env("PAYMENT_STRIPE_SECRET_KEY", default="")
+PAYMENT_STRIPE_WEBHOOK_SECRET = env("PAYMENT_STRIPE_WEBHOOK_SECRET", default="")
+PAYMENT_PAYPAL_CLIENT_ID = env("PAYMENT_PAYPAL_CLIENT_ID", default="")
+PAYMENT_PAYPAL_CLIENT_SECRET = env("PAYMENT_PAYPAL_CLIENT_SECRET", default="")
+PAYMENT_PAYPAL_BASE_URL = env("PAYMENT_PAYPAL_BASE_URL", default="https://api-m.sandbox.paypal.com")
+
 
 # django-allauth
 # ------------------------------------------------------------------------------

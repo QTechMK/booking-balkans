@@ -1,19 +1,27 @@
 from datetime import date
 from datetime import timedelta
+import hashlib
+import hmac
+import json
 from urllib.parse import urlparse
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import Sum
 from django.db.models import ProtectedError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.utils.dateparse import parse_date
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 from booking.tenancy.models import Membership
 from booking.tenancy.models import Property
@@ -44,13 +52,14 @@ from .forms import BusinessUnitForm
 from .forms import BusinessUnitTypeForm
 from .forms import BusinessChannelRateRuleForm
 from .forms import BusinessPriceParityObservationForm
-from .models import GuestPortalAccess, Reservation
+from .models import GuestPortalAccess, PaymentTransaction, Reservation
 from .models import ReservationChannel
 from .models import ReservationSource
 from .models import ReservationStatus
 from booking.tenancy.models import ChannelRateRule
 from booking.tenancy.models import PriceParityObservation
 from .services.booking import book_direct
+from .services.payments import PaymentConfigurationError, PaymentProviderError, capture_paypal_order, create_checkout
 from .forms import GuestPortalCheckinForm
 
 
@@ -448,7 +457,95 @@ def guest_portal(request, token):
     return render(request, "booking/guest_portal.html", {
         "reservation": reservation, "portal_access": portal_access,
         "settings": settings_obj, "portal_active": portal_active, "checkin_active": checkin_active, "form": form, "services": services,
+        "payment_transactions": reservation.payment_transactions.all(),
     })
+
+
+def payment_start(request, token):
+    portal_access = get_object_or_404(
+        GuestPortalAccess.objects.select_related("reservation", "reservation__property"), token=token,
+    )
+    reservation = portal_access.reservation
+    from booking.operations.models import OnlineBookingSettings
+    settings_obj = OnlineBookingSettings.objects.filter(property=reservation.property).first()
+    if not settings_obj or not settings_obj.guest_portal_active or not settings_obj.online_payment_active:
+        messages.error(request, "Online ödeme bu tesis için aktif değil.")
+        return redirect("reservations:guest_portal", token=token)
+    if settings_obj.payment_provider == OnlineBookingSettings.PaymentProvider.MANUAL:
+        messages.error(request, "Online ödeme sağlayıcısı yapılandırılmamış.")
+        return redirect("reservations:guest_portal", token=token)
+    paid = reservation.payment_transactions.filter(status=PaymentTransaction.Status.PAID).aggregate(total=Sum("amount"))["total"] or 0
+    amount = reservation.total_amount - paid
+    if settings_obj.deposit_payment_active and settings_obj.deposit_percent:
+        amount = min(amount, reservation.total_amount * settings_obj.deposit_percent / 100)
+    try:
+        result = create_checkout(
+            provider=settings_obj.payment_provider,
+            reservation=reservation,
+            amount=amount,
+            success_url=request.build_absolute_uri(reverse("reservations:payment_result", kwargs={"token": token})) + "?result=success",
+            cancel_url=request.build_absolute_uri(reverse("reservations:payment_result", kwargs={"token": token})) + "?result=cancelled",
+        )
+    except (PaymentConfigurationError, PaymentProviderError) as exc:
+        messages.error(request, str(exc))
+        return redirect("reservations:guest_portal", token=token)
+    PaymentTransaction.objects.create(
+        reservation=reservation, provider=settings_obj.payment_provider, amount=amount,
+        currency=reservation.currency, external_id=result["external_id"],
+        checkout_url=result["checkout_url"], provider_payload=result["payload"],
+    )
+    return redirect(result["checkout_url"])
+
+
+def payment_result(request, token):
+    portal_access = get_object_or_404(GuestPortalAccess.objects.select_related("reservation"), token=token)
+    reservation = portal_access.reservation
+    result = request.GET.get("result", "pending")
+    external_id = request.GET.get("token")
+    transaction = reservation.payment_transactions.filter(provider=PaymentTransaction.Provider.PAYPAL, external_id=external_id, status=PaymentTransaction.Status.PENDING).first() if external_id else None
+    if transaction:
+        try:
+            payload = capture_paypal_order(transaction.external_id)
+        except (PaymentConfigurationError, PaymentProviderError) as exc:
+            transaction.status = PaymentTransaction.Status.FAILED
+            transaction.provider_payload = {"error": str(exc)}
+            transaction.save(update_fields=["status", "provider_payload", "updated_at"])
+            result = "failed"
+        else:
+            transaction.status = PaymentTransaction.Status.PAID
+            transaction.paid_at = timezone.now()
+            transaction.provider_payload = payload
+            transaction.save(update_fields=["status", "paid_at", "provider_payload", "updated_at"])
+            result = "success"
+    return render(request, "booking/payment_result.html", {
+        "reservation": reservation,
+        "result": result,
+    })
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    if request.method != "POST" or not settings.PAYMENT_STRIPE_WEBHOOK_SECRET:
+        return JsonResponse({"detail": "Webhook is not configured."}, status=400)
+    signature = request.headers.get("Stripe-Signature", "")
+    timestamp = next((part.split("=", 1)[1] for part in signature.split(",") if part.startswith("t=")), "")
+    signatures = [part.split("=", 1)[1] for part in signature.split(",") if part.startswith("v1=")]
+    signed_payload = f"{timestamp}.{request.body.decode('utf-8')}".encode()
+    expected = hmac.new(settings.PAYMENT_STRIPE_WEBHOOK_SECRET.encode(), signed_payload, hashlib.sha256).hexdigest()
+    if not timestamp or not any(hmac.compare_digest(expected, value) for value in signatures):
+        return JsonResponse({"detail": "Invalid signature."}, status=400)
+    try:
+        event = json.loads(request.body)
+        data = event.get("data", {}).get("object", {})
+        transaction = PaymentTransaction.objects.get(provider="stripe", external_id=data.get("id", ""))
+    except (ValueError, PaymentTransaction.DoesNotExist):
+        return JsonResponse({"detail": "Unknown event."}, status=400)
+    if event.get("type") == "checkout.session.completed":
+        transaction.status = PaymentTransaction.Status.PAID
+        transaction.paid_at = timezone.now()
+        transaction.provider_payload = event
+        transaction.save(update_fields=["status", "paid_at", "provider_payload", "updated_at"])
+    return JsonResponse({"received": True})
 
 
 def _business_properties(user):
