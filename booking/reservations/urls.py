@@ -30,6 +30,16 @@ urlpatterns = [
         views.business_channel_list,
         name="business_channel_list",
     ),
+    path(
+        "business/channel-rules/",
+        views.business_channel_rate_rules,
+        name="business_channel_rate_rules",
+    ),
+    path(
+        "business/price-parity/",
+        views.business_price_parity,
+        name="business_price_parity",
+    ),
     path("business/inventory/", views.business_inventory, name="business_inventory"),
     path("business/rates/", views.business_rate_plans, name="business_rate_plans"),
     path("business/rate-calendar/", views.business_rate_calendar, name="business_rate_calendar"),

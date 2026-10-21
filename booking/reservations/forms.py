@@ -8,6 +8,8 @@ from booking.tenancy.models import Inventory
 from booking.tenancy.models import RatePlan
 from booking.tenancy.models import Unit
 from booking.tenancy.models import UnitType
+from booking.tenancy.models import ChannelRateRule
+from booking.tenancy.models import PriceParityObservation
 
 
 class MarketplaceSearchForm(forms.Form):
@@ -237,4 +239,67 @@ class BusinessBulkInventoryForm(forms.Form):
             self.add_error("end_date", "Bitiş tarihi başlangıç tarihinden önce olamaz.")
         if cleaned.get("blocked_capacity") is not None and cleaned.get("total_capacity") is not None and cleaned["blocked_capacity"] > cleaned["total_capacity"]:
             self.add_error("blocked_capacity", "Bloke kapasite toplam kapasiteyi aşamaz.")
+        return cleaned
+
+
+class BusinessChannelRateRuleForm(forms.ModelForm):
+    class Meta:
+        model = ChannelRateRule
+        fields = ["channel", "rate_plan", "name", "rule_type", "adjustment", "priority", "is_active"]
+        widgets = {
+            "channel": forms.Select(attrs={"class": "form-select"}),
+            "rate_plan": forms.Select(attrs={"class": "form-select"}),
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "rule_type": forms.Select(attrs={"class": "form-select"}),
+            "adjustment": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "priority": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def __init__(self, *args, property_, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.property = property_
+        self.fields["channel"].queryset = property_.reservation_channels.filter(is_active=True)
+        self.fields["rate_plan"].queryset = property_.rate_plans.filter(is_active=True)
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("channel") and cleaned["channel"].property_id != self.property.id:
+            self.add_error("channel", "Kanal seçilen tesise ait değil.")
+        if cleaned.get("rate_plan") and cleaned["rate_plan"].property_id != self.property.id:
+            self.add_error("rate_plan", "Rate plan seçilen tesise ait değil.")
+        return cleaned
+
+
+class BusinessPriceParityObservationForm(forms.ModelForm):
+    class Meta:
+        model = PriceParityObservation
+        fields = [
+            "rate_plan", "channel", "competitor_name", "check_in", "check_out",
+            "adults", "children", "currency", "direct_amount", "competitor_amount", "terms_match",
+        ]
+        widgets = {
+            "rate_plan": forms.Select(attrs={"class": "form-select"}),
+            "channel": forms.Select(attrs={"class": "form-select"}),
+            "competitor_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Örn. Booking.com"}),
+            "check_in": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "check_out": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "adults": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "children": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "currency": forms.TextInput(attrs={"class": "form-control", "maxlength": 3}),
+            "direct_amount": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": 0}),
+            "competitor_amount": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": 0}),
+            "terms_match": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def __init__(self, *args, property_, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.property = property_
+        self.fields["rate_plan"].queryset = property_.rate_plans.filter(is_active=True)
+        self.fields["channel"].queryset = property_.reservation_channels.filter(is_active=True)
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("check_in") and cleaned.get("check_out") and cleaned["check_out"] <= cleaned["check_in"]:
+            self.add_error("check_out", "Çıkış tarihi giriş tarihinden sonra olmalı.")
         return cleaned

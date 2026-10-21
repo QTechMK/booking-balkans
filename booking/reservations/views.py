@@ -36,10 +36,14 @@ from .forms import BusinessBulkInventoryForm
 from .forms import BusinessRatePlanForm
 from .forms import BusinessUnitForm
 from .forms import BusinessUnitTypeForm
+from .forms import BusinessChannelRateRuleForm
+from .forms import BusinessPriceParityObservationForm
 from .models import Reservation
 from .models import ReservationChannel
 from .models import ReservationSource
 from .models import ReservationStatus
+from booking.tenancy.models import ChannelRateRule
+from booking.tenancy.models import PriceParityObservation
 from .services.booking import book_direct
 
 
@@ -679,6 +683,67 @@ def business_channel_list(request):
         if selected_property
         else ReservationChannel.objects.none()
     )
+
+
+@login_required
+def business_channel_rate_rules(request):
+    properties, selected_property = _selected_business_property(request)
+    edit_rule = (
+        selected_property.channel_rate_rules.filter(id=request.GET.get("edit_rule")).first()
+        if selected_property else None
+    )
+    form = (
+        BusinessChannelRateRuleForm(instance=edit_rule, property_=selected_property)
+        if selected_property else None
+    )
+    if request.method == "POST" and selected_property:
+        if request.POST.get("entity") == "rate_rule_delete":
+            rule = selected_property.channel_rate_rules.filter(id=request.POST.get("object_id")).first()
+            if rule:
+                rule.delete()
+            return redirect(f"{reverse('reservations:business_channel_rate_rules')}?property_id={selected_property.id}")
+        form = BusinessChannelRateRuleForm(request.POST, instance=edit_rule, property_=selected_property)
+        if form.is_valid():
+            rule = form.save(commit=False)
+            rule.property = selected_property
+            rule.save()
+            return redirect(f"{reverse('reservations:business_channel_rate_rules')}?property_id={selected_property.id}")
+    rules = (
+        selected_property.channel_rate_rules.select_related("channel", "rate_plan")
+        if selected_property else ChannelRateRule.objects.none()
+    )
+    return render(request, "booking/business/channel_rate_rules.html", {
+        "properties": properties,
+        "selected_property": selected_property,
+        "form": form,
+        "rules": rules,
+    })
+
+
+@login_required
+def business_price_parity(request):
+    properties, selected_property = _selected_business_property(request)
+    form = BusinessPriceParityObservationForm(property_=selected_property) if selected_property else None
+    if request.method == "POST" and selected_property:
+        form = BusinessPriceParityObservationForm(request.POST, property_=selected_property)
+        if form.is_valid():
+            observation = form.save(commit=False)
+            observation.property = selected_property
+            observation.save()
+            return redirect(f"{reverse('reservations:business_price_parity')}?property_id={selected_property.id}")
+    observations = (
+        selected_property.price_parity_observations.select_related("rate_plan", "channel")
+        if selected_property else PriceParityObservation.objects.none()
+    )
+    status = request.GET.get("status")
+    if status in {choice for choice, _ in PriceParityObservation._meta.get_field("status").choices}:
+        observations = observations.filter(status=status)
+    return render(request, "booking/business/price_parity.html", {
+        "properties": properties,
+        "selected_property": selected_property,
+        "form": form,
+        "observations": observations,
+    })
     return render(
         request,
         "booking/business/reservations/channels.html",
