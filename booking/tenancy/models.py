@@ -296,7 +296,8 @@ class RoomPhoto(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="room_photos")
     unit_type = models.ForeignKey(UnitType, on_delete=models.CASCADE, null=True, blank=True, related_name="photos")
     unit = models.ForeignKey("Unit", on_delete=models.CASCADE, null=True, blank=True, related_name="photos")
-    image_url = models.URLField(max_length=500)
+    image = models.ImageField(upload_to="room-photos/%Y/%m/", blank=True)
+    image_url = models.URLField(max_length=500, blank=True)
     alt_text = models.CharField(max_length=160, blank=True)
     is_primary = models.BooleanField(default=False)
     sort_order = models.PositiveIntegerField(default=0)
@@ -313,6 +314,8 @@ class RoomPhoto(models.Model):
 
     def clean(self) -> None:
         from django.core.exceptions import ValidationError
+        if not self.image and not self.image_url:
+            raise ValidationError({"image": _("A room photo must have an uploaded image or an image URL.")})
         if self.unit_type_id and self.unit_type.property_id != self.property_id:
             raise ValidationError({"unit_type": _("Room type must belong to the same property.")})
         if self.unit_id and self.unit.property_id != self.property_id:

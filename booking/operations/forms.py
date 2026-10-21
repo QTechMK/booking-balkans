@@ -63,12 +63,15 @@ class RateTypeForm(DictionaryForm):
 class RoomPhotoForm(forms.ModelForm):
     class Meta:
         model = RoomPhoto
-        fields = ["unit_type", "unit", "image_url", "alt_text", "is_primary", "sort_order"]
+        fields = ["unit_type", "unit", "image", "image_url", "alt_text", "is_primary", "sort_order"]
+        widgets = {"image": forms.ClearableFileInput(attrs={"accept": "image/*"})}
 
     def clean(self):
         cleaned = super().clean()
         if not cleaned.get("unit_type") and not cleaned.get("unit"):
             raise forms.ValidationError("Fotoğraf bir oda tipine veya fiziksel odaya bağlanmalıdır.")
+        if not cleaned.get("image") and not cleaned.get("image_url"):
+            raise forms.ValidationError("Dosya yükleyin veya bir görsel URL'si girin.")
         return cleaned
 
 

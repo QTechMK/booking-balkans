@@ -374,7 +374,7 @@ def hotel_dictionaries(request):
     model, form_class = form_map[active]
     edit_id = request.POST.get("edit_id") or request.GET.get("edit_id")
     instance = model.objects.filter(property=selected, id=edit_id).first() if selected and edit_id else None
-    form = form_class(request.POST or None, instance=instance)
+    form = form_class(request.POST or None, request.FILES or None, instance=instance)
     if selected and active == "room_photo":
         form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
         form.fields["unit"].queryset = selected.units.filter(is_active=True)
