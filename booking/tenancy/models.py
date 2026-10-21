@@ -380,6 +380,154 @@ class RatePlan(models.Model):
         return f"{self.property.name} - {self.name}"
 
 
+class ChannelRateRuleType(models.TextChoices):
+    PERCENT = "percent", _("Percentage")
+    FIXED = "fixed", _("Fixed amount")
+
+
+class ChannelRateRule(models.Model):
+    """A property-scoped adjustment applied to a rate for one sales channel.
+
+    This is an internal commercial rule. It does not represent or control
+    Google's Price Accuracy or Competitiveness systems.
+    """
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="channel_rate_rules",
+    )
+    channel = models.ForeignKey(
+        "reservations.ReservationChannel",
+        on_delete=models.CASCADE,
+        related_name="rate_rules",
+    )
+    rate_plan = models.ForeignKey(
+        RatePlan,
+        on_delete=models.CASCADE,
+        related_name="channel_rate_rules",
+        null=True,
+        blank=True,
+    )
+    name = models.CharField(max_length=160)
+    rule_type = models.CharField(
+        max_length=12,
+        choices=ChannelRateRuleType.choices,
+        default=ChannelRateRuleType.PERCENT,
+    )
+    adjustment = models.DecimalField(max_digits=8, decimal_places=2)
+    priority = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["priority", "name"]
+        indexes = [
+            models.Index(fields=["property", "channel", "is_active"]),
+            models.Index(fields=["rate_plan", "is_active"]),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.channel_id and self.property_id:
+            if self.channel.property_id != self.property_id:
+                raise ValidationError({"channel": _("Channel must belong to the same property.")})
+        if self.rate_plan_id and self.property_id:
+            if self.rate_plan.property_id != self.property_id:
+                raise ValidationError({"rate_plan": _("Rate plan must belong to the same property.")})
+        if self.rule_type == ChannelRateRuleType.PERCENT and self.adjustment < -100:
+            raise ValidationError({"adjustment": _("Percentage adjustment cannot be below -100.")})
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.channel.name} - {self.name}"
+
+
+class PriceParityStatus(models.TextChoices):
+    BELOW = "below", _("Direct price is lower")
+    EQUAL = "equal", _("Prices are equal")
+    ABOVE = "above", _("Direct price is higher")
+    UNCOMPARABLE = "uncomparable", _("Not comparable")
+
+
+class PriceParityObservation(models.Model):
+    """An auditable comparison between direct and an external channel price."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="price_parity_observations",
+    )
+    rate_plan = models.ForeignKey(
+        RatePlan,
+        on_delete=models.SET_NULL,
+        related_name="price_parity_observations",
+        null=True,
+        blank=True,
+    )
+    channel = models.ForeignKey(
+        "reservations.ReservationChannel",
+        on_delete=models.SET_NULL,
+        related_name="price_parity_observations",
+        null=True,
+        blank=True,
+    )
+    competitor_name = models.CharField(max_length=160)
+    check_in = models.DateField()
+    check_out = models.DateField()
+    adults = models.PositiveIntegerField(default=1)
+    children = models.PositiveIntegerField(default=0)
+    currency = models.CharField(max_length=3, default="TRY")
+    direct_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    competitor_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    terms_match = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=16,
+        choices=PriceParityStatus.choices,
+        default=PriceParityStatus.UNCOMPARABLE,
+    )
+    terms_snapshot = models.JSONField(default=dict, blank=True)
+    observed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-observed_at"]
+        indexes = [
+            models.Index(fields=["property", "observed_at"]),
+            models.Index(fields=["property", "status", "observed_at"]),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if self.check_out <= self.check_in:
+            raise ValidationError({"check_out": _("Check-out must be after check-in.")})
+        if self.rate_plan_id and self.rate_plan.property_id != self.property_id:
+            raise ValidationError({"rate_plan": _("Rate plan must belong to the same property.")})
+        if self.channel_id and self.channel.property_id != self.property_id:
+            raise ValidationError({"channel": _("Channel must belong to the same property.")})
+        for field in ("direct_amount", "competitor_amount"):
+            value = getattr(self, field)
+            if value is not None and value < 0:
+                raise ValidationError({field: _("Amount cannot be negative.")})
+
+    def classify(self) -> str:
+        if not self.terms_match or self.direct_amount is None or self.competitor_amount is None:
+            return PriceParityStatus.UNCOMPARABLE
+        if self.direct_amount < self.competitor_amount:
+            return PriceParityStatus.BELOW
+        if self.direct_amount > self.competitor_amount:
+            return PriceParityStatus.ABOVE
+        return PriceParityStatus.EQUAL
+
+    def save(self, *args, **kwargs):
+        self.status = self.classify()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.competitor_name} - {self.status}"
+
+
 class Season(models.Model):
     """A named date range used to organize pricing rules."""
 

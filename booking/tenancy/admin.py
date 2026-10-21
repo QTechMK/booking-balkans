@@ -1,11 +1,13 @@
 from django.contrib import admin
 
 from .models import Bed
+from .models import ChannelRateRule
 from .models import DailyRate
 from .models import Inventory
 from .models import Membership
 from .models import Organization
 from .models import Property
+from .models import PriceParityObservation
 from .models import RatePlan
 from .models import RateRestriction
 from .models import Season
@@ -155,3 +157,40 @@ class RateRestrictionAdmin(admin.ModelAdmin):
     search_fields = ["rate_plan__name", "rate_plan__code"]
     autocomplete_fields = ["rate_plan"]
     date_hierarchy = "date"
+
+
+@admin.register(ChannelRateRule)
+class ChannelRateRuleAdmin(admin.ModelAdmin):
+    list_display = [
+        "name",
+        "property",
+        "channel",
+        "rate_plan",
+        "rule_type",
+        "adjustment",
+        "priority",
+        "is_active",
+    ]
+    list_filter = ["rule_type", "is_active", "property", "channel"]
+    search_fields = ["name", "channel__name", "rate_plan__name", "property__name"]
+    autocomplete_fields = ["property", "channel", "rate_plan"]
+
+
+@admin.register(PriceParityObservation)
+class PriceParityObservationAdmin(admin.ModelAdmin):
+    list_display = [
+        "observed_at",
+        "property",
+        "competitor_name",
+        "check_in",
+        "check_out",
+        "direct_amount",
+        "competitor_amount",
+        "terms_match",
+        "status",
+    ]
+    list_filter = ["status", "terms_match", "property", "competitor_name"]
+    search_fields = ["competitor_name", "property__name", "rate_plan__name"]
+    autocomplete_fields = ["property", "rate_plan", "channel"]
+    date_hierarchy = "observed_at"
+    readonly_fields = ["observed_at", "status"]
