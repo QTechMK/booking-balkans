@@ -23,7 +23,7 @@ from .models import (
     MaintenanceStatus,
     MaintenanceTicket,
     OnlineBookingSettings,
-    OperationalTask,
+    GuestLoyaltyAccount, GuestProfileExtension, LoyaltyTier, OperationalTask,
     PropertyRole,
     TaskPriority,
     TaskGroup,
@@ -33,7 +33,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
-    OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm,
+    GuestProfileForm, LoyaltyTierForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm,
 )
 
 
@@ -199,12 +199,32 @@ def online_settings(request):
 @login_required
 def crm_guests(request):
     properties, selected = _selected_property(request)
-    guests = Guest.objects.filter(property=selected).select_related("profile_extension") if selected else Guest.objects.none()
+    guests = Guest.objects.filter(property=selected).select_related("profile_extension", "loyalty_account") if selected else Guest.objects.none()
     q = request.GET.get("q", "").strip()
     if q:
         guests = guests.filter(Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q))
+    selected_guest = guests.filter(id=request.GET.get("guest_id")).first() if selected and request.GET.get("guest_id") else None
+    profile = GuestProfileExtension.objects.filter(guest=selected_guest).first() if selected_guest else None
+    if selected_guest and not profile:
+        profile = GuestProfileExtension(guest=selected_guest)
+    profile_form = GuestProfileForm(request.POST or None, instance=profile) if selected_guest else None
+    tier_form = LoyaltyTierForm(request.POST or None) if selected else None
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "profile" and selected_guest and profile_form and profile_form.is_valid():
+            profile_form.save(); messages.success(request, "Misafir profili kaydedildi.")
+        elif action == "tier" and tier_form and tier_form.is_valid():
+            obj = tier_form.save(commit=False); obj.property = selected; obj.save(); messages.success(request, "Sadakat seviyesi kaydedildi.")
+        elif action == "loyalty" and selected_guest and request.POST.get("membership_number"):
+            tier = selected.loyalty_tiers.filter(id=request.POST.get("tier_id"), is_active=True).first()
+            GuestLoyaltyAccount.objects.update_or_create(guest=selected_guest, defaults={"property": selected, "tier": tier, "membership_number": request.POST["membership_number"], "points_balance": request.POST.get("points_balance") or 0})
+            messages.success(request, "Sadakat hesabı kaydedildi.")
+        return redirect(f"{reverse('operations:crm_guests')}?property_id={selected.id}&q={q}&guest_id={selected_guest.id if selected_guest else ''}")
     return render(request, "booking/operations/crm_guests.html", {
         "properties": properties, "selected_property": selected, "guests": guests, "query": q,
+        "selected_guest": selected_guest, "profile_form": profile_form, "tier_form": tier_form,
+        "tiers": selected.loyalty_tiers.filter(is_active=True) if selected else LoyaltyTier.objects.none(),
+        "loyalty": getattr(selected_guest, "loyalty_account", None) if selected_guest else None,
     })
 
 

@@ -3,7 +3,7 @@ from django import forms
 from booking.tenancy.models import (
     BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView,
 )
-from .models import OperationalTask, TaskGroup, TaskLocation
+from .models import GuestProfileExtension, LoyaltyTier, OperationalTask, TaskGroup, TaskLocation
 
 
 class PropertySettingsForm(forms.ModelForm):
@@ -85,3 +85,16 @@ class OperationalTaskForm(forms.ModelForm):
         model = OperationalTask
         fields = ["group", "location", "unit", "title", "description", "status", "priority", "assigned_to", "due_at"]
         widgets = {"due_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "description": forms.Textarea(attrs={"rows": 2})}
+
+
+class GuestProfileForm(forms.ModelForm):
+    class Meta:
+        model = GuestProfileExtension
+        fields = ["gender", "birth_date", "nationality", "identity_reference", "company_name", "tax_number", "vip", "gdpr_confirmed", "email_confirmed", "phone_confirmed", "preferences", "allergens", "loyalty_code"]
+        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"}), "preferences": forms.Textarea(attrs={"rows": 2}), "allergens": forms.Textarea(attrs={"rows": 2})}
+
+
+class LoyaltyTierForm(forms.ModelForm):
+    class Meta:
+        model = LoyaltyTier
+        fields = ["code", "name", "minimum_points", "discount_percent", "is_active"]

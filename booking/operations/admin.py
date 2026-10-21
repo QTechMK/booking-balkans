@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestProfileExtension, HousekeepingTask, MaintenanceTicket, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, HousekeepingTask, LoyaltyTier, MaintenanceTicket, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -77,6 +77,22 @@ class GuestProfileExtensionAdmin(admin.ModelAdmin):
     list_display = ("guest", "vip", "gdpr_confirmed", "email_confirmed", "phone_confirmed")
     list_filter = ("vip", "gdpr_confirmed")
     search_fields = ("guest__first_name", "guest__last_name", "guest__email")
+
+
+@admin.register(LoyaltyTier)
+class LoyaltyTierAdmin(admin.ModelAdmin):
+    list_display = ("name", "property", "minimum_points", "discount_percent", "is_active")
+    list_filter = ("property", "is_active")
+    search_fields = ("name", "code", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(GuestLoyaltyAccount)
+class GuestLoyaltyAccountAdmin(admin.ModelAdmin):
+    list_display = ("membership_number", "guest", "property", "tier", "points_balance")
+    list_filter = ("property", "tier")
+    search_fields = ("membership_number", "guest__first_name", "guest__last_name", "guest__email")
+    autocomplete_fields = ("guest", "property", "tier")
 
 
 @admin.register(OnlineBookingSettings)

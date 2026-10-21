@@ -157,6 +157,39 @@ class GuestProfileExtension(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+class LoyaltyTier(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="loyalty_tiers")
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=120)
+    minimum_points = models.PositiveIntegerField(default=0)
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["property", "minimum_points"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_loyalty_tier_code_per_property")]
+
+
+class GuestLoyaltyAccount(models.Model):
+    guest = models.OneToOneField(Guest, on_delete=models.CASCADE, related_name="loyalty_account")
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="loyalty_accounts")
+    tier = models.ForeignKey(LoyaltyTier, on_delete=models.SET_NULL, null=True, blank=True, related_name="accounts")
+    membership_number = models.CharField(max_length=80, unique=True)
+    points_balance = models.PositiveIntegerField(default=0)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["guest", "property"], name="unique_guest_loyalty_property")]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.guest_id and self.property_id and self.guest.property_id != self.property_id:
+            raise ValidationError({"guest": _("Guest must belong to the same property.")})
+        if self.tier_id and self.tier.property_id != self.property_id:
+            raise ValidationError({"tier": _("Loyalty tier must belong to the same property.")})
+
+
 class OnlineBookingSettings(models.Model):
     property = models.OneToOneField(Property, on_delete=models.CASCADE, related_name="online_booking_settings")
     booking_page_active = models.BooleanField(default=True)
