@@ -138,7 +138,7 @@ class MarketingDeliveryAdmin(admin.ModelAdmin):
 
 @admin.register(OnlineBookingSettings)
 class OnlineBookingSettingsAdmin(admin.ModelAdmin):
-    list_display = ("property", "booking_page_active", "online_checkin_active", "online_payment_active", "guest_portal_active")
+    list_display = ("property", "booking_page_active", "online_checkin_active", "online_payment_active", "payment_provider", "deposit_percent", "guest_portal_active")
     list_filter = ("booking_page_active", "online_checkin_active", "guest_portal_active")
 
 

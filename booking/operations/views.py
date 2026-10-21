@@ -318,8 +318,13 @@ def online_settings(request):
     if request.method == "POST" and settings_obj:
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
             setattr(settings_obj, field, request.POST.get(field) == "on")
-        for field in ["seo_title", "seo_description", "meta_keywords", "domain"]:
+        for field in ["seo_title", "seo_description", "meta_keywords", "domain", "payment_provider", "payment_public_key"]:
             setattr(settings_obj, field, request.POST.get(field, "").strip())
+        try:
+            settings_obj.deposit_percent = max(0, min(100, float(request.POST.get("deposit_percent") or 0)))
+            settings_obj.payment_due_hours = max(0, int(request.POST.get("payment_due_hours") or 24))
+        except ValueError:
+            messages.error(request, "Ödeme yüzdesi veya ödeme vadesi geçersiz.")
         settings_obj.save()
         messages.success(request, "Online booking ayarları kaydedildi.")
         return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
@@ -330,6 +335,7 @@ def online_settings(request):
         "services": selected.online_services.all() if selected else PropertyService.objects.none(),
         "service_requests": ServiceRequest.objects.filter(reservation__property=selected).select_related("reservation", "reservation__guest", "service")[:50] if selected else ServiceRequest.objects.none(),
         "service_status_choices": ServiceRequest.Status.choices,
+        "payment_provider_choices": OnlineBookingSettings.PaymentProvider.choices,
     })
 
 

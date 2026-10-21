@@ -285,6 +285,11 @@ class MarketingDelivery(models.Model):
 
 
 class OnlineBookingSettings(models.Model):
+    class PaymentProvider(models.TextChoices):
+        MANUAL = "manual", _("Manual / hotel payment")
+        STRIPE = "stripe", _("Stripe")
+        PAYPAL = "paypal", _("PayPal")
+
     property = models.OneToOneField(Property, on_delete=models.CASCADE, related_name="online_booking_settings")
     booking_page_active = models.BooleanField(default=True)
     online_checkin_active = models.BooleanField(default=False)
@@ -295,6 +300,10 @@ class OnlineBookingSettings(models.Model):
     late_checkout_active = models.BooleanField(default=False)
     transfer_active = models.BooleanField(default=False)
     guest_portal_active = models.BooleanField(default=False)
+    payment_provider = models.CharField(max_length=16, choices=PaymentProvider.choices, default=PaymentProvider.MANUAL)
+    payment_public_key = models.CharField(max_length=255, blank=True)
+    deposit_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    payment_due_hours = models.PositiveIntegerField(default=24)
     seo_title = models.CharField(max_length=180, blank=True)
     seo_description = models.TextField(blank=True)
     meta_keywords = models.CharField(max_length=255, blank=True)
