@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from booking.tenancy.models import (
     BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
@@ -191,4 +192,13 @@ class UserPropertyAccessForm(forms.ModelForm):
             "valid_from": forms.DateInput(attrs={"type": "date"}),
             "valid_until": forms.DateInput(attrs={"type": "date"}),
             "last_pin_change": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = get_user_model()
+        fields = ["name", "email", "phone", "gender", "position", "department"]
+        widgets = {
+            "gender": forms.TextInput(attrs={"placeholder": "Kadın / Erkek / Belirtmek istemiyor"}),
         }

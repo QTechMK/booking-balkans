@@ -37,7 +37,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPropertyAccessForm,
+    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -482,14 +482,19 @@ def access_control(request):
         return HttpResponseForbidden("Bu tesis için yetki yönetimi erişiminiz yok.")
     role_form = PropertyRoleForm(request.POST or None, prefix="role")
     access_form = UserPropertyAccessForm(request.POST or None, prefix="access")
+    staff_users = get_user_model().objects.none()
     if selected:
         role_form.fields["permissions"].queryset = AccessPermission.objects.filter(is_active=True)
         access_form.fields["role"].queryset = selected.access_roles.filter(is_active=True)
-        access_form.fields["user"].queryset = get_user_model().objects.filter(
+        staff_users = get_user_model().objects.filter(
             id__in=Membership.objects.filter(
                 Q(organization=selected.organization, property__isnull=True) | Q(property=selected), is_active=True,
             ).values_list("user_id", flat=True),
         ).order_by("username")
+        access_form.fields["user"].queryset = staff_users
+    profile_user_id = request.POST.get("profile_user_id") or request.GET.get("profile_user_id")
+    profile_user = staff_users.filter(id=profile_user_id).first() if profile_user_id else None
+    profile_form = UserProfileForm(request.POST or None, instance=profile_user, prefix="profile")
     if request.method == "POST" and selected:
         action = request.POST.get("action")
         if action == "role" and role_form.is_valid():
@@ -499,6 +504,10 @@ def access_control(request):
             role_form.save_m2m()
             messages.success(request, "Property rolü kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}")
+        if action == "profile" and profile_user and profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, "Kullanıcı profili kaydedildi.")
+            return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={profile_user.id}")
         if action == "access" and access_form.is_valid():
             access = access_form.save(commit=False)
             access.property = selected
@@ -520,7 +529,8 @@ def access_control(request):
         "roles": selected.access_roles.prefetch_related("permissions") if selected else PropertyRole.objects.none(),
         "accesses": selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none(),
         "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),
-        "role_form": role_form, "access_form": access_form,
+        "role_form": role_form, "access_form": access_form, "staff_users": staff_users,
+        "profile_user": profile_user, "profile_form": profile_form,
     })
 
 

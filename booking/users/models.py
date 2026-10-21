@@ -13,6 +13,10 @@ class User(AbstractUser):
 
     # First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)
+    phone = CharField(_("phone"), blank=True, max_length=40)
+    gender = CharField(_("gender"), blank=True, max_length=20)
+    position = CharField(_("position"), blank=True, max_length=120)
+    department = CharField(_("department"), blank=True, max_length=120)
     first_name = None  # type: ignore[assignment]
     last_name = None  # type: ignore[assignment]
 
