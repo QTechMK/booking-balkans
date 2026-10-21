@@ -372,7 +372,10 @@ def crm_guests(request):
                 else:
                     LoyaltyTransaction.objects.create(account=account, kind=kind, points=delta, note=request.POST.get("note", ""), created_by=request.user)
                     account.points_balance += delta
-                    account.save(update_fields=["points_balance", "updated_at"])
+                    account.tier = account.property.loyalty_tiers.filter(
+                        is_active=True, minimum_points__lte=account.points_balance,
+                    ).order_by("-minimum_points").first()
+                    account.save(update_fields=["points_balance", "tier", "updated_at"])
                     messages.success(request, "Sadakat puan hareketi kaydedildi.")
         return redirect(f"{reverse('operations:crm_guests')}?property_id={selected.id}&q={q}&guest_id={selected_guest.id if selected_guest else ''}")
     return render(request, "booking/operations/crm_guests.html", {
