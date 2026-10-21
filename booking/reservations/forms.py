@@ -31,9 +31,16 @@ class GuestBookingForm(forms.ModelForm):
         model = Guest
         fields = ["first_name", "last_name", "email", "phone", "country"]
         widgets = {
-            "first_name": forms.TextInput(attrs={"autocomplete": "given-name"}),
-            "last_name": forms.TextInput(attrs={"autocomplete": "family-name"}),
-            "email": forms.EmailInput(attrs={"autocomplete": "email"}),
-            "phone": forms.TextInput(attrs={"autocomplete": "tel"}),
-            "country": forms.TextInput(attrs={"maxlength": 2, "placeholder": "TR"}),
+            "first_name": forms.TextInput(attrs={"class": "form-control", "autocomplete": "given-name"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control", "autocomplete": "family-name"}),
+            "email": forms.EmailInput(attrs={"class": "form-control", "autocomplete": "email"}),
+            "phone": forms.TextInput(attrs={"class": "form-control", "autocomplete": "tel"}),
+            "country": forms.TextInput(attrs={"class": "form-control", "maxlength": 2, "placeholder": "TR"}),
+        }
+        labels = {
+            "first_name": "Ad",
+            "last_name": "Soyad",
+            "email": "E-posta",
+            "phone": "Telefon",
+            "country": "Ülke kodu",
         }

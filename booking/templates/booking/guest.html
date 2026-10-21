@@ -7,7 +7,7 @@
     <h1 class="h4 mb-1">Misafir bilgileri</h1><p class="text-body-secondary mb-4">Rezervasyonunuzu tamamlamak için bilgilerinizi girin.</p>
     <form method="post">{% csrf_token %}
       {{ search_form.property_id }}{{ search_form.rate_plan_id }}{{ search_form.check_in.as_hidden }}{{ search_form.check_out.as_hidden }}{{ search_form.quantity.as_hidden }}
-      {% for field in guest_form %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}</div>{% endfor %}
+      {% for field in guest_form %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="small text-danger mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}
       <button class="btn btn-primary w-100" type="submit">Rezervasyonu onayla</button>
     </form>
   </div></div></div>
