@@ -1,12 +1,22 @@
 from django.contrib import admin
 
 from .models import Guest
+from .models import FolioEntry
 from .models import GuestPortalAccess
 from .models import PaymentTransaction
 from .models import Reservation
 from .models import ReservationChannel
 from .models import ReservationHold
 from .models import ReservationItem
+
+
+@admin.register(FolioEntry)
+class FolioEntryAdmin(admin.ModelAdmin):
+    list_display = ["reservation", "entry_type", "description", "amount", "currency", "posted_at", "posted_by"]
+    list_filter = ["entry_type", "currency", "reservation__property"]
+    search_fields = ["reservation__reference", "description"]
+    autocomplete_fields = ["reservation", "posted_by", "voided_by"]
+    readonly_fields = ["created_at"]
 
 
 @admin.register(GuestPortalAccess)

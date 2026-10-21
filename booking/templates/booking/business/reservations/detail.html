@@ -1,7 +1,7 @@
-{% extends 'base.html' %}
+﻿{% extends 'booking/admin_base.html' %}
 
 {% block content %}
-{% include 'partials/navbar.html' %}
+
 <main class="booking-flow-main py-5">
   <div class="container">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -15,6 +15,13 @@
 
     <div class="row g-4">
       <div class="col-lg-8">
+        <div class="card border shadow-sm mb-4">
+          <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+            {% if can_check_in %}<form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="check_in"><button class="btn btn-success">Check-in yap</button></form>{% endif %}
+            {% if can_check_out %}<form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="check_out"><button class="btn btn-outline-success">Check-out yap</button></form>{% endif %}
+            {% if reservation.status != 'cancelled' %}<form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="cancel"><button class="btn btn-outline-danger">Rezervasyonu iptal et</button></form>{% endif %}
+          </div>
+        </div>
         <div class="card border shadow-sm mb-4">
           <div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Konaklama bilgileri</h2></div>
           <div class="card-body p-4">
@@ -37,6 +44,12 @@
             </table>
           </div>
         </div>
+
+        <div class="card border shadow-sm mt-4">
+          <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center"><h2 class="h5 mb-0">Folio hareketleri</h2><span class="badge {% if folio_balance > 0 %}text-bg-warning{% else %}text-bg-success{% endif %}">Bakiye: {{ folio_balance }} {{ reservation.currency }}</span></div>
+          <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Tarih</th><th>Açıklama</th><th>Tür</th><th class="text-end">Tutar</th></tr></thead><tbody>{% for entry in folio_entries %}<tr><td>{{ entry.posted_at|date:'d.m.Y H:i' }}</td><td>{{ entry.description }}</td><td>{{ entry.get_entry_type_display }}</td><td class="text-end">{% if entry.entry_type == 'payment' or entry.entry_type == 'refund' %}-{% endif %}{{ entry.amount }} {{ entry.currency }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-body-secondary py-3">Henüz folio hareketi yok.</td></tr>{% endfor %}</tbody></table></div>
+          <form method="post" class="card-body border-top"><input type="hidden" name="action" value="post_folio">{% csrf_token %}<div class="row g-2 align-items-end"><div class="col-md-3"><label class="form-label">Tür</label><select name="entry_type" class="form-select">{% for value,label in folio_entry_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div><div class="col-md-3"><label class="form-label">Tutar</label><input name="amount" type="number" min="0.01" step="0.01" class="form-control" required></div><div class="col-md-4"><label class="form-label">Açıklama</label><input name="description" class="form-control" maxlength="255" required></div><div class="col-md-2"><button class="btn btn-primary w-100">Kaydet</button></div></div></form>
+        </div>
       </div>
 
       <div class="col-lg-4">
@@ -55,12 +68,12 @@
             <div class="d-flex justify-content-between mb-2"><span>Ara toplam</span><span>{{ reservation.subtotal_amount }} {{ reservation.currency }}</span></div>
             <div class="d-flex justify-content-between mb-3"><span>Vergi</span><span>{{ reservation.tax_amount }} {{ reservation.currency }}</span></div>
             <hr><div class="d-flex justify-content-between fw-semibold"><span>Toplam</span><span>{{ reservation.total_amount }} {{ reservation.currency }}</span></div>
-            <p class="small text-body-secondary mt-3 mb-0">Ödeme durumu: Tesiste ödeme</p>
+            <p class="small text-body-secondary mt-3 mb-0">Ödenen: {{ paid_total }} {{ reservation.currency }} · Açık bakiye: {{ folio_balance }} {{ reservation.currency }}</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 </main>
-{% include 'partials/footer.html' %}
+
 {% endblock content %}

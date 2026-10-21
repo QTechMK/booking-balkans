@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'booking/admin_base.html' %}
 {% load static %}
 
 {% block extra_css %}
@@ -6,7 +6,7 @@
 {% endblock extra_css %}
 
 {% block content %}
-{% include 'partials/navbar.html' %}
+
 <main class="booking-flow-main py-5">
   <div class="container">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -56,5 +56,5 @@
     </div>
   </div>
 </main>
-{% include 'partials/footer.html' %}
+
 {% endblock content %}

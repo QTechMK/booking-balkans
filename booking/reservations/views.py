@@ -1,5 +1,6 @@
 from datetime import date
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 import hashlib
 import hmac
 import json
@@ -10,7 +11,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.db.models import ProtectedError
 from django.db.models import Q
@@ -52,7 +53,15 @@ from .forms import BusinessUnitForm
 from .forms import BusinessUnitTypeForm
 from .forms import BusinessChannelRateRuleForm
 from .forms import BusinessPriceParityObservationForm
-from .models import GuestPortalAccess, PaymentTransaction, Reservation
+from .models import (
+    FolioEntry,
+    FolioEntryType,
+    GuestPortalAccess,
+    PaymentTransaction,
+    Reservation,
+    ReservationItem,
+    StayStatus,
+)
 from .models import ReservationChannel
 from .models import ReservationSource
 from .models import ReservationStatus
@@ -790,13 +799,71 @@ def business_reservation_detail(request, pk):
     reservation = get_object_or_404(
         Reservation.objects.filter(property__in=_business_properties(request.user))
         .select_related("guest", "property", "channel")
-        .prefetch_related("items__unit_type", "items__rate_plan", "items__unit"),
+        .prefetch_related(
+            "items__unit_type", "items__rate_plan", "items__unit", "folio_entries"
+        ),
         pk=pk,
+    )
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action in {"check_in", "check_out"}:
+            try:
+                with transaction.atomic():
+                    items = list(reservation.items.select_for_update())
+                    if action == "check_in":
+                        for item in items:
+                            item.check_in(actor=request.user)
+                        messages.success(request, "Rezervasyon için check-in tamamlandı.")
+                    else:
+                        for item in items:
+                            item.check_out(actor=request.user)
+                        messages.success(request, "Rezervasyon için check-out tamamlandı.")
+            except ValidationError as exc:
+                messages.error(request, "; ".join(exc.messages))
+            return redirect("reservations:business_reservation_detail", pk=reservation.pk)
+        if action == "cancel":
+            if reservation.status != ReservationStatus.CANCELLED:
+                reservation.status = ReservationStatus.CANCELLED
+                reservation.save(update_fields=["status", "updated_at"])
+                messages.success(request, "Rezervasyon iptal edildi.")
+            return redirect("reservations:business_reservation_detail", pk=reservation.pk)
+        if action == "post_folio":
+            try:
+                amount = Decimal(request.POST.get("amount", "0"))
+            except (TypeError, ValueError, InvalidOperation):
+                amount = Decimal("0")
+            entry_type = request.POST.get("entry_type")
+            if entry_type not in {choice for choice, _ in FolioEntryType.choices} or amount <= 0:
+                messages.error(request, "Geçerli bir folio hareketi ve tutar girin.")
+            else:
+                FolioEntry.objects.create(
+                    reservation=reservation,
+                    entry_type=entry_type,
+                    description=request.POST.get("description", "Folio hareketi")[:255],
+                    amount=amount,
+                    currency=reservation.currency,
+                    posted_by=request.user,
+                )
+                messages.success(request, "Folio hareketi kaydedildi.")
+            return redirect("reservations:business_reservation_detail", pk=reservation.pk)
+    folio_entries = list(reservation.folio_entries.all())
+    folio_balance = sum((entry.signed_amount for entry in folio_entries), Decimal("0"))
+    paid_total = sum(
+        (entry.amount for entry in folio_entries if entry.entry_type == FolioEntryType.PAYMENT),
+        Decimal("0"),
     )
     return render(
         request,
         "booking/business/reservations/detail.html",
-        {"reservation": reservation},
+        {
+            "reservation": reservation,
+            "folio_entries": folio_entries,
+            "folio_balance": folio_balance,
+            "paid_total": paid_total,
+            "folio_entry_types": FolioEntryType.choices,
+            "can_check_in": reservation.stay_status == StayStatus.NOT_ARRIVED,
+            "can_check_out": reservation.stay_status == StayStatus.CHECKED_IN,
+        },
     )
 
 
@@ -856,6 +923,16 @@ def business_channel_list(request):
         selected_property.reservation_channels.all()
         if selected_property
         else ReservationChannel.objects.none()
+    )
+    return render(
+        request,
+        "booking/business/reservations/channels.html",
+        {
+            "properties": properties,
+            "selected_property": selected_property,
+            "channels": channels,
+            "form": form,
+        },
     )
 
 
@@ -918,16 +995,6 @@ def business_price_parity(request):
         "form": form,
         "observations": observations,
     })
-    return render(
-        request,
-        "booking/business/reservations/channels.html",
-        {
-            "properties": properties,
-            "selected_property": selected_property,
-            "channels": channels,
-            "form": form,
-        },
-    )
 
 
 @login_required

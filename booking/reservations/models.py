@@ -269,6 +269,67 @@ class PaymentTransaction(models.Model):
         ]
 
 
+class FolioEntryType(models.TextChoices):
+    CHARGE = "charge", _("Charge")
+    PAYMENT = "payment", _("Payment")
+    REFUND = "refund", _("Refund")
+    ADJUSTMENT = "adjustment", _("Adjustment")
+
+
+class FolioEntry(models.Model):
+    """Immutable hotel folio movement for a reservation.
+
+    Charges and adjustments increase the balance; payments and refunds reduce it.
+    The signed balance is calculated from the entry type so front-office users
+    cannot accidentally hide a payment by entering a negative amount.
+    """
+
+    reservation = models.ForeignKey(
+        Reservation, on_delete=models.PROTECT, related_name="folio_entries"
+    )
+    entry_type = models.CharField(max_length=16, choices=FolioEntryType.choices)
+    description = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    vat_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    posted_at = models.DateTimeField(default=timezone.now)
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posted_folio_entries",
+    )
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="voided_folio_entries",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["posted_at", "id"]
+        indexes = [
+            models.Index(fields=["reservation", "posted_at"]),
+            models.Index(fields=["reservation", "entry_type"]),
+        ]
+
+    def clean(self):
+        if self.amount < 0 or self.vat_amount < 0:
+            raise ValidationError(_("Folio amounts cannot be negative."))
+        if self.reservation_id and self.currency != self.reservation.currency:
+            raise ValidationError({"currency": _("Currency must match the reservation.")})
+
+    @property
+    def signed_amount(self):
+        if self.entry_type in {FolioEntryType.PAYMENT, FolioEntryType.REFUND}:
+            return -self.amount
+        return self.amount
+
+
 class ReservationItem(models.Model):
     """A booked unit type/rate product within a reservation."""
 
