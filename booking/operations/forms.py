@@ -1,7 +1,7 @@
 from django import forms
 
 from booking.tenancy.models import (
-    BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
+    BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
 from .models import GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, TaskGroup, TaskLocation
 
@@ -11,6 +11,13 @@ class PropertySettingsForm(forms.ModelForm):
         model = PropertySettings
         exclude = ["property"]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class PropertyProfileForm(forms.ModelForm):
+    class Meta:
+        model = Property
+        fields = ["name", "slug", "business_type", "address", "city", "country", "document_number", "timezone", "currency", "is_active"]
+        widgets = {"address": forms.Textarea(attrs={"rows": 2})}
 
 
 class DictionaryForm(forms.ModelForm):

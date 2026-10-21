@@ -2,6 +2,7 @@
 <div class="nav-header"><a href="/" class="brand-logo"><img class="logo-abbr" src="{% static 'images/logo-icon.svg' %}" alt="Booking Balkans"><span class="brand-title">Booking Balkans</span></a><div class="nav-control"><div class="hamburger"><span class="line"></span><span class="line"></span><span class="line"></span></div></div></div>
 <div class="deznav"><div class="deznav-scroll"><ul class="metismenu" id="menu">
   <li class="nav-label">HOTEL MANAGER</li>
+  <li><a href="{% url 'operations:dashboard' %}"><i class="flaticon-381-home"></i><span class="nav-text">Dashboard</span></a></li>
   <li><a href="{% url 'operations:room_rack' %}"><i class="flaticon-381-home"></i><span class="nav-text">Front Office</span></a></li>
   <li><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-settings-2"></i><span class="nav-text">Otel Tanımları</span></a><ul><li><a href="{% url 'operations:property_settings' %}">Property Settings</a></li><li><a href="{% url 'operations:hotel_dictionaries' %}">Hotel Dictionaries</a></li><li><a href="{% url 'operations:room_master' %}">Room Master</a></li></ul></li>
   <li><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Operasyon</span></a><ul><li><a href="{% url 'operations:housekeeping' %}">Housekeeping</a></li><li><a href="{% url 'operations:maintenance' %}">Teknik Servis</a></li><li><a href="{% url 'operations:tasks' %}">Görev Yönetimi</a></li></ul></li>

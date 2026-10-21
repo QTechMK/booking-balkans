@@ -32,7 +32,7 @@ from .models import (
     UnitHousekeepingState,
 )
 from .forms import (
-    BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
+    BedTypeForm, BoardTypeForm, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
     GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm,
 )
 
@@ -51,6 +51,42 @@ def _users_for_property(property_):
         Q(organization=property_.organization, property__isnull=True)
         | Q(property=property_), is_active=True
     ).select_related("user").values_list("user", "user__username")
+
+
+@login_required
+def dashboard(request):
+    properties, selected = _selected_property(request)
+    today = timezone.localdate()
+    if selected:
+        rooms_total = selected.units.filter(is_active=True).count()
+        occupied = ReservationItem.objects.filter(
+            reservation__property=selected,
+            reservation__status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+            reservation__check_in__lte=today,
+            reservation__check_out__gt=today,
+            unit__isnull=False,
+        ).count()
+        metrics = {
+            "rooms_total": rooms_total,
+            "occupied": occupied,
+            "occupancy_percent": round((occupied / rooms_total) * 100, 1) if rooms_total else 0,
+            "dirty": HousekeepingTask.objects.filter(property=selected, status=HousekeepingStatus.DIRTY).count(),
+            "maintenance": MaintenanceTicket.objects.filter(property=selected, status__in=[MaintenanceStatus.OPEN, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.WAITING]).count(),
+            "tasks": OperationalTask.objects.filter(property=selected, status__in=[TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.WAITING]).count(),
+            "guests": Guest.objects.filter(property=selected).count(),
+            "arrivals": ReservationItem.objects.filter(reservation__property=selected, reservation__check_in=today).count(),
+            "departures": ReservationItem.objects.filter(reservation__property=selected, reservation__check_out=today).count(),
+        }
+        recent_tasks = OperationalTask.objects.filter(property=selected).select_related("assigned_to")[:8]
+        recent_tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit")[:8]
+    else:
+        metrics = {key: 0 for key in ["rooms_total", "occupied", "occupancy_percent", "dirty", "maintenance", "tasks", "guests", "arrivals", "departures"]}
+        recent_tasks = OperationalTask.objects.none()
+        recent_tickets = MaintenanceTicket.objects.none()
+    return render(request, "booking/operations/dashboard.html", {
+        "title": "Hotel Dashboard", "properties": properties, "selected_property": selected,
+        "metrics": metrics, "recent_tasks": recent_tasks, "recent_tickets": recent_tickets, "today": today,
+    })
 
 
 @login_required
@@ -306,14 +342,19 @@ def property_settings(request):
     properties, selected = _selected_property(request)
     settings_obj = PropertySettings.objects.filter(property=selected).first() if selected else None
     form = PropertySettingsForm(request.POST or None, instance=settings_obj)
-    if request.method == "POST" and selected and form.is_valid():
-        obj = form.save(commit=False)
-        obj.property = selected
-        obj.save()
-        messages.success(request, "Otel ayarları kaydedildi.")
+    property_form = PropertyProfileForm(request.POST or None, instance=selected) if selected else PropertyProfileForm()
+    if request.method == "POST" and selected:
+        if request.POST.get("form_type") == "profile" and property_form.is_valid():
+            property_form.save()
+            messages.success(request, "Tesis bilgileri kaydedildi.")
+        elif request.POST.get("form_type") != "profile" and form.is_valid():
+            obj = form.save(commit=False)
+            obj.property = selected
+            obj.save()
+            messages.success(request, "Otel ayarları kaydedildi.")
         return redirect(f"{reverse('operations:property_settings')}?property_id={selected.id}")
     return render(request, "booking/operations/property_settings.html", {
-        "title": "Property Settings",
+        "title": "Property Settings", "property_form": property_form,
         "properties": properties, "selected_property": selected, "form": form,
     })
 
@@ -331,10 +372,15 @@ def hotel_dictionaries(request):
     if active not in form_map:
         active = "board_type"
     model, form_class = form_map[active]
-    form = form_class(request.POST or None)
+    edit_id = request.POST.get("edit_id") or request.GET.get("edit_id")
+    instance = model.objects.filter(property=selected, id=edit_id).first() if selected and edit_id else None
+    form = form_class(request.POST or None, instance=instance)
     if selected and active == "room_photo":
         form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
         form.fields["unit"].queryset = selected.units.filter(is_active=True)
+    if request.method == "POST" and selected and request.POST.get("action") == "delete":
+        model.objects.filter(property=selected, id=request.POST.get("item_id")).delete()
+        return redirect(f"{reverse('operations:hotel_dictionaries')}?property_id={selected.id}&entity={active}")
     if request.method == "POST" and selected and form.is_valid():
         obj = form.save(commit=False)
         obj.property = selected
@@ -356,7 +402,10 @@ def room_master(request):
     entity = request.POST.get("entity") or request.GET.get("entity", "unit_type")
     if entity not in {"unit_type", "unit"}:
         entity = "unit_type"
-    form = UnitTypeForm(request.POST or None) if entity == "unit_type" else UnitForm(request.POST or None)
+    edit_id = request.POST.get("edit_id") or request.GET.get("edit_id")
+    model = UnitType if entity == "unit_type" else Unit
+    instance = model.objects.filter(property=selected, id=edit_id).first() if selected and edit_id else None
+    form = UnitTypeForm(request.POST or None, instance=instance) if entity == "unit_type" else UnitForm(request.POST or None, instance=instance)
     if entity == "unit_type":
         form.fields["room_group"].queryset = RoomGroup.objects.filter(property=selected, is_active=True) if selected else RoomGroup.objects.none()
         form.fields["amenities"].queryset = selected.roomamenity_set.filter(is_active=True) if selected else form.fields["amenities"].queryset.none()
