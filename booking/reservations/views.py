@@ -44,13 +44,14 @@ from .forms import BusinessUnitForm
 from .forms import BusinessUnitTypeForm
 from .forms import BusinessChannelRateRuleForm
 from .forms import BusinessPriceParityObservationForm
-from .models import Reservation
+from .models import GuestPortalAccess, Reservation
 from .models import ReservationChannel
 from .models import ReservationSource
 from .models import ReservationStatus
 from booking.tenancy.models import ChannelRateRule
 from booking.tenancy.models import PriceParityObservation
 from .services.booking import book_direct
+from .forms import GuestPortalCheckinForm
 
 
 def _default_search():
@@ -387,7 +388,37 @@ def confirmation(request):
         Reservation,
         reference=reference,
     )
-    return render(request, "booking/confirmation.html", {"reservation": reservation})
+    portal_access, _ = GuestPortalAccess.objects.get_or_create(reservation=reservation)
+    return render(request, "booking/confirmation.html", {"reservation": reservation, "portal_access": portal_access})
+
+
+def guest_portal(request, token):
+    portal_access = get_object_or_404(
+        GuestPortalAccess.objects.select_related("reservation", "reservation__guest", "reservation__property"),
+        token=token,
+    )
+    reservation = portal_access.reservation
+    from booking.operations.models import OnlineBookingSettings
+    settings_obj = OnlineBookingSettings.objects.filter(property=reservation.property).first()
+    checkin_active = bool(settings_obj and settings_obj.online_checkin_active)
+    form = GuestPortalCheckinForm(request.POST or None, initial={
+        "first_name": reservation.guest.first_name, "last_name": reservation.guest.last_name,
+        "phone": reservation.guest.phone,
+    })
+    if request.method == "POST" and checkin_active and not portal_access.online_checkin_completed and form.is_valid():
+        data = form.cleaned_data
+        guest = reservation.guest
+        guest.first_name, guest.last_name, guest.phone = data["first_name"], data["last_name"], data["phone"]
+        guest.save(update_fields=["first_name", "last_name", "phone", "updated_at"])
+        portal_access.checkin_data = {key: data[key] for key in ("nationality", "identity_reference")}
+        portal_access.online_checkin_completed = True
+        portal_access.save(update_fields=["checkin_data", "online_checkin_completed", "updated_at"])
+        messages.success(request, "Online check-in tamamlandı.")
+        return redirect("reservations:guest_portal", token=portal_access.token)
+    return render(request, "booking/guest_portal.html", {
+        "reservation": reservation, "portal_access": portal_access,
+        "settings": settings_obj, "checkin_active": checkin_active, "form": form,
+    })
 
 
 def _business_properties(user):

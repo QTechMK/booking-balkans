@@ -1,10 +1,19 @@
 from django.contrib import admin
 
 from .models import Guest
+from .models import GuestPortalAccess
 from .models import Reservation
 from .models import ReservationChannel
 from .models import ReservationHold
 from .models import ReservationItem
+
+
+@admin.register(GuestPortalAccess)
+class GuestPortalAccessAdmin(admin.ModelAdmin):
+    list_display = ["reservation", "token", "online_checkin_completed", "expires_at", "updated_at"]
+    list_filter = ["online_checkin_completed", "reservation__property"]
+    search_fields = ["reservation__reference", "reservation__guest__email"]
+    autocomplete_fields = ["reservation"]
 
 
 @admin.register(Guest)

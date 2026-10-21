@@ -224,6 +224,19 @@ class Reservation(models.Model):
         return StayStatus.NOT_ARRIVED
 
 
+class GuestPortalAccess(models.Model):
+    reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE, related_name="portal_access")
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    online_checkin_completed = models.BooleanField(default=False)
+    checkin_data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
 class ReservationItem(models.Model):
     """A booked unit type/rate product within a reservation."""
 

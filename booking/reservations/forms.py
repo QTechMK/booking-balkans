@@ -16,6 +16,15 @@ from booking.tenancy.models import ChannelRateRule
 from booking.tenancy.models import PriceParityObservation
 
 
+class GuestPortalCheckinForm(forms.Form):
+    first_name = forms.CharField(max_length=120, label="Ad")
+    last_name = forms.CharField(max_length=120, required=False, label="Soyad")
+    phone = forms.CharField(max_length=40, required=False, label="Telefon")
+    nationality = forms.CharField(max_length=80, required=False, label="Uyruk")
+    identity_reference = forms.CharField(max_length=120, required=False, label="Kimlik veya pasaport no")
+    accept_terms = forms.BooleanField(label="Konaklama koşullarını kabul ediyorum")
+
+
 class MarketplaceSearchForm(forms.Form):
     q = forms.CharField(required=False, label="Konum veya işletme")
     check_in = forms.DateField(

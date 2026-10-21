@@ -8,6 +8,7 @@ urlpatterns = [
     path("search/", views.search, name="search"),
     path("guest/", views.guest_details, name="guest_details"),
     path("confirmation/", views.confirmation, name="confirmation"),
+    path("guest/portal/<uuid:token>/", views.guest_portal, name="guest_portal"),
     path("widget/<uuid:widget_key>/", views.widget_search, name="widget_search"),
     path(
         "business/reservations/",
