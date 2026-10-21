@@ -2,13 +2,16 @@ from datetime import date
 from datetime import timedelta
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 
+from booking.tenancy.models import Membership
 from booking.tenancy.models import Property
 from booking.tenancy.models import RatePlan
 from booking.tenancy.services.availability import get_availability
@@ -16,6 +19,8 @@ from booking.tenancy.services.availability import get_availability
 from .forms import BookingSearchForm
 from .forms import GuestBookingForm
 from .models import Reservation
+from .models import ReservationSource
+from .models import ReservationStatus
 from .services.booking import book_direct
 
 
@@ -134,3 +139,73 @@ def confirmation(request):
         reference=reference,
     )
     return render(request, "booking/confirmation.html", {"reservation": reservation})
+
+
+def _business_properties(user):
+    if user.is_superuser:
+        return Property.objects.filter(is_active=True)
+
+    memberships = Membership.objects.filter(user=user, is_active=True)
+    organization_ids = memberships.values_list("organization_id", flat=True)
+    property_ids = memberships.exclude(property_id=None).values_list(
+        "property_id", flat=True
+    )
+    return Property.objects.filter(
+        Q(organization_id__in=organization_ids) | Q(id__in=property_ids),
+        is_active=True,
+    ).distinct()
+
+
+@login_required
+def business_reservation_list(request):
+    properties = _business_properties(request.user).order_by("name")
+    property_id = request.GET.get("property_id")
+    selected_property = properties.filter(id=property_id).first() if property_id else None
+    if not selected_property:
+        selected_property = properties.first()
+
+    reservations = Reservation.objects.none()
+    if selected_property:
+        reservations = (
+            Reservation.objects.filter(property=selected_property)
+            .select_related("guest", "property")
+            .prefetch_related("items")
+        )
+
+        status = request.GET.get("status")
+        if status in {choice for choice, _ in ReservationStatus.choices}:
+            reservations = reservations.filter(status=status)
+
+        source = request.GET.get("source")
+        if source in {choice for choice, _ in ReservationSource.choices}:
+            reservations = reservations.filter(source=source)
+
+        search_term = request.GET.get("q", "").strip()
+        if search_term:
+            reservations = reservations.filter(
+                Q(reference__icontains=search_term)
+                | Q(guest__first_name__icontains=search_term)
+                | Q(guest__last_name__icontains=search_term)
+                | Q(guest__email__icontains=search_term)
+            )
+
+        check_in_from = request.GET.get("check_in_from")
+        if check_in_from:
+            reservations = reservations.filter(check_in__gte=check_in_from)
+
+        check_in_to = request.GET.get("check_in_to")
+        if check_in_to:
+            reservations = reservations.filter(check_in__lte=check_in_to)
+
+    return render(
+        request,
+        "booking/business/reservations/list.html",
+        {
+            "properties": properties,
+            "selected_property": selected_property,
+            "reservations": reservations,
+            "status_choices": ReservationStatus.choices,
+            "source_choices": ReservationSource.choices,
+            "filters": request.GET,
+        },
+    )

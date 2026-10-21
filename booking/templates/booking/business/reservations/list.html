@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="booking-flow-main py-5">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <h1 class="h3 mb-1">Rezervasyonlar</h1>
+        <p class="text-body-secondary mb-0">İşletmenize ait rezervasyonları yönetin.</p>
+      </div>
+      {% if selected_property %}<span class="badge bg-primary-subtle text-primary px-3 py-2">{{ selected_property.name }}</span>{% endif %}
+    </div>
+
+    <div class="card border shadow-sm mb-4">
+      <div class="card-body p-4">
+        <form method="get" class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label" for="id_property_id">İşletme</label>
+            <select class="form-select" name="property_id" id="id_property_id">
+              {% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="id_q">Ara</label>
+            <input class="form-control" type="search" name="q" id="id_q" value="{{ filters.q|default:'' }}" placeholder="Referans, misafir veya e-posta">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="id_status">Durum</label>
+            <select class="form-select" name="status" id="id_status">
+              <option value="">Tümü</option>
+              {% for value,label in status_choices %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="id_source">Kaynak</label>
+            <select class="form-select" name="source" id="id_source">
+              <option value="">Tümü</option>
+              {% for value,label in source_choices %}<option value="{{ value }}" {% if filters.source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="id_check_in_from">Giriş başlangıç</label>
+            <input class="form-control" type="date" name="check_in_from" id="id_check_in_from" value="{{ filters.check_in_from|default:'' }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="id_check_in_to">Giriş bitiş</label>
+            <input class="form-control" type="date" name="check_in_to" id="id_check_in_to" value="{{ filters.check_in_to|default:'' }}">
+          </div>
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <a class="btn btn-light" href="{% url 'reservations:business_reservation_list' %}">Temizle</a>
+            <button class="btn btn-primary" type="submit">Filtrele</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card border shadow-sm">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+        <h2 class="h5 mb-0">Rezervasyon listesi</h2>
+        <span class="text-body-secondary small">{{ reservations|length }} kayıt</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Referans</th><th>Misafir</th><th>Tarih</th><th>Kaynak</th><th>Durum</th><th>Konaklama</th><th class="text-end">Toplam</th></tr></thead>
+          <tbody>
+            {% for reservation in reservations %}
+            <tr>
+              <td><span class="fw-semibold">{{ reservation.reference }}</span><div class="small text-body-secondary">{{ reservation.created_at|date:'d.m.Y H:i' }}</div></td>
+              <td>{{ reservation.guest.first_name }} {{ reservation.guest.last_name }}<div class="small text-body-secondary">{{ reservation.guest.email }}</div></td>
+              <td>{{ reservation.check_in|date:'d.m.Y' }}<br><span class="text-body-secondary">{{ reservation.check_out|date:'d.m.Y' }}</span></td>
+              <td>{{ reservation.get_source_display }}</td>
+              <td><span class="badge bg-primary-subtle text-primary">{{ reservation.get_status_display }}</span></td>
+              <td>{% if reservation.stay_status == 'checked_in' %}Giriş yaptı{% elif reservation.stay_status == 'checked_out' %}Çıkış yaptı{% elif reservation.stay_status == 'early_checkout' %}Erken çıkış{% else %}Giriş bekliyor{% endif %}</td>
+              <td class="text-end fw-semibold">{{ reservation.total_amount }} {{ reservation.currency }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="7" class="text-center text-body-secondary py-5">Bu filtrelerle eşleşen rezervasyon bulunamadı.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+{% include 'partials/footer.html' %}
+{% endblock content %}
