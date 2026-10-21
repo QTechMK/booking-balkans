@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="booking-flow-main py-5">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <a class="small text-decoration-none" href="{% url 'reservations:business_reservation_list' %}">← Rezervasyonlar</a>
+        <h1 class="h3 mb-1 mt-2">Rezervasyon {{ reservation.reference }}</h1>
+        <p class="text-body-secondary mb-0">{{ reservation.property.name }}</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary px-3 py-2">{{ reservation.get_status_display }}</span>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card border shadow-sm mb-4">
+          <div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Konaklama bilgileri</h2></div>
+          <div class="card-body p-4">
+            <div class="row g-4">
+              <div class="col-sm-6"><div class="small text-body-secondary">Giriş</div><div class="fw-semibold">{{ reservation.check_in|date:'d.m.Y' }}</div></div>
+              <div class="col-sm-6"><div class="small text-body-secondary">Çıkış</div><div class="fw-semibold">{{ reservation.check_out|date:'d.m.Y' }}</div></div>
+              <div class="col-sm-6"><div class="small text-body-secondary">Kaynak</div><div class="fw-semibold">{{ reservation.get_source_display }}</div></div>
+              <div class="col-sm-6"><div class="small text-body-secondary">Konaklama durumu</div><div class="fw-semibold">{% if reservation.stay_status == 'checked_in' %}Giriş yaptı{% elif reservation.stay_status == 'checked_out' %}Çıkış yaptı{% elif reservation.stay_status == 'early_checkout' %}Erken çıkış{% else %}Giriş bekliyor{% endif %}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border shadow-sm">
+          <div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Oda / ünite</h2></div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead><tr><th>Ünite tipi</th><th>Rate plan</th><th>Ünite</th><th>Miktar</th><th class="text-end">Tutar</th></tr></thead>
+              <tbody>{% for item in reservation.items.all %}<tr><td>{{ item.unit_type.name }}</td><td>{{ item.rate_plan.name }}</td><td>{% if item.unit %}{{ item.unit.code }}{% else %}Atanmadı{% endif %}</td><td>{{ item.quantity }}</td><td class="text-end">{{ item.total_amount }} {{ reservation.currency }}</td></tr>{% endfor %}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card border shadow-sm mb-4">
+          <div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Misafir</h2></div>
+          <div class="card-body p-4">
+            <h3 class="h6">{{ reservation.guest.first_name }} {{ reservation.guest.last_name }}</h3>
+            {% if reservation.guest.email %}<p class="mb-1 text-body-secondary">{{ reservation.guest.email }}</p>{% endif %}
+            {% if reservation.guest.phone %}<p class="mb-1 text-body-secondary">{{ reservation.guest.phone }}</p>{% endif %}
+            {% if reservation.guest.country %}<p class="mb-0 text-body-secondary">{{ reservation.guest.country }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="card border shadow-sm">
+          <div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Finans özeti</h2></div>
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between mb-2"><span>Ara toplam</span><span>{{ reservation.subtotal_amount }} {{ reservation.currency }}</span></div>
+            <div class="d-flex justify-content-between mb-3"><span>Vergi</span><span>{{ reservation.tax_amount }} {{ reservation.currency }}</span></div>
+            <hr><div class="d-flex justify-content-between fw-semibold"><span>Toplam</span><span>{{ reservation.total_amount }} {{ reservation.currency }}</span></div>
+            <p class="small text-body-secondary mt-3 mb-0">Ödeme durumu: Tesiste ödeme</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

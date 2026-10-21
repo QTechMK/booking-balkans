@@ -209,3 +209,18 @@ def business_reservation_list(request):
             "filters": request.GET,
         },
     )
+
+
+@login_required
+def business_reservation_detail(request, pk):
+    reservation = get_object_or_404(
+        Reservation.objects.filter(property__in=_business_properties(request.user))
+        .select_related("guest", "property")
+        .prefetch_related("items__unit_type", "items__rate_plan", "items__unit"),
+        pk=pk,
+    )
+    return render(
+        request,
+        "booking/business/reservations/detail.html",
+        {"reservation": reservation},
+    )

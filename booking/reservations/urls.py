@@ -13,4 +13,9 @@ urlpatterns = [
         views.business_reservation_list,
         name="business_reservation_list",
     ),
+    path(
+        "business/reservations/<int:pk>/",
+        views.business_reservation_detail,
+        name="business_reservation_detail",
+    ),
 ]
