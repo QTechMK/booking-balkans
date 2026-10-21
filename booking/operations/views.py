@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings as django_settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -323,6 +324,20 @@ def online_settings(request):
             messages.success(request, "Hizmet talebi güncellendi.")
         return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
     if request.method == "POST" and settings_obj:
+        selected_provider = request.POST.get("payment_provider", settings_obj.payment_provider)
+        payment_active = request.POST.get("online_payment_active") == "on"
+        provider_ready = {
+            OnlineBookingSettings.PaymentProvider.STRIPE: bool(django_settings.PAYMENT_STRIPE_SECRET_KEY),
+            OnlineBookingSettings.PaymentProvider.PAYPAL: bool(
+                django_settings.PAYMENT_PAYPAL_CLIENT_ID and django_settings.PAYMENT_PAYPAL_CLIENT_SECRET
+            ),
+        }
+        if payment_active and selected_provider == OnlineBookingSettings.PaymentProvider.MANUAL:
+            messages.error(request, "Online ödeme için Stripe veya PayPal seçilmelidir.")
+            return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
+        if payment_active and selected_provider in provider_ready and not provider_ready[selected_provider]:
+            messages.error(request, "Seçilen ödeme sağlayıcısının production anahtarları yapılandırılmamış.")
+            return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
             setattr(settings_obj, field, request.POST.get(field) == "on")
         for field in ["seo_title", "seo_description", "meta_keywords", "domain", "payment_provider", "payment_public_key"]:
