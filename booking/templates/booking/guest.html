@@ -2,8 +2,8 @@
 
 {% block content %}
 {% include 'partials/navbar.html' %}
-<main class="py-5"><div class="container"><div class="row g-4 justify-content-center">
-  <div class="col-lg-7"><div class="card border shadow-sm"><div class="card-body p-4">
+<main class="booking-flow-main py-5"><div class="container"><div class="row g-4 justify-content-center">
+  <div class="col-lg-8"><div class="card border shadow-sm h-100"><div class="card-body p-4">
     <h1 class="h4 mb-1">Misafir bilgileri</h1><p class="text-body-secondary mb-4">Rezervasyonunuzu tamamlamak için bilgilerinizi girin.</p>
     <form method="post">{% csrf_token %}
       {{ search_form.property_id }}{{ search_form.rate_plan_id }}{{ search_form.check_in.as_hidden }}{{ search_form.check_out.as_hidden }}{{ search_form.quantity.as_hidden }}

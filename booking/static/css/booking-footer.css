@@ -4,6 +4,25 @@
   overflow: hidden;
 }
 
+.booking-flow-main {
+  min-height: 52vh;
+}
+
+.booking-flow-main .card {
+  overflow: hidden;
+}
+
+@media (max-width: 575.98px) {
+  .booking-flow-main {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  .booking-flow-main .card-body {
+    padding: 1.25rem !important;
+  }
+}
+
 .booking-footer .container {
   min-width: 0;
 }
