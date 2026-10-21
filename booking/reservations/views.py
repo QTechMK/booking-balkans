@@ -398,9 +398,29 @@ def guest_portal(request, token):
         token=token,
     )
     reservation = portal_access.reservation
-    from booking.operations.models import OnlineBookingSettings
+    from booking.operations.models import OnlineBookingSettings, PropertyService, ServiceRequest
     settings_obj = OnlineBookingSettings.objects.filter(property=reservation.property).first()
     checkin_active = bool(settings_obj and settings_obj.online_checkin_active)
+    if request.method == "POST" and request.POST.get("action") == "service_request" and settings_obj:
+        service = PropertyService.objects.filter(
+            id=request.POST.get("service_id"), property=reservation.property, is_active=True, show_online=True,
+        ).first()
+        flag_by_kind = {
+            PropertyService.Kind.EXTRA: "extra_services_active",
+            PropertyService.Kind.LATE_CHECKOUT: "late_checkout_active",
+            PropertyService.Kind.TRANSFER: "transfer_active",
+            PropertyService.Kind.ROOM_UPGRADE: "room_upgrade_active",
+        }
+        if service and getattr(settings_obj, flag_by_kind[service.kind], False):
+            try:
+                quantity = max(1, int(request.POST.get("quantity") or 1))
+            except ValueError:
+                quantity = 1
+            ServiceRequest.objects.create(reservation=reservation, service=service, quantity=quantity, note=request.POST.get("note", ""))
+            messages.success(request, "Hizmet talebiniz tesise iletildi.")
+        else:
+            messages.error(request, "Bu hizmet şu anda kullanılamıyor.")
+        return redirect("reservations:guest_portal", token=portal_access.token)
     form = GuestPortalCheckinForm(request.POST or None, initial={
         "first_name": reservation.guest.first_name, "last_name": reservation.guest.last_name,
         "phone": reservation.guest.phone,
@@ -415,9 +435,16 @@ def guest_portal(request, token):
         portal_access.save(update_fields=["checkin_data", "online_checkin_completed", "updated_at"])
         messages.success(request, "Online check-in tamamlandı.")
         return redirect("reservations:guest_portal", token=portal_access.token)
+    flag_by_kind = {
+        PropertyService.Kind.EXTRA: "extra_services_active",
+        PropertyService.Kind.LATE_CHECKOUT: "late_checkout_active",
+        PropertyService.Kind.TRANSFER: "transfer_active",
+        PropertyService.Kind.ROOM_UPGRADE: "room_upgrade_active",
+    }
+    services = [service for service in PropertyService.objects.filter(property=reservation.property, is_active=True, show_online=True) if settings_obj and getattr(settings_obj, flag_by_kind[service.kind], False)]
     return render(request, "booking/guest_portal.html", {
         "reservation": reservation, "portal_access": portal_access,
-        "settings": settings_obj, "checkin_active": checkin_active, "form": form,
+        "settings": settings_obj, "checkin_active": checkin_active, "form": form, "services": services,
     })
 
 
