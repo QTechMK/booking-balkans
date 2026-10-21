@@ -41,6 +41,19 @@ class HousekeepingTask(models.Model):
         return f"{self.unit.code} - {self.get_status_display()}"
 
 
+class UnitHousekeepingState(models.Model):
+    """Canonical current housekeeping state for a physical room."""
+
+    unit = models.OneToOneField(Unit, on_delete=models.CASCADE, related_name="housekeeping_state")
+    status = models.CharField(max_length=24, choices=HousekeepingStatus.choices, default=HousekeepingStatus.CLEAN)
+    note = models.TextField(blank=True)
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="housekeeping_state_changes")
+    changed_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.unit.code} - {self.get_status_display()}"
+
+
 class MaintenanceStatus(models.TextChoices):
     OPEN = "open", _("Open")
     IN_PROGRESS = "in_progress", _("In progress")

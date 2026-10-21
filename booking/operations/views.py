@@ -23,6 +23,7 @@ from .models import (
     MaintenanceTicket,
     OnlineBookingSettings,
     TaskPriority,
+    UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
@@ -60,12 +61,20 @@ def housekeeping(request):
                 assigned_to_id=request.POST.get("assigned_to") or None,
                 note=request.POST.get("note", ""),
             )
+            UnitHousekeepingState.objects.update_or_create(
+                unit=unit,
+                defaults={"status": request.POST.get("status", HousekeepingStatus.DIRTY), "note": request.POST.get("note", ""), "changed_by": request.user},
+            )
         elif task and request.POST.get("action") == "status":
             status = request.POST.get("status")
             if status in HousekeepingStatus.values:
                 task.status = status
                 task.inspected_at = timezone.now() if status == HousekeepingStatus.INSPECTION else task.inspected_at
                 task.save(update_fields=["status", "inspected_at", "updated_at"])
+                UnitHousekeepingState.objects.update_or_create(
+                    unit=task.unit,
+                    defaults={"status": status, "note": task.note, "changed_by": request.user},
+                )
         return redirect(f"{reverse('operations:housekeeping')}?property_id={selected.id}")
     tasks_qs = HousekeepingTask.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else HousekeepingTask.objects.none()
     status = request.GET.get("status")
@@ -226,6 +235,11 @@ def room_rack(request):
                 messages.success(request, f"{item.reservation.reference} için check-in tamamlandı.")
             elif item and action == "check_out":
                 item.check_out(actor=request.user)
+                if item.unit_id:
+                    UnitHousekeepingState.objects.update_or_create(
+                        unit=item.unit,
+                        defaults={"status": HousekeepingStatus.DIRTY, "note": "Check-out sonrası temizlik bekliyor.", "changed_by": request.user},
+                    )
                 messages.success(request, f"{item.reservation.reference} için check-out tamamlandı.")
         except ValidationError as exc:
             messages.error(request, str(exc))
@@ -241,8 +255,10 @@ def room_rack(request):
     by_unit = {item.unit_id: item for item in occupied}
     rooms = []
     if selected:
+        states = {state.unit_id: state for state in UnitHousekeepingState.objects.filter(unit__property=selected)}
         for unit in selected.units.select_related("unit_type", "unit_type__room_group").order_by("floor", "code"):
             item = by_unit.get(unit.id)
+            housekeeping_state = states.get(unit.id)
             if unit.status == "maintenance":
                 rack_status = "Bakım"
             elif unit.status == "out_of_service":
@@ -251,6 +267,8 @@ def room_rack(request):
                 rack_status = "Konaklıyor"
             elif item:
                 rack_status = "Giriş bekliyor"
+            elif housekeeping_state and housekeeping_state.status != HousekeepingStatus.CLEAN:
+                rack_status = housekeeping_state.get_status_display()
             else:
                 rack_status = "Müsait"
             rooms.append({"unit": unit, "item": item, "status": rack_status})
