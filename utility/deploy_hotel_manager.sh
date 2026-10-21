@@ -19,19 +19,41 @@ sudo systemctl is-active --quiet "$SERVICE_NAME"
 HEAD="$(git rev-parse --short HEAD)"
 echo "Deployed commit: $HEAD"
 
-static_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$SITE_URL/static/css/hotel-manager.css")"
-if [[ "$static_status" != "200" ]]; then
-    echo "hotel-manager.css beklenen 200 yerine $static_status döndürdü" >&2
-    exit 1
-fi
-
-dashboard_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$SITE_URL/booking/business/dashboard/")"
-case "$dashboard_status" in
-    301|302) ;;
-    *)
-        echo "business dashboard beklenen login yönlendirmesi yerine $dashboard_status döndürdü" >&2
+for asset in \
+    "/static/css/hotel-manager.css" \
+    "/static/tixia/css/style.css"; do
+    asset_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$SITE_URL$asset")"
+    if [[ "$asset_status" != "200" ]]; then
+        echo "$asset beklenen 200 yerine $asset_status döndürdü" >&2
         exit 1
-        ;;
-esac
+    fi
+done
 
-echo "Production smoke test başarılı: static=200, dashboard=$dashboard_status"
+business_routes=(
+    "/booking/business/dashboard/"
+    "/booking/business/reports/"
+    "/booking/business/property-settings/"
+    "/booking/business/hotel-dictionaries/"
+    "/booking/business/room-master/"
+    "/booking/business/room-rack/"
+    "/booking/business/housekeeping/"
+    "/booking/business/maintenance/"
+    "/booking/business/tasks/"
+    "/booking/business/online-settings/"
+    "/booking/business/crm/guests/"
+    "/booking/business/crm/marketing/"
+    "/booking/business/access/"
+)
+
+for route in "${business_routes[@]}"; do
+    route_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$SITE_URL$route")"
+    case "$route_status" in
+        301|302) ;;
+        *)
+            echo "$route beklenen login yönlendirmesi yerine $route_status döndürdü" >&2
+            exit 1
+            ;;
+    esac
+done
+
+echo "Production smoke test başarılı: ${#business_routes[@]} business route, Tixia CSS ve hotel-manager.css doğrulandı"
