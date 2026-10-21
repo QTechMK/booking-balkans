@@ -3,7 +3,7 @@ from django import forms
 from booking.tenancy.models import (
     BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
-from .models import GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyService, TaskGroup, TaskLocation
+from .models import AccessPermission, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, TaskGroup, TaskLocation, UserPropertyAccess
 
 
 class PropertySettingsForm(forms.ModelForm):
@@ -175,3 +175,20 @@ class PropertyServiceForm(forms.ModelForm):
         model = PropertyService
         exclude = ["property", "created_at", "updated_at"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class PropertyRoleForm(forms.ModelForm):
+    class Meta:
+        model = PropertyRole
+        fields = ["name", "department", "permissions", "is_active"]
+
+
+class UserPropertyAccessForm(forms.ModelForm):
+    class Meta:
+        model = UserPropertyAccess
+        fields = ["user", "role", "is_active", "valid_from", "valid_until", "two_factor_required", "last_pin_change"]
+        widgets = {
+            "valid_from": forms.DateInput(attrs={"type": "date"}),
+            "valid_until": forms.DateInput(attrs={"type": "date"}),
+            "last_pin_change": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
