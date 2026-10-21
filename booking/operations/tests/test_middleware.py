@@ -39,3 +39,13 @@ def test_required_property_mfa_allows_configured_user(mfa_access_setup, monkeypa
     response = RequiredPropertyMFAMiddleware(lambda request: HttpResponse("ok"))(request)
     assert response.status_code == 200
     assert response.content == b"ok"
+
+
+@pytest.mark.django_db
+def test_invalid_property_id_does_not_crash(mfa_access_setup, monkeypatch):
+    user, _ = mfa_access_setup
+    monkeypatch.setattr("booking.operations.middleware.is_mfa_enabled", lambda user: True)
+    request = RequestFactory().get("/booking/business/dashboard/?property_id=invalid")
+    request.user = user
+    response = RequiredPropertyMFAMiddleware(lambda request: HttpResponse("ok"))(request)
+    assert response.status_code == 200

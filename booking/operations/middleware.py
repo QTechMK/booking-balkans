@@ -30,6 +30,10 @@ class RequiredPropertyMFAMiddleware:
         if request.user.is_superuser or request.path.startswith("/accounts/"):
             return False
         property_id = request.POST.get("property_id") or request.GET.get("property_id")
+        try:
+            property_id = int(property_id) if property_id else None
+        except (TypeError, ValueError):
+            property_id = None
         accesses = UserPropertyAccess.objects.filter(
             user=request.user,
             is_active=True,
