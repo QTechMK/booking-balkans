@@ -4,7 +4,8 @@
 }
 
 .channel-table {
-  min-width: 760px;
+  min-width: 680px;
+  font-size: .92rem;
 }
 
 .channel-table th,
@@ -14,8 +15,8 @@
 }
 
 .channel-widget-cell {
-  min-width: 250px;
-  max-width: 320px;
+  min-width: 185px;
+  max-width: 235px;
 }
 
 .channel-key {
@@ -26,7 +27,7 @@
 }
 
 .channel-embed {
-  min-width: 220px;
+  min-width: 160px;
   resize: vertical;
 }
 

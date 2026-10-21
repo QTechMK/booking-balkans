@@ -203,3 +203,38 @@ class BusinessInventoryForm(forms.ModelForm):
             "blocked_capacity": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
             "is_closed": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
+
+
+class BusinessBulkDailyRateForm(forms.Form):
+    rate_plan = forms.ModelChoiceField(queryset=RatePlan.objects.none(), label="Rate plan")
+    start_date = forms.DateField(label="Başlangıç", widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+    end_date = forms.DateField(label="Bitiş", widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+    amount = forms.DecimalField(label="Tutar", min_value=0, max_digits=12, decimal_places=2, widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0"}))
+    min_nights = forms.IntegerField(label="Minimum gece", min_value=1, initial=1, widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}))
+    max_nights = forms.IntegerField(label="Maksimum gece", min_value=1, required=False, widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}))
+    is_closed = forms.BooleanField(label="Satışa kapalı", required=False, widget=forms.CheckboxInput(attrs={"class": "form-check-input"}))
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("start_date") and cleaned.get("end_date") and cleaned["end_date"] < cleaned["start_date"]:
+            self.add_error("end_date", "Bitiş tarihi başlangıç tarihinden önce olamaz.")
+        if cleaned.get("max_nights") and cleaned.get("min_nights") and cleaned["max_nights"] < cleaned["min_nights"]:
+            self.add_error("max_nights", "Maksimum gece minimum geceden küçük olamaz.")
+        return cleaned
+
+
+class BusinessBulkInventoryForm(forms.Form):
+    unit_type = forms.ModelChoiceField(queryset=UnitType.objects.none(), label="Ünite tipi")
+    start_date = forms.DateField(label="Başlangıç", widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+    end_date = forms.DateField(label="Bitiş", widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+    total_capacity = forms.IntegerField(label="Toplam kapasite", min_value=0, widget=forms.NumberInput(attrs={"class": "form-control", "min": 0}))
+    blocked_capacity = forms.IntegerField(label="Bloke kapasite", min_value=0, initial=0, widget=forms.NumberInput(attrs={"class": "form-control", "min": 0}))
+    is_closed = forms.BooleanField(label="Satışa kapalı", required=False, widget=forms.CheckboxInput(attrs={"class": "form-check-input"}))
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("start_date") and cleaned.get("end_date") and cleaned["end_date"] < cleaned["start_date"]:
+            self.add_error("end_date", "Bitiş tarihi başlangıç tarihinden önce olamaz.")
+        if cleaned.get("blocked_capacity") is not None and cleaned.get("total_capacity") is not None and cleaned["blocked_capacity"] > cleaned["total_capacity"]:
+            self.add_error("blocked_capacity", "Bloke kapasite toplam kapasiteyi aşamaz.")
+        return cleaned

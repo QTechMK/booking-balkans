@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import ProtectedError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
@@ -30,6 +31,8 @@ from .forms import ReservationChannelForm
 from .forms import BusinessManualReservationForm
 from .forms import BusinessDailyRateForm
 from .forms import BusinessInventoryForm
+from .forms import BusinessBulkDailyRateForm
+from .forms import BusinessBulkInventoryForm
 from .forms import BusinessRatePlanForm
 from .forms import BusinessUnitForm
 from .forms import BusinessUnitTypeForm
@@ -402,21 +405,39 @@ def _selected_business_property(request):
 @login_required
 def business_inventory(request):
     properties, selected_property = _selected_business_property(request)
-    unit_type_form = BusinessUnitTypeForm(prefix="unit_type")
-    unit_form = BusinessUnitForm(prefix="unit")
+    edit_unit_type = selected_property.unit_types.filter(id=request.GET.get("edit_unit_type")).first() if selected_property else None
+    edit_unit = selected_property.units.filter(id=request.GET.get("edit_unit")).first() if selected_property else None
+    unit_type_form = BusinessUnitTypeForm(instance=edit_unit_type, prefix="unit_type")
+    unit_form = BusinessUnitForm(instance=edit_unit, prefix="unit")
     if selected_property:
         unit_form.fields["unit_type"].queryset = selected_property.unit_types.all()
     if request.method == "POST" and selected_property:
         entity = request.POST.get("entity")
+        if entity == "unit_type_delete":
+            obj = selected_property.unit_types.filter(id=request.POST.get("object_id")).first()
+            if obj:
+                try:
+                    obj.delete()
+                except ProtectedError:
+                    messages.error(request, "Bu oda tipi ilişkili kayıtlar nedeniyle silinemedi.")
+            return redirect(f"{reverse('reservations:business_inventory')}?property_id={selected_property.id}")
+        if entity == "unit_delete":
+            obj = selected_property.units.filter(id=request.POST.get("object_id")).first()
+            if obj:
+                try:
+                    obj.delete()
+                except ProtectedError:
+                    messages.error(request, "Bu ünite ilişkili rezervasyonlar nedeniyle silinemedi.")
+            return redirect(f"{reverse('reservations:business_inventory')}?property_id={selected_property.id}")
         if entity == "unit_type":
-            unit_type_form = BusinessUnitTypeForm(request.POST, prefix="unit_type")
+            unit_type_form = BusinessUnitTypeForm(request.POST, instance=edit_unit_type, prefix="unit_type")
             if unit_type_form.is_valid():
                 obj = unit_type_form.save(commit=False)
                 obj.property = selected_property
                 obj.save()
                 return redirect(f"{reverse('reservations:business_inventory')}?property_id={selected_property.id}")
         elif entity == "unit":
-            unit_form = BusinessUnitForm(request.POST, prefix="unit")
+            unit_form = BusinessUnitForm(request.POST, instance=edit_unit, prefix="unit")
             unit_form.fields["unit_type"].queryset = selected_property.unit_types.all()
             if unit_form.is_valid() and unit_form.cleaned_data["unit_type"].property_id == selected_property.id:
                 obj = unit_form.save(commit=False)
@@ -431,11 +452,20 @@ def business_inventory(request):
 @login_required
 def business_rate_plans(request):
     properties, selected_property = _selected_business_property(request)
-    form = BusinessRatePlanForm(prefix="rate")
+    edit_rate_plan = selected_property.rate_plans.filter(id=request.GET.get("edit_rate_plan")).first() if selected_property else None
+    form = BusinessRatePlanForm(instance=edit_rate_plan, prefix="rate")
     if selected_property:
         form.fields["unit_type"].queryset = selected_property.unit_types.all()
     if request.method == "POST" and selected_property:
-        form = BusinessRatePlanForm(request.POST, prefix="rate")
+        if request.POST.get("entity") == "rate_delete":
+            obj = selected_property.rate_plans.filter(id=request.POST.get("object_id")).first()
+            if obj:
+                try:
+                    obj.delete()
+                except ProtectedError:
+                    messages.error(request, "Bu rate plan ilişkili kayıtlar nedeniyle silinemedi.")
+            return redirect(f"{reverse('reservations:business_rate_plans')}?property_id={selected_property.id}")
+        form = BusinessRatePlanForm(request.POST, instance=edit_rate_plan, prefix="rate")
         form.fields["unit_type"].queryset = selected_property.unit_types.all()
         if form.is_valid() and form.cleaned_data["unit_type"].property_id == selected_property.id:
             obj = form.save(commit=False)
@@ -454,9 +484,13 @@ def business_rate_calendar(request):
     selected_rate_plan = rate_plans.filter(id=rate_plan_id).first() if rate_plan_id else rate_plans.first()
     daily_form = BusinessDailyRateForm(prefix="rate")
     inventory_form = BusinessInventoryForm(prefix="inventory")
+    bulk_rate_form = BusinessBulkDailyRateForm(prefix="bulk_rate")
+    bulk_inventory_form = BusinessBulkInventoryForm(prefix="bulk_inventory")
     if selected_property:
         daily_form.fields["rate_plan"].queryset = rate_plans
         inventory_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+        bulk_rate_form.fields["rate_plan"].queryset = rate_plans
+        bulk_inventory_form.fields["unit_type"].queryset = selected_property.unit_types.all()
         if selected_rate_plan:
             daily_form.fields["rate_plan"].initial = selected_rate_plan
         first_unit_type = selected_property.unit_types.order_by("name").first()
@@ -470,6 +504,19 @@ def business_rate_calendar(request):
             if daily_form.is_valid() and daily_form.cleaned_data["rate_plan"].property_id == selected_property.id:
                 daily_form.save()
                 return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={daily_form.cleaned_data['rate_plan'].id}")
+        elif entity == "bulk_rate":
+            bulk_rate_form = BusinessBulkDailyRateForm(request.POST, prefix="bulk_rate")
+            bulk_rate_form.fields["rate_plan"].queryset = rate_plans
+            if bulk_rate_form.is_valid() and bulk_rate_form.cleaned_data["rate_plan"].property_id == selected_property.id:
+                data = bulk_rate_form.cleaned_data
+                current = data["start_date"]
+                while current <= data["end_date"]:
+                    DailyRate.objects.update_or_create(
+                        rate_plan=data["rate_plan"], date=current,
+                        defaults={"amount": data["amount"], "min_nights": data["min_nights"], "max_nights": data["max_nights"], "is_closed": data["is_closed"]},
+                    )
+                    current += timedelta(days=1)
+                return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={data['rate_plan'].id}")
         elif entity == "inventory":
             inventory_form = BusinessInventoryForm(request.POST, prefix="inventory")
             inventory_form.fields["unit_type"].queryset = selected_property.unit_types.all()
@@ -478,9 +525,22 @@ def business_rate_calendar(request):
                 obj.property = selected_property
                 obj.save()
                 return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={rate_plan_id or ''}")
+        elif entity == "bulk_inventory":
+            bulk_inventory_form = BusinessBulkInventoryForm(request.POST, prefix="bulk_inventory")
+            bulk_inventory_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+            if bulk_inventory_form.is_valid() and bulk_inventory_form.cleaned_data["unit_type"].property_id == selected_property.id:
+                data = bulk_inventory_form.cleaned_data
+                current = data["start_date"]
+                while current <= data["end_date"]:
+                    Inventory.objects.update_or_create(
+                        property=selected_property, unit_type=data["unit_type"], date=current,
+                        defaults={"total_capacity": data["total_capacity"], "blocked_capacity": data["blocked_capacity"], "is_closed": data["is_closed"]},
+                    )
+                    current += timedelta(days=1)
+                return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={rate_plan_id or ''}")
     daily_rates = selected_rate_plan.daily_rates.order_by("-date")[:31] if selected_rate_plan else DailyRate.objects.none()
     inventory_days = selected_property.inventory_days.select_related("unit_type").order_by("-date")[:31] if selected_property else Inventory.objects.none()
-    return render(request, "booking/business/rate_calendar.html", {"properties": properties, "selected_property": selected_property, "rate_plans": rate_plans, "selected_rate_plan": selected_rate_plan, "daily_form": daily_form, "inventory_form": inventory_form, "daily_rates": daily_rates, "inventory_days": inventory_days})
+    return render(request, "booking/business/rate_calendar.html", {"properties": properties, "selected_property": selected_property, "rate_plans": rate_plans, "selected_rate_plan": selected_rate_plan, "daily_form": daily_form, "inventory_form": inventory_form, "bulk_rate_form": bulk_rate_form, "bulk_inventory_form": bulk_inventory_form, "daily_rates": daily_rates, "inventory_days": inventory_days})
 
 
 @login_required
@@ -555,6 +615,11 @@ def business_reservation_detail(request, pk):
         .prefetch_related("items__unit_type", "items__rate_plan", "items__unit"),
         pk=pk,
     )
+    return render(
+        request,
+        "booking/business/reservations/detail.html",
+        {"reservation": reservation},
+    )
 
 
 @login_required
@@ -573,18 +638,16 @@ def business_reservation_calendar(request):
         if selected_property
         else Reservation.objects.none()
     )
+    calendar_days = [start + timedelta(days=index) for index in range((end - start).days + 1)]
+    calendar_rows = [
+        {"reservation": reservation, "occupied_dates": [reservation.check_in + timedelta(days=index) for index in range((reservation.check_out - reservation.check_in).days)]}
+        for reservation in reservations
+    ]
     return render(
         request,
         "booking/business/reservations/calendar.html",
-        {"properties": properties, "selected_property": selected_property, "reservations": reservations, "start": start, "end": end},
+        {"properties": properties, "selected_property": selected_property, "reservations": reservations, "calendar_days": calendar_days, "calendar_rows": calendar_rows, "start": start, "end": end},
     )
-    return render(
-        request,
-        "booking/business/reservations/detail.html",
-        {"reservation": reservation},
-    )
-
-
 @login_required
 def business_channel_list(request):
     properties = _business_properties(request.user).order_by("name")
@@ -593,8 +656,17 @@ def business_channel_list(request):
     if not selected_property:
         selected_property = properties.first()
 
-    form = ReservationChannelForm(request.POST or None)
-    if request.method == "POST" and selected_property and form.is_valid():
+    edit_channel = selected_property.reservation_channels.filter(id=request.GET.get("edit_channel")).first() if selected_property else None
+    form = ReservationChannelForm(instance=edit_channel, data=request.POST or None)
+    if request.method == "POST" and selected_property:
+        if request.POST.get("entity") == "channel_delete":
+            channel = selected_property.reservation_channels.filter(id=request.POST.get("object_id")).first()
+            if channel:
+                channel.delete()
+            return redirect(f"{reverse('reservations:business_channel_list')}?property_id={selected_property.id}")
+        if not form.is_valid():
+            channels = selected_property.reservation_channels.all()
+            return render(request, "booking/business/reservations/channels.html", {"properties": properties, "selected_property": selected_property, "channels": channels, "form": form})
         channel = form.save(commit=False)
         channel.property = selected_property
         channel.save()

@@ -1,0 +1,25 @@
+.reservation-tape {
+  min-width: 760px;
+}
+
+.reservation-tape th,
+.reservation-tape td {
+  min-width: 58px;
+}
+
+.reservation-tape .reservation-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 190px;
+  background: var(--bs-body-bg);
+}
+
+.reservation-cell.occupied {
+  background: rgba(79, 70, 229, .14);
+}
+
+.reservation-cell {
+  height: 3.4rem;
+  text-align: center;
+}
