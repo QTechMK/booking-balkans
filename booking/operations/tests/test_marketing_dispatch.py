@@ -75,3 +75,12 @@ def test_dispatch_marketing_sends_sms_to_configured_webhook(email_campaign, sett
     email_campaign.refresh_from_db()
     assert email_campaign.status == MarketingDelivery.Status.SENT
     assert email_campaign.provider_message_id == "sms-1"
+
+
+@pytest.mark.django_db
+def test_dispatch_marketing_records_email_failure(email_campaign, monkeypatch):
+    monkeypatch.setattr("booking.operations.management.commands.dispatch_marketing.send_mail", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("SMTP down")))
+    call_command("dispatch_marketing")
+    email_campaign.refresh_from_db()
+    assert email_campaign.status == MarketingDelivery.Status.FAILED
+    assert "SMTP down" in email_campaign.error

@@ -57,7 +57,10 @@ class Command(BaseCommand):
     @staticmethod
     def _dispatch(delivery, template):
         if delivery.channel == MessageTemplate.Channel.EMAIL:
-            send_mail(template.subject or delivery.campaign.name, template.body, None, [delivery.recipient], fail_silently=False)
+            try:
+                send_mail(template.subject or delivery.campaign.name, template.body, None, [delivery.recipient], fail_silently=False)
+            except Exception as exc:
+                raise RuntimeError(f"email provider error: {exc}") from exc
             return ""
         config = {
             MessageTemplate.Channel.SMS: (settings.MARKETING_SMS_WEBHOOK_URL, settings.MARKETING_SMS_WEBHOOK_TOKEN),
@@ -68,14 +71,17 @@ class Command(BaseCommand):
         headers = {"Content-Type": "application/json"}
         if config[1]:
             headers["Authorization"] = f"Bearer {config[1]}"
-        response = requests.post(config[0], headers=headers, json={
-            "channel": delivery.channel,
-            "to": delivery.recipient,
-            "body": template.body,
-            "subject": template.subject,
-            "campaign_id": delivery.campaign_id,
-            "delivery_id": delivery.id,
-        }, timeout=15)
+        try:
+            response = requests.post(config[0], headers=headers, json={
+                "channel": delivery.channel,
+                "to": delivery.recipient,
+                "body": template.body,
+                "subject": template.subject,
+                "campaign_id": delivery.campaign_id,
+                "delivery_id": delivery.id,
+            }, timeout=15)
+        except requests.RequestException as exc:
+            raise RuntimeError(f"provider connection error: {exc}") from exc
         if not response.ok:
             raise RuntimeError(f"provider returned HTTP {response.status_code}")
         try:
