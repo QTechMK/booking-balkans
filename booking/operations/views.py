@@ -6,7 +6,7 @@ from django.db.models import BooleanField
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 
 from booking.reservations.models import Guest, ReservationItem, ReservationStatus, StayStatus
 from booking.reservations.views import _business_properties
@@ -95,18 +95,26 @@ def maintenance(request):
         action = request.POST.get("action")
         ticket = MaintenanceTicket.objects.filter(property=selected, id=request.POST.get("ticket_id")).first()
         if action == "create" and request.POST.get("title"):
+            sla_due_at = parse_datetime(request.POST.get("sla_due_at", ""))
+            if sla_due_at and timezone.is_naive(sla_due_at):
+                sla_due_at = timezone.make_aware(sla_due_at)
             MaintenanceTicket.objects.create(
                 property=selected,
                 unit=selected.units.filter(id=request.POST.get("unit_id")).first(),
                 title=request.POST["title"], description=request.POST.get("description", ""),
                 priority=request.POST.get("priority", TaskPriority.NORMAL),
                 assigned_to_id=request.POST.get("assigned_to") or None, created_by=request.user,
+                sla_due_at=sla_due_at,
             )
         elif ticket and action == "status" and request.POST.get("status") in MaintenanceStatus.values:
             ticket.status = request.POST["status"]
+            ticket.assigned_to_id = request.POST.get("assigned_to") or None
+            ticket.resolution_note = request.POST.get("resolution_note", "").strip()
             if ticket.status == MaintenanceStatus.RESOLVED:
                 ticket.resolved_at = timezone.now()
-            ticket.save(update_fields=["status", "resolved_at", "updated_at"])
+            else:
+                ticket.resolved_at = None
+            ticket.save(update_fields=["status", "assigned_to", "resolution_note", "resolved_at", "updated_at"])
         return redirect(f"{reverse('operations:maintenance')}?property_id={selected.id}")
     tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else MaintenanceTicket.objects.none()
     return render(request, "booking/operations/maintenance.html", {
