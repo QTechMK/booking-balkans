@@ -7,6 +7,10 @@ from booking.tenancy.models import DailyRate
 from booking.tenancy.models import Inventory
 from booking.tenancy.models import RatePlan
 from booking.tenancy.models import Unit
+from booking.tenancy.models import BoardType
+from booking.tenancy.models import RateType
+from booking.tenancy.models import RoomAmenity
+from booking.tenancy.models import RoomGroup
 from booking.tenancy.models import UnitType
 from booking.tenancy.models import ChannelRateRule
 from booking.tenancy.models import PriceParityObservation
@@ -162,21 +166,21 @@ class BusinessManualReservationForm(forms.Form):
 class BusinessUnitTypeForm(forms.ModelForm):
     class Meta:
         model = UnitType
-        fields = ["name", "code", "kind", "inventory_mode", "capacity_per_unit", "max_adults", "max_children", "is_active"]
+        fields = ["name", "code", "kind", "inventory_mode", "capacity_per_unit", "max_adults", "max_children", "max_infants", "child_age_from", "child_age_to", "infant_age_to", "bed_count", "room_group", "amenities", "description", "is_active"]
         widgets = {field: forms.Select(attrs={"class": "form-select"}) for field in ["kind", "inventory_mode"]}
 
 
 class BusinessUnitForm(forms.ModelForm):
     class Meta:
         model = Unit
-        fields = ["unit_type", "code", "name", "status", "floor", "is_active"]
+        fields = ["unit_type", "code", "name", "status", "floor", "bed_type", "room_view", "room_location", "description", "phone", "owner_name", "is_locked", "out_of_service_from", "out_of_service_to", "is_active"]
         widgets = {"unit_type": forms.Select(attrs={"class": "form-select"}), "status": forms.Select(attrs={"class": "form-select"})}
 
 
 class BusinessRatePlanForm(forms.ModelForm):
     class Meta:
         model = RatePlan
-        fields = ["unit_type", "name", "code", "meal_plan", "cancellation_policy", "is_refundable", "max_adults", "max_children", "currency", "is_active"]
+        fields = ["unit_type", "board_type", "rate_type", "name", "code", "meal_plan", "cancellation_policy", "is_refundable", "deposit_percent", "max_adults", "max_children", "currency", "is_active"]
         widgets = {field: forms.Select(attrs={"class": "form-select"}) for field in ["unit_type", "meal_plan"]}
 
 

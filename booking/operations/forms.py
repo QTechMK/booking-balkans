@@ -1,7 +1,7 @@
 from django import forms
 
 from booking.tenancy.models import (
-    BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomView,
+    BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView,
 )
 
 
@@ -50,3 +50,15 @@ class RateTypeForm(DictionaryForm):
             "is_refundable", "prepayment_percent", "price_factor", "cancellation_until_hours",
             "cancellation_penalty_days", "min_nights", "max_nights", "show_online",
         ]
+
+
+class RoomPhotoForm(forms.ModelForm):
+    class Meta:
+        model = RoomPhoto
+        fields = ["unit_type", "unit", "image_url", "alt_text", "is_primary", "sort_order"]
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("unit_type") and not cleaned.get("unit"):
+            raise forms.ValidationError("Fotoğraf bir oda tipine veya fiziksel odaya bağlanmalıdır.")
+        return cleaned

@@ -160,6 +160,11 @@ class RoomLocation(PropertyDictionaryBase):
         constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_room_location_code_per_property")]
 
 
+class RoomAmenity(PropertyDictionaryBase):
+    class Meta(PropertyDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_room_amenity_code_per_property")]
+
+
 class BoardType(PropertyDictionaryBase):
     extra_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     child_extra_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -249,7 +254,12 @@ class UnitType(models.Model):
     max_adults = models.PositiveIntegerField(_("maximum adults"), default=2)
     max_children = models.PositiveIntegerField(_("maximum children"), default=0)
     bed_count = models.PositiveIntegerField(_("bed count"), default=1)
+    max_infants = models.PositiveIntegerField(default=0)
+    child_age_from = models.PositiveSmallIntegerField(null=True, blank=True)
+    child_age_to = models.PositiveSmallIntegerField(null=True, blank=True)
+    infant_age_to = models.PositiveSmallIntegerField(null=True, blank=True)
     description = models.TextField(blank=True)
+    amenities = models.ManyToManyField("RoomAmenity", blank=True, related_name="unit_types")
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -267,8 +277,48 @@ class UnitType(models.Model):
             ),
         ]
 
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+        if self.room_group_id and self.property_id and self.room_group.property_id != self.property_id:
+            raise ValidationError({"room_group": _("Room group must belong to the same property.")})
+        if self.child_age_from is not None and self.child_age_to is not None and self.child_age_to < self.child_age_from:
+            raise ValidationError({"child_age_to": _("Child age end cannot be below child age start.")})
+        if self.infant_age_to is not None and self.child_age_from is not None and self.infant_age_to > self.child_age_from:
+            raise ValidationError({"infant_age_to": _("Infant age end cannot exceed child age start.")})
+
     def __str__(self) -> str:
         return f"{self.property.name} - {self.name}"
+
+
+class RoomPhoto(models.Model):
+    """A property-scoped photo reference for a room type or physical room."""
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="room_photos")
+    unit_type = models.ForeignKey(UnitType, on_delete=models.CASCADE, null=True, blank=True, related_name="photos")
+    unit = models.ForeignKey("Unit", on_delete=models.CASCADE, null=True, blank=True, related_name="photos")
+    image_url = models.URLField(max_length=500)
+    alt_text = models.CharField(max_length=160, blank=True)
+    is_primary = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(unit_type__isnull=False) | models.Q(unit__isnull=False),
+                name="room_photo_has_target",
+            ),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+        if self.unit_type_id and self.unit_type.property_id != self.property_id:
+            raise ValidationError({"unit_type": _("Room type must belong to the same property.")})
+        if self.unit_id and self.unit.property_id != self.property_id:
+            raise ValidationError({"unit": _("Room must belong to the same property.")})
+        if self.unit_type_id and self.unit_id and self.unit.unit_type_id != self.unit_type_id:
+            raise ValidationError({"unit": _("Room must belong to the selected room type.")})
 
 
 class Unit(models.Model):

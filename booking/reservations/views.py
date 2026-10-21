@@ -22,6 +22,12 @@ from booking.tenancy.models import DailyRate
 from booking.tenancy.models import Inventory
 from booking.tenancy.models import Unit
 from booking.tenancy.models import UnitType
+from booking.tenancy.models import BedType
+from booking.tenancy.models import RoomAmenity
+from booking.tenancy.models import RoomLocation
+from booking.tenancy.models import RoomView
+from booking.tenancy.models import BoardType
+from booking.tenancy.models import RateType
 from booking.tenancy.services.availability import get_availability
 
 from .forms import BookingSearchForm
@@ -415,6 +421,11 @@ def business_inventory(request):
     unit_form = BusinessUnitForm(instance=edit_unit, prefix="unit")
     if selected_property:
         unit_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+        unit_type_form.fields["room_group"].queryset = selected_property.roomgroup_set.filter(is_active=True)
+        unit_type_form.fields["amenities"].queryset = RoomAmenity.objects.filter(property=selected_property, is_active=True)
+        unit_form.fields["bed_type"].queryset = BedType.objects.filter(property=selected_property, is_active=True)
+        unit_form.fields["room_view"].queryset = RoomView.objects.filter(property=selected_property, is_active=True)
+        unit_form.fields["room_location"].queryset = RoomLocation.objects.filter(property=selected_property, is_active=True)
     if request.method == "POST" and selected_property:
         entity = request.POST.get("entity")
         if entity == "unit_type_delete":
@@ -439,6 +450,7 @@ def business_inventory(request):
                 obj = unit_type_form.save(commit=False)
                 obj.property = selected_property
                 obj.save()
+                unit_type_form.save_m2m()
                 return redirect(f"{reverse('reservations:business_inventory')}?property_id={selected_property.id}")
         elif entity == "unit":
             unit_form = BusinessUnitForm(request.POST, instance=edit_unit, prefix="unit")
@@ -460,6 +472,8 @@ def business_rate_plans(request):
     form = BusinessRatePlanForm(instance=edit_rate_plan, prefix="rate")
     if selected_property:
         form.fields["unit_type"].queryset = selected_property.unit_types.all()
+        form.fields["board_type"].queryset = BoardType.objects.filter(property=selected_property, is_active=True)
+        form.fields["rate_type"].queryset = RateType.objects.filter(property=selected_property, is_active=True)
     if request.method == "POST" and selected_property:
         if request.POST.get("entity") == "rate_delete":
             obj = selected_property.rate_plans.filter(id=request.POST.get("object_id")).first()
@@ -471,6 +485,8 @@ def business_rate_plans(request):
             return redirect(f"{reverse('reservations:business_rate_plans')}?property_id={selected_property.id}")
         form = BusinessRatePlanForm(request.POST, instance=edit_rate_plan, prefix="rate")
         form.fields["unit_type"].queryset = selected_property.unit_types.all()
+        form.fields["board_type"].queryset = BoardType.objects.filter(property=selected_property, is_active=True)
+        form.fields["rate_type"].queryset = RateType.objects.filter(property=selected_property, is_active=True)
         if form.is_valid() and form.cleaned_data["unit_type"].property_id == selected_property.id:
             obj = form.save(commit=False)
             obj.property = selected_property

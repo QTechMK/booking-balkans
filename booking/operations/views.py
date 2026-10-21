@@ -10,7 +10,7 @@ from booking.reservations.models import Guest
 from booking.reservations.views import _business_properties
 from booking.tenancy.models import (
     BedType, BoardType, Membership, Property, PropertySettings, RateType,
-    RoomGroup, RoomLocation, RoomView, Unit,
+    RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit,
 )
 
 from .models import (
@@ -24,7 +24,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
-    RoomGroupForm, RoomLocationForm, RoomViewForm,
+    RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm,
 )
 
 
@@ -184,6 +184,7 @@ def hotel_dictionaries(request):
     form_map = {
         "room_group": (RoomGroup, RoomGroupForm), "bed_type": (BedType, BedTypeForm),
         "room_view": (RoomView, RoomViewForm), "room_location": (RoomLocation, RoomLocationForm),
+        "room_photo": (RoomPhoto, RoomPhotoForm),
         "board_type": (BoardType, BoardTypeForm), "rate_type": (RateType, RateTypeForm),
     }
     active = request.POST.get("entity") or request.GET.get("entity", "board_type")
@@ -191,6 +192,9 @@ def hotel_dictionaries(request):
         active = "board_type"
     model, form_class = form_map[active]
     form = form_class(request.POST or None)
+    if selected and active == "room_photo":
+        form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
+        form.fields["unit"].queryset = selected.units.filter(is_active=True)
     if request.method == "POST" and selected and form.is_valid():
         obj = form.save(commit=False)
         obj.property = selected
@@ -201,5 +205,5 @@ def hotel_dictionaries(request):
     return render(request, "booking/operations/hotel_dictionaries.html", {
         "properties": properties, "selected_property": selected, "active_entity": active,
         "form": form, "lists": lists, "selected_items": lists[active],
-        "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "board_type": "Board Type", "rate_type": "Rate Type"},
+        "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "room_photo": "Oda fotoğrafı", "board_type": "Board Type", "rate_type": "Rate Type"},
     })

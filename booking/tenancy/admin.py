@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import Bed
-from .models import BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomView
+from .models import BedType, BoardType, PropertySettings, RateType, RoomAmenity, RoomGroup, RoomLocation, RoomPhoto, RoomView
 from .models import ChannelRateRule
 from .models import DailyRate
 from .models import Inventory
@@ -46,8 +46,16 @@ class PropertyDictionaryAdmin(admin.ModelAdmin):
     autocomplete_fields = ["property"]
 
 
-for _model in [RoomGroup, BedType, RoomView, RoomLocation, BoardType, RateType]:
+for _model in [RoomGroup, BedType, RoomView, RoomLocation, RoomAmenity, BoardType, RateType]:
     admin.site.register(_model, PropertyDictionaryAdmin)
+
+
+@admin.register(RoomPhoto)
+class RoomPhotoAdmin(admin.ModelAdmin):
+    list_display = ["property", "unit_type", "unit", "is_primary", "sort_order"]
+    list_filter = ["is_primary", "property"]
+    search_fields = ["image_url", "alt_text", "property__name"]
+    autocomplete_fields = ["property", "unit_type", "unit"]
 
 
 @admin.register(Membership)
@@ -71,6 +79,7 @@ class UnitTypeAdmin(admin.ModelAdmin):
     list_filter = ["kind", "inventory_mode", "is_active"]
     search_fields = ["name", "code", "property__name", "property__organization__name"]
     autocomplete_fields = ["property", "room_group"]
+    filter_horizontal = ["amenities"]
     prepopulated_fields = {"code": ("name",)}
 
 
