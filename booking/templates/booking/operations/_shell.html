@@ -1,15 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'booking/admin_base.html' %}
 {% block content %}
-{% include 'partials/navbar.html' %}
-<main class="py-4">
-  <div class="container-fluid px-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-      <div><h1 class="h3 mb-1">{{ title }}</h1><p class="text-body-secondary mb-0">Hotel operasyon yönetimi</p></div>
-      <form method="get" class="d-flex gap-2"><select class="form-select" name="property_id" onchange="this.form.submit()">{% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select></form>
-    </div>
-    <div class="card border shadow-sm mb-3"><div class="card-body py-2"><div class="d-flex flex-wrap gap-2 align-items-center"><span class="text-primary fw-semibold">⋮</span><span class="border-start ps-3">Yeni kayıt</span><span class="border-start ps-3">Düzenle</span><span class="border-start ps-3">Yazdır</span><span class="border-start ps-3">Yenile</span></div></div></div>
-    {% block operations_content %}{% endblock %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><h1 class="h3 mb-1">{{ title }}</h1><p class="text-muted mb-0">Otel operasyon yönetimi</p></div>
+    <form method="get" class="hotel-toolbar"><select class="form-select" name="property_id" onchange="this.submit()">{% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select></form>
   </div>
-</main>
-{% include 'partials/footer.html' %}
+  <div class="card mb-4"><div class="card-body py-3"><div class="hotel-toolbar"><a class="btn btn-primary btn-sm" href="{% url 'operations:room_rack' %}"><i class="fa fa-bed me-1"></i> Room Rack</a><a class="btn btn-outline-primary btn-sm" href="{% url 'operations:housekeeping' %}">Housekeeping</a><a class="btn btn-outline-primary btn-sm" href="{% url 'operations:tasks' %}">Görevler</a><a class="btn btn-outline-secondary btn-sm" href="javascript:location.reload()"><i class="fa fa-refresh me-1"></i> Yenile</a></div></div></div>
+  {% block operations_content %}{% endblock %}
 {% endblock content %}

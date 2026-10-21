@@ -1,7 +1,7 @@
 from django import forms
 
 from booking.tenancy.models import (
-    BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView,
+    BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
 from .models import GuestProfileExtension, LoyaltyTier, OperationalTask, TaskGroup, TaskLocation
 
@@ -98,3 +98,17 @@ class LoyaltyTierForm(forms.ModelForm):
     class Meta:
         model = LoyaltyTier
         fields = ["code", "name", "minimum_points", "discount_percent", "is_active"]
+
+
+class UnitTypeForm(forms.ModelForm):
+    class Meta:
+        model = UnitType
+        exclude = ["property", "created_at", "updated_at"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class UnitForm(forms.ModelForm):
+    class Meta:
+        model = Unit
+        exclude = ["property", "created_at", "updated_at"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}

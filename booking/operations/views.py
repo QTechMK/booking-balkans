@@ -13,7 +13,7 @@ from booking.reservations.models import Guest, ReservationItem, ReservationStatu
 from booking.reservations.views import _business_properties
 from booking.tenancy.models import (
     BedType, BoardType, Membership, Property, PropertySettings, RateType,
-    RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit,
+    RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
 
 from .models import (
@@ -33,7 +33,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, LoyaltyTierForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm,
+    GuestProfileForm, LoyaltyTierForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm,
 )
 
 
@@ -87,6 +87,7 @@ def housekeeping(request):
     if status in HousekeepingStatus.values:
         tasks_qs = tasks_qs.filter(status=status)
     return render(request, "booking/operations/housekeeping.html", {
+        "title": "Housekeeping",
         "properties": properties, "selected_property": selected, "tasks": tasks_qs,
         "units": selected.units.select_related("unit_type") if selected else Unit.objects.none(),
         "users": _users_for_property(selected), "status_choices": HousekeepingStatus.choices,
@@ -124,6 +125,7 @@ def maintenance(request):
         return redirect(f"{reverse('operations:maintenance')}?property_id={selected.id}")
     tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else MaintenanceTicket.objects.none()
     return render(request, "booking/operations/maintenance.html", {
+        "title": "Teknik Servis",
         "properties": properties, "selected_property": selected, "tickets": tickets,
         "units": selected.units.all() if selected else Unit.objects.none(), "users": _users_for_property(selected),
         "status_choices": MaintenanceStatus.choices, "priority_choices": TaskPriority.choices,
@@ -162,6 +164,7 @@ def tasks(request):
     if selected: _task_form_querysets(form, selected)
     tasks_qs = OperationalTask.objects.filter(property=selected).select_related("group", "location", "unit", "assigned_to") if selected else OperationalTask.objects.none()
     return render(request, "booking/operations/tasks.html", {
+        "title": "Görev Yönetimi",
         "properties": properties, "selected_property": selected, "tasks": tasks_qs,
         "form": form, "task_groups": TaskGroup.objects.filter(property=selected) if selected else TaskGroup.objects.none(),
         "task_locations": TaskLocation.objects.filter(property=selected) if selected else TaskLocation.objects.none(),
@@ -192,6 +195,7 @@ def online_settings(request):
         messages.success(request, "Online booking ayarları kaydedildi.")
         return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
     return render(request, "booking/operations/online_settings.html", {
+        "title": "Online Booking Ayarları",
         "properties": properties, "selected_property": selected, "settings": settings_obj,
     })
 
@@ -221,6 +225,7 @@ def crm_guests(request):
             messages.success(request, "Sadakat hesabı kaydedildi.")
         return redirect(f"{reverse('operations:crm_guests')}?property_id={selected.id}&q={q}&guest_id={selected_guest.id if selected_guest else ''}")
     return render(request, "booking/operations/crm_guests.html", {
+        "title": "Misafir CRM",
         "properties": properties, "selected_property": selected, "guests": guests, "query": q,
         "selected_guest": selected_guest, "profile_form": profile_form, "tier_form": tier_form,
         "tiers": selected.loyalty_tiers.filter(is_active=True) if selected else LoyaltyTier.objects.none(),
@@ -240,6 +245,7 @@ def access_control(request):
         property=selected, is_active=True,
     ).select_related("user") if selected else Membership.objects.none()
     return render(request, "booking/operations/access_control.html", {
+        "title": "Kullanıcı ve Yetki",
         "properties": properties, "selected_property": selected,
         "memberships": list(memberships) + list(property_memberships),
         "roles": selected.access_roles.prefetch_related("permissions") if selected else PropertyRole.objects.none(),
@@ -260,6 +266,7 @@ def property_settings(request):
         messages.success(request, "Otel ayarları kaydedildi.")
         return redirect(f"{reverse('operations:property_settings')}?property_id={selected.id}")
     return render(request, "booking/operations/property_settings.html", {
+        "title": "Property Settings",
         "properties": properties, "selected_property": selected, "form": form,
     })
 
@@ -289,9 +296,47 @@ def hotel_dictionaries(request):
         return redirect(f"{reverse('operations:hotel_dictionaries')}?property_id={selected.id}&entity={active}")
     lists = {key: model.objects.filter(property=selected) if selected else model.objects.none() for key, (model, _) in form_map.items()}
     return render(request, "booking/operations/hotel_dictionaries.html", {
+        "title": "Hotel Dictionaries",
         "properties": properties, "selected_property": selected, "active_entity": active,
         "form": form, "lists": lists, "selected_items": lists[active],
         "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "room_photo": "Oda fotoğrafı", "board_type": "Board Type", "rate_type": "Rate Type"},
+    })
+
+
+@login_required
+def room_master(request):
+    properties, selected = _selected_property(request)
+    entity = request.POST.get("entity") or request.GET.get("entity", "unit_type")
+    if entity not in {"unit_type", "unit"}:
+        entity = "unit_type"
+    form = UnitTypeForm(request.POST or None) if entity == "unit_type" else UnitForm(request.POST or None)
+    if entity == "unit_type":
+        form.fields["room_group"].queryset = RoomGroup.objects.filter(property=selected, is_active=True) if selected else RoomGroup.objects.none()
+        form.fields["amenities"].queryset = selected.roomamenity_set.filter(is_active=True) if selected else form.fields["amenities"].queryset.none()
+    else:
+        form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True) if selected else UnitType.objects.none()
+        form.fields["bed_type"].queryset = BedType.objects.filter(property=selected, is_active=True) if selected else BedType.objects.none()
+        form.fields["room_view"].queryset = RoomView.objects.filter(property=selected, is_active=True) if selected else RoomView.objects.none()
+        form.fields["room_location"].queryset = RoomLocation.objects.filter(property=selected, is_active=True) if selected else RoomLocation.objects.none()
+    if request.method == "POST" and selected:
+        action = request.POST.get("action", "save")
+        if action == "delete":
+            if entity == "unit_type":
+                UnitType.objects.filter(property=selected, id=request.POST.get("item_id")).delete()
+            else:
+                Unit.objects.filter(property=selected, id=request.POST.get("item_id")).delete()
+            return redirect(f"{reverse('operations:room_master')}?property_id={selected.id}&entity={entity}")
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.property = selected
+            obj.save()
+            form.save_m2m()
+            return redirect(f"{reverse('operations:room_master')}?property_id={selected.id}&entity={entity}")
+    return render(request, "booking/operations/room_master.html", {
+        "title": "Room Master", "properties": properties, "selected_property": selected,
+        "entity": entity, "form": form,
+        "unit_types": selected.unit_types.select_related("room_group") if selected else UnitType.objects.none(),
+        "units": selected.units.select_related("unit_type", "bed_type", "room_view", "room_location") if selected else Unit.objects.none(),
     })
 
 
@@ -314,6 +359,15 @@ def room_rack(request):
                     UnitHousekeepingState.objects.update_or_create(
                         unit=item.unit,
                         defaults={"status": HousekeepingStatus.DIRTY, "note": "Check-out sonrası temizlik bekliyor.", "changed_by": request.user},
+                    )
+                    HousekeepingTask.objects.get_or_create(
+                        property=selected,
+                        unit=item.unit,
+                        status=HousekeepingStatus.DIRTY,
+                        defaults={
+                            "priority": TaskPriority.NORMAL,
+                            "note": "Otomatik check-out temizliği",
+                        },
                     )
                 messages.success(request, f"{item.reservation.reference} için check-out tamamlandı.")
         except ValidationError as exc:
@@ -353,6 +407,7 @@ def room_rack(request):
         reservation__check_in__lte=selected_date, reservation__check_out__gt=selected_date,
     ).select_related("reservation", "reservation__guest", "unit_type") if selected else ReservationItem.objects.none()
     return render(request, "booking/operations/room_rack.html", {
+        "title": "Room Rack",
         "properties": properties, "selected_property": selected, "rack_date": selected_date,
         "rooms": rooms, "unassigned": unassigned,
     })

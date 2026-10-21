@@ -1,0 +1,15 @@
+/* Booking Balkans admin layer. Tixia assets remain isolated under /static/tixia/. */
+body { background: #f5f6fa; }
+.content-body { min-height: calc(100vh - 150px); }
+.content-body .container-fluid { max-width: 1920px; }
+.dashboard_bar { font-weight: 700; color: #2130b8; }
+.brand-logo { display: flex; align-items: center; gap: 8px; padding-left: 18px; }
+.brand-logo .logo-abbr { width: 36px; height: 36px; object-fit: contain; }
+.brand-title { color: #2130b8; font-weight: 700; font-size: 18px; white-space: nowrap; }
+.hotel-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.hotel-toolbar .btn { min-height: 38px; }
+.table thead th { white-space: nowrap; }
+.table td, .table th { vertical-align: middle; }
+.status-pill { min-width: 90px; display: inline-block; text-align: center; }
+.form-label { font-weight: 600; color: #4d5360; }
+@media (max-width: 991px) { .header .dashboard_bar { font-size: 18px; } .brand-title { display: none; } }
