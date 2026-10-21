@@ -23,7 +23,7 @@ from .models import (
     MaintenanceStatus,
     MaintenanceTicket,
     OnlineBookingSettings,
-    GuestLoyaltyAccount, GuestProfileExtension, LoyaltyTier, OperationalTask,
+    GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MessageTemplate, OperationalTask,
     PropertyRole,
     TaskPriority,
     TaskGroup,
@@ -33,7 +33,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, LoyaltyTierForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm,
+    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm,
 )
 
 
@@ -223,6 +223,22 @@ def crm_guests(request):
             tier = selected.loyalty_tiers.filter(id=request.POST.get("tier_id"), is_active=True).first()
             GuestLoyaltyAccount.objects.update_or_create(guest=selected_guest, defaults={"property": selected, "tier": tier, "membership_number": request.POST["membership_number"], "points_balance": request.POST.get("points_balance") or 0})
             messages.success(request, "Sadakat hesabı kaydedildi.")
+        elif action == "loyalty_tx" and selected_guest:
+            account = GuestLoyaltyAccount.objects.filter(guest=selected_guest, property=selected).first()
+            try:
+                amount = abs(int(request.POST.get("points") or 0))
+            except ValueError:
+                amount = 0
+            kind = request.POST.get("kind")
+            if account and amount and kind in {"earn", "redeem", "adjust"}:
+                delta = amount if kind == "earn" else -amount if kind == "redeem" else int(request.POST.get("signed_points") or 0)
+                if delta < 0 and account.points_balance + delta < 0:
+                    messages.error(request, "Puan bakiyesi eksiye düşemez.")
+                else:
+                    LoyaltyTransaction.objects.create(account=account, kind=kind, points=delta, note=request.POST.get("note", ""), created_by=request.user)
+                    account.points_balance += delta
+                    account.save(update_fields=["points_balance", "updated_at"])
+                    messages.success(request, "Sadakat puan hareketi kaydedildi.")
         return redirect(f"{reverse('operations:crm_guests')}?property_id={selected.id}&q={q}&guest_id={selected_guest.id if selected_guest else ''}")
     return render(request, "booking/operations/crm_guests.html", {
         "title": "Misafir CRM",
@@ -230,6 +246,37 @@ def crm_guests(request):
         "selected_guest": selected_guest, "profile_form": profile_form, "tier_form": tier_form,
         "tiers": selected.loyalty_tiers.filter(is_active=True) if selected else LoyaltyTier.objects.none(),
         "loyalty": getattr(selected_guest, "loyalty_account", None) if selected_guest else None,
+    })
+
+
+@login_required
+def crm_marketing(request):
+    properties, selected = _selected_property(request)
+    entity = request.POST.get("entity") or request.GET.get("entity", "segment")
+    forms = {
+        "segment": GuestSegmentForm(request.POST or None),
+        "template": MessageTemplateForm(request.POST or None),
+        "campaign": MarketingCampaignForm(request.POST or None),
+    }
+    if entity not in forms:
+        entity = "segment"
+    form = forms[entity]
+    if selected and entity == "campaign":
+        form.fields["segment"].queryset = selected.guest_segments.filter(is_active=True)
+        form.fields["template"].queryset = selected.message_templates.filter(is_active=True)
+    if request.method == "POST" and selected and form.is_valid():
+        obj = form.save(commit=False)
+        obj.property = selected
+        if hasattr(obj, "created_by"):
+            obj.created_by = request.user
+        obj.save()
+        return redirect(f"{reverse('operations:crm_marketing')}?property_id={selected.id}&entity={entity}")
+    return render(request, "booking/operations/crm_marketing.html", {
+        "title": "CRM Kampanya ve Şablonlar", "properties": properties, "selected_property": selected,
+        "entity": entity, "form": form,
+        "segments": selected.guest_segments.all() if selected else GuestSegment.objects.none(),
+        "templates": selected.message_templates.all() if selected else MessageTemplate.objects.none(),
+        "campaigns": selected.marketing_campaigns.select_related("segment", "template") if selected else MarketingCampaign.objects.none(),
     })
 
 

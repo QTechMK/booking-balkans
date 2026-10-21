@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, HousekeepingTask, LoyaltyTier, MaintenanceTicket, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -93,6 +93,39 @@ class GuestLoyaltyAccountAdmin(admin.ModelAdmin):
     list_filter = ("property", "tier")
     search_fields = ("membership_number", "guest__first_name", "guest__last_name", "guest__email")
     autocomplete_fields = ("guest", "property", "tier")
+
+
+@admin.register(LoyaltyTransaction)
+class LoyaltyTransactionAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "account", "kind", "points", "created_by")
+    list_filter = ("kind", "account__property")
+    search_fields = ("account__membership_number", "account__guest__email", "note")
+    autocomplete_fields = ("account", "created_by")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(GuestSegment)
+class GuestSegmentAdmin(admin.ModelAdmin):
+    list_display = ("name", "property", "is_active", "updated_at")
+    list_filter = ("property", "is_active")
+    search_fields = ("name", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(MessageTemplate)
+class MessageTemplateAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "channel", "property", "is_active")
+    list_filter = ("channel", "property", "is_active")
+    search_fields = ("name", "code", "body")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(MarketingCampaign)
+class MarketingCampaignAdmin(admin.ModelAdmin):
+    list_display = ("name", "property", "status", "segment", "template", "scheduled_at")
+    list_filter = ("property", "status")
+    search_fields = ("name", "property__name")
+    autocomplete_fields = ("property", "segment", "template", "created_by")
 
 
 @admin.register(OnlineBookingSettings)

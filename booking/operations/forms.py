@@ -3,7 +3,7 @@ from django import forms
 from booking.tenancy.models import (
     BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
-from .models import GuestProfileExtension, LoyaltyTier, OperationalTask, TaskGroup, TaskLocation
+from .models import GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, TaskGroup, TaskLocation
 
 
 class PropertySettingsForm(forms.ModelForm):
@@ -112,3 +112,24 @@ class UnitForm(forms.ModelForm):
         model = Unit
         exclude = ["property", "created_at", "updated_at"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class GuestSegmentForm(forms.ModelForm):
+    class Meta:
+        model = GuestSegment
+        exclude = ["property", "criteria", "created_at", "updated_at"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class MessageTemplateForm(forms.ModelForm):
+    class Meta:
+        model = MessageTemplate
+        exclude = ["property", "updated_at"]
+        widgets = {"body": forms.Textarea(attrs={"rows": 5})}
+
+
+class MarketingCampaignForm(forms.ModelForm):
+    class Meta:
+        model = MarketingCampaign
+        exclude = ["property", "sent_at", "created_by", "created_at"]
+        widgets = {"scheduled_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}

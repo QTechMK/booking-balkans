@@ -190,6 +190,79 @@ class GuestLoyaltyAccount(models.Model):
             raise ValidationError({"tier": _("Loyalty tier must belong to the same property.")})
 
 
+class LoyaltyTransaction(models.Model):
+    class Kind(models.TextChoices):
+        EARN = "earn", _("Earn")
+        REDEEM = "redeem", _("Redeem")
+        ADJUST = "adjust", _("Adjustment")
+
+    account = models.ForeignKey(GuestLoyaltyAccount, on_delete=models.CASCADE, related_name="transactions")
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    points = models.IntegerField()
+    note = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["account", "created_at"])]
+
+
+class GuestSegment(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="guest_segments")
+    name = models.CharField(max_length=160)
+    description = models.TextField(blank=True)
+    criteria = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "name"], name="unique_guest_segment_name")]
+
+
+class MessageTemplate(models.Model):
+    class Channel(models.TextChoices):
+        EMAIL = "email", _("Email")
+        SMS = "sms", _("SMS")
+        WHATSAPP = "whatsapp", _("WhatsApp")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="message_templates")
+    code = models.SlugField(max_length=100)
+    name = models.CharField(max_length=160)
+    channel = models.CharField(max_length=12, choices=Channel.choices)
+    subject = models.CharField(max_length=180, blank=True)
+    body = models.TextField()
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "channel", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_message_template_code")]
+
+
+class MarketingCampaign(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Draft")
+        SCHEDULED = "scheduled", _("Scheduled")
+        SENT = "sent", _("Sent")
+        CANCELLED = "cancelled", _("Cancelled")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="marketing_campaigns")
+    name = models.CharField(max_length=180)
+    segment = models.ForeignKey(GuestSegment, on_delete=models.SET_NULL, null=True, blank=True, related_name="campaigns")
+    template = models.ForeignKey(MessageTemplate, on_delete=models.SET_NULL, null=True, blank=True, related_name="campaigns")
+    status = models.CharField(max_length=14, choices=Status.choices, default=Status.DRAFT)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
 class OnlineBookingSettings(models.Model):
     property = models.OneToOneField(Property, on_delete=models.CASCADE, related_name="online_booking_settings")
     booking_page_active = models.BooleanField(default=True)

@@ -14,5 +14,6 @@ urlpatterns = [
     path("business/tasks/", views.tasks, name="tasks"),
     path("business/online-settings/", views.online_settings, name="online_settings"),
     path("business/crm/guests/", views.crm_guests, name="crm_guests"),
+    path("business/crm/marketing/", views.crm_marketing, name="crm_marketing"),
     path("business/access/", views.access_control, name="access_control"),
 ]
