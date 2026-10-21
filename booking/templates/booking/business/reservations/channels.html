@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="booking-flow-main py-5">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <h1 class="h3 mb-1">Rezervasyon kanalları</h1>
+        <p class="text-body-secondary mb-0">Telefon, e-posta, WhatsApp ve diğer kanalları tesis bazında yönetin.</p>
+      </div>
+      {% if selected_property %}<span class="badge bg-primary-subtle text-primary px-3 py-2">{{ selected_property.name }}</span>{% endif %}
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card border shadow-sm">
+          <div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Tanımlı kanallar</h2></div>
+          <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Kanal</th><th>Kod</th><th>Kaynak</th><th>Website</th><th>Widget key</th><th>Durum</th></tr></thead><tbody>
+            {% for channel in channels %}<tr><td>{{ channel.name }}</td><td><code>{{ channel.code }}</code></td><td>{{ channel.get_source_display }}</td><td>{% if channel.website_name %}{{ channel.website_name }}<div class="small text-body-secondary">{{ channel.website_domain }}</div>{% else %}—{% endif %}</td><td><code>{{ channel.widget_key }}</code>{% if channel.source == 'widget' %}<textarea class="form-control form-control-sm mt-2" rows="2" readonly>&lt;iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'reservations:widget_search' channel.widget_key %}" width="100%" height="420" frameborder="0" loading="lazy"&gt;&lt;/iframe&gt;</textarea>{% endif %}</td><td>{% if channel.is_active %}<span class="badge bg-success-subtle text-success">Aktif</span>{% else %}<span class="badge bg-secondary-subtle text-secondary">Pasif</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-body-secondary py-4">Kanal tanımı yok.</td></tr>{% endfor %}
+          </tbody></table></div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card border shadow-sm"><div class="card-header bg-transparent py-3"><h2 class="h5 mb-0">Yeni kanal ekle</h2></div><div class="card-body p-4">
+          <form method="post">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}">
+            {{ form.non_field_errors }}
+            {% for field in form %}<div class="mb-3">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}</div>{% endfor %}
+            <button class="btn btn-primary w-100" type="submit" {% if not selected_property %}disabled{% endif %}>Kanalı kaydet</button>
+          </form>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

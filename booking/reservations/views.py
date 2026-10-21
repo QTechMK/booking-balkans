@@ -1,5 +1,6 @@
 from datetime import date
 from datetime import timedelta
+from urllib.parse import urlparse
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -11,16 +12,29 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.dateparse import parse_date
 
 from booking.tenancy.models import Membership
 from booking.tenancy.models import Property
 from booking.tenancy.models import RatePlan
+from booking.tenancy.models import DailyRate
+from booking.tenancy.models import Inventory
+from booking.tenancy.models import Unit
+from booking.tenancy.models import UnitType
 from booking.tenancy.services.availability import get_availability
 
 from .forms import BookingSearchForm
 from .forms import GuestBookingForm
 from .forms import MarketplaceSearchForm
+from .forms import ReservationChannelForm
+from .forms import BusinessManualReservationForm
+from .forms import BusinessDailyRateForm
+from .forms import BusinessInventoryForm
+from .forms import BusinessRatePlanForm
+from .forms import BusinessUnitForm
+from .forms import BusinessUnitTypeForm
 from .models import Reservation
+from .models import ReservationChannel
 from .models import ReservationSource
 from .models import ReservationStatus
 from .services.booking import book_direct
@@ -81,6 +95,7 @@ def marketplace_search(request):
                         "check_in": cleaned["check_in"].isoformat(),
                         "check_out": cleaned["check_out"].isoformat(),
                         "quantity": cleaned["quantity"],
+                        "source": ReservationSource.MARKETPLACE,
                     }
                 )
                 results.append(
@@ -134,6 +149,7 @@ def marketplace_property_detail(request, pk):
                         "check_in": check_in.isoformat(),
                         "check_out": check_out.isoformat(),
                         "quantity": quantity,
+                        "source": ReservationSource.MARKETPLACE,
                     }
                 ),
             }
@@ -198,6 +214,77 @@ def search(request):
     )
 
 
+def _widget_channel(widget_key):
+    return get_object_or_404(
+        ReservationChannel.objects.select_related("property").filter(
+            widget_key=widget_key,
+            source=ReservationSource.WIDGET,
+            is_active=True,
+            property__is_active=True,
+        )
+    )
+
+
+def _widget_origin_matches(request, channel):
+    """Return whether the embedding request matches the channel's configured domain."""
+    configured = (channel.website_domain or "").strip().lower().rstrip(".")
+    if not configured:
+        return False
+    origin = request.META.get("HTTP_ORIGIN") or request.META.get("HTTP_REFERER")
+    if not origin:
+        return True
+    hostname = (urlparse(origin).hostname or "").lower().rstrip(".")
+    configured = configured.removeprefix("https://").removeprefix("http://").split("/")[0]
+    return hostname == configured or hostname.endswith(f".{configured}")
+
+
+def widget_search(request, widget_key):
+    channel = _widget_channel(widget_key)
+    if not _widget_origin_matches(request, channel):
+        return render(request, "booking/widget_denied.html", {"channel": channel}, status=403)
+
+    start = date.today() + timedelta(days=1)
+    end = start + timedelta(days=2)
+    rate_plan = channel.property.rate_plans.filter(is_active=True).order_by("name").first()
+    form = BookingSearchForm(
+        request.GET or None,
+        initial={
+            "property_id": channel.property_id,
+            "rate_plan_id": rate_plan.id if rate_plan else "",
+            "check_in": start,
+            "check_out": end,
+            "quantity": 1,
+        },
+    )
+    result = None
+    if request.GET and form.is_valid():
+        selected_rate_plan = get_object_or_404(
+            RatePlan,
+            id=form.cleaned_data["rate_plan_id"],
+            property_id=channel.property_id,
+            is_active=True,
+        )
+        result = get_availability(
+            property_id=channel.property_id,
+            rate_plan_id=selected_rate_plan.id,
+            check_in=form.cleaned_data["check_in"],
+            check_out=form.cleaned_data["check_out"],
+            quantity=form.cleaned_data["quantity"],
+        )
+        rate_plan = selected_rate_plan
+    return render(
+        request,
+        "booking/widget_search.html",
+        {
+            "channel": channel,
+            "form": form,
+            "result": result,
+            "property": channel.property,
+            "rate_plan": rate_plan,
+        },
+    )
+
+
 def guest_details(request):
     search_form = BookingSearchForm(request.GET or request.POST or None)
     if not search_form.is_valid():
@@ -221,6 +308,36 @@ def guest_details(request):
         return redirect("reservations:search")
     guest_form = GuestBookingForm(request.POST or None)
     if request.method == "POST" and guest_form.is_valid():
+        source = request.GET.get("source") or request.POST.get("source", ReservationSource.DIRECT)
+        valid_sources = {value for value, _ in ReservationSource.choices}
+        if source not in valid_sources:
+            source = ReservationSource.DIRECT
+        channel_codes = {
+            ReservationSource.DIRECT: "tenant_website",
+            ReservationSource.MARKETPLACE: "booking_balkans_marketplace",
+            ReservationSource.WIDGET: "iframe_widget",
+            ReservationSource.B2B: "b2b_portal",
+        }
+        if source == ReservationSource.WIDGET:
+            channel = ReservationChannel.objects.filter(
+                property_id=data["property_id"],
+                widget_key=request.GET.get("widget_key") or request.POST.get("widget_key"),
+                source=ReservationSource.WIDGET,
+                is_active=True,
+            ).first()
+        else:
+            channel = ReservationChannel.objects.filter(
+                property_id=data["property_id"],
+                code=channel_codes.get(source),
+                is_active=True,
+            ).first()
+        if source == ReservationSource.WIDGET and not channel:
+            return render(
+                request,
+                "booking/widget_denied.html",
+                {"channel": None},
+                status=403,
+            )
         try:
             reservation = book_direct(
                 property_id=data["property_id"],
@@ -229,6 +346,8 @@ def guest_details(request):
                 check_out=data["check_out"],
                 quantity=data["quantity"],
                 guest_data=guest_form.cleaned_data,
+                source=source,
+                channel=channel,
             )
         except (IntegrityError, ValidationError):
             messages.error(request, "Rezervasyon oluşturulamadı; oda tekrar kontrol ediliyor.")
@@ -244,6 +363,7 @@ def guest_details(request):
             "guest_form": guest_form,
             "rate_plan": rate_plan,
             "availability": availability,
+            "widget_key": request.GET.get("widget_key") or request.POST.get("widget_key", ""),
         },
     )
 
@@ -272,6 +392,97 @@ def _business_properties(user):
     ).distinct()
 
 
+def _selected_business_property(request):
+    properties = _business_properties(request.user).order_by("name")
+    property_id = request.POST.get("property_id") or request.GET.get("property_id")
+    selected = properties.filter(id=property_id).first() if property_id else None
+    return properties, selected or properties.first()
+
+
+@login_required
+def business_inventory(request):
+    properties, selected_property = _selected_business_property(request)
+    unit_type_form = BusinessUnitTypeForm(prefix="unit_type")
+    unit_form = BusinessUnitForm(prefix="unit")
+    if selected_property:
+        unit_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+    if request.method == "POST" and selected_property:
+        entity = request.POST.get("entity")
+        if entity == "unit_type":
+            unit_type_form = BusinessUnitTypeForm(request.POST, prefix="unit_type")
+            if unit_type_form.is_valid():
+                obj = unit_type_form.save(commit=False)
+                obj.property = selected_property
+                obj.save()
+                return redirect(f"{reverse('reservations:business_inventory')}?property_id={selected_property.id}")
+        elif entity == "unit":
+            unit_form = BusinessUnitForm(request.POST, prefix="unit")
+            unit_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+            if unit_form.is_valid() and unit_form.cleaned_data["unit_type"].property_id == selected_property.id:
+                obj = unit_form.save(commit=False)
+                obj.property = selected_property
+                obj.save()
+                return redirect(f"{reverse('reservations:business_inventory')}?property_id={selected_property.id}")
+    unit_types = selected_property.unit_types.prefetch_related("units") if selected_property else UnitType.objects.none()
+    units = selected_property.units.select_related("unit_type") if selected_property else Unit.objects.none()
+    return render(request, "booking/business/inventory.html", {"properties": properties, "selected_property": selected_property, "unit_type_form": unit_type_form, "unit_form": unit_form, "unit_types": unit_types, "units": units})
+
+
+@login_required
+def business_rate_plans(request):
+    properties, selected_property = _selected_business_property(request)
+    form = BusinessRatePlanForm(prefix="rate")
+    if selected_property:
+        form.fields["unit_type"].queryset = selected_property.unit_types.all()
+    if request.method == "POST" and selected_property:
+        form = BusinessRatePlanForm(request.POST, prefix="rate")
+        form.fields["unit_type"].queryset = selected_property.unit_types.all()
+        if form.is_valid() and form.cleaned_data["unit_type"].property_id == selected_property.id:
+            obj = form.save(commit=False)
+            obj.property = selected_property
+            obj.save()
+            return redirect(f"{reverse('reservations:business_rate_plans')}?property_id={selected_property.id}")
+    rate_plans = selected_property.rate_plans.select_related("unit_type") if selected_property else RatePlan.objects.none()
+    return render(request, "booking/business/rates.html", {"properties": properties, "selected_property": selected_property, "form": form, "rate_plans": rate_plans})
+
+
+@login_required
+def business_rate_calendar(request):
+    properties, selected_property = _selected_business_property(request)
+    rate_plan_id = request.POST.get("rate_plan_id") or request.GET.get("rate_plan_id")
+    rate_plans = selected_property.rate_plans.filter(is_active=True) if selected_property else RatePlan.objects.none()
+    selected_rate_plan = rate_plans.filter(id=rate_plan_id).first() if rate_plan_id else rate_plans.first()
+    daily_form = BusinessDailyRateForm(prefix="rate")
+    inventory_form = BusinessInventoryForm(prefix="inventory")
+    if selected_property:
+        daily_form.fields["rate_plan"].queryset = rate_plans
+        inventory_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+        if selected_rate_plan:
+            daily_form.fields["rate_plan"].initial = selected_rate_plan
+        first_unit_type = selected_property.unit_types.order_by("name").first()
+        if first_unit_type:
+            inventory_form.fields["unit_type"].initial = first_unit_type
+    if request.method == "POST" and selected_property:
+        entity = request.POST.get("entity")
+        if entity == "rate":
+            daily_form = BusinessDailyRateForm(request.POST, prefix="rate")
+            daily_form.fields["rate_plan"].queryset = rate_plans
+            if daily_form.is_valid() and daily_form.cleaned_data["rate_plan"].property_id == selected_property.id:
+                daily_form.save()
+                return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={daily_form.cleaned_data['rate_plan'].id}")
+        elif entity == "inventory":
+            inventory_form = BusinessInventoryForm(request.POST, prefix="inventory")
+            inventory_form.fields["unit_type"].queryset = selected_property.unit_types.all()
+            if inventory_form.is_valid() and inventory_form.cleaned_data["unit_type"].property_id == selected_property.id:
+                obj = inventory_form.save(commit=False)
+                obj.property = selected_property
+                obj.save()
+                return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={rate_plan_id or ''}")
+    daily_rates = selected_rate_plan.daily_rates.order_by("-date")[:31] if selected_rate_plan else DailyRate.objects.none()
+    inventory_days = selected_property.inventory_days.select_related("unit_type").order_by("-date")[:31] if selected_property else Inventory.objects.none()
+    return render(request, "booking/business/rate_calendar.html", {"properties": properties, "selected_property": selected_property, "rate_plans": rate_plans, "selected_rate_plan": selected_rate_plan, "daily_form": daily_form, "inventory_form": inventory_form, "daily_rates": daily_rates, "inventory_days": inventory_days})
+
+
 @login_required
 def business_reservation_list(request):
     properties = _business_properties(request.user).order_by("name")
@@ -284,7 +495,7 @@ def business_reservation_list(request):
     if selected_property:
         reservations = (
             Reservation.objects.filter(property=selected_property)
-            .select_related("guest", "property")
+            .select_related("guest", "property", "channel")
             .prefetch_related("items")
         )
 
@@ -295,6 +506,12 @@ def business_reservation_list(request):
         source = request.GET.get("source")
         if source in {choice for choice, _ in ReservationSource.choices}:
             reservations = reservations.filter(source=source)
+
+        channel_id = request.GET.get("channel")
+        if channel_id and selected_property.reservation_channels.filter(
+            id=channel_id, is_active=True
+        ).exists():
+            reservations = reservations.filter(channel_id=channel_id)
 
         search_term = request.GET.get("q", "").strip()
         if search_term:
@@ -322,6 +539,9 @@ def business_reservation_list(request):
             "reservations": reservations,
             "status_choices": ReservationStatus.choices,
             "source_choices": ReservationSource.choices,
+            "channel_choices": selected_property.reservation_channels.filter(
+                is_active=True
+            ),
             "filters": request.GET,
         },
     )
@@ -331,12 +551,116 @@ def business_reservation_list(request):
 def business_reservation_detail(request, pk):
     reservation = get_object_or_404(
         Reservation.objects.filter(property__in=_business_properties(request.user))
-        .select_related("guest", "property")
+        .select_related("guest", "property", "channel")
         .prefetch_related("items__unit_type", "items__rate_plan", "items__unit"),
         pk=pk,
+    )
+
+
+@login_required
+def business_reservation_calendar(request):
+    properties, selected_property = _selected_business_property(request)
+    start = parse_date(request.GET.get("start", "")) or date.today()
+    end = parse_date(request.GET.get("end", "")) or (start + timedelta(days=30))
+    if end < start:
+        end = start + timedelta(days=30)
+    reservations = (
+        Reservation.objects.filter(
+            property=selected_property,
+            check_in__lte=end,
+            check_out__gte=start,
+        ).select_related("guest", "channel").order_by("check_in", "reference")
+        if selected_property
+        else Reservation.objects.none()
+    )
+    return render(
+        request,
+        "booking/business/reservations/calendar.html",
+        {"properties": properties, "selected_property": selected_property, "reservations": reservations, "start": start, "end": end},
     )
     return render(
         request,
         "booking/business/reservations/detail.html",
         {"reservation": reservation},
+    )
+
+
+@login_required
+def business_channel_list(request):
+    properties = _business_properties(request.user).order_by("name")
+    property_id = request.POST.get("property_id") or request.GET.get("property_id")
+    selected_property = properties.filter(id=property_id).first() if property_id else None
+    if not selected_property:
+        selected_property = properties.first()
+
+    form = ReservationChannelForm(request.POST or None)
+    if request.method == "POST" and selected_property and form.is_valid():
+        channel = form.save(commit=False)
+        channel.property = selected_property
+        channel.save()
+        return redirect(
+            f"{reverse('reservations:business_channel_list')}?property_id={selected_property.id}"
+        )
+
+    channels = (
+        selected_property.reservation_channels.all()
+        if selected_property
+        else ReservationChannel.objects.none()
+    )
+    return render(
+        request,
+        "booking/business/reservations/channels.html",
+        {
+            "properties": properties,
+            "selected_property": selected_property,
+            "channels": channels,
+            "form": form,
+        },
+    )
+
+
+@login_required
+def business_reservation_create(request):
+    properties = _business_properties(request.user).order_by("name")
+    property_id = request.POST.get("property") or request.GET.get("property_id")
+    selected_property = properties.filter(id=property_id).first() if property_id else properties.first()
+    form = BusinessManualReservationForm(
+        request.POST or None,
+        properties=properties,
+        selected_property=selected_property,
+    )
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        availability = get_availability(
+            property_id=data["property"].id,
+            rate_plan_id=data["rate_plan"].id,
+            check_in=data["check_in"],
+            check_out=data["check_out"],
+            quantity=data["quantity"],
+        )
+        if not availability.available:
+            form.add_error(None, "Seçilen tarihlerde yeterli müsaitlik yok.")
+        else:
+            reservation = book_direct(
+                property_id=data["property"].id,
+                rate_plan_id=data["rate_plan"].id,
+                check_in=data["check_in"],
+                check_out=data["check_out"],
+                quantity=data["quantity"],
+                guest_data={
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                    "email": data["email"],
+                    "phone": data["phone"],
+                    "country": data["country"],
+                },
+                source=ReservationSource.MANUAL,
+                channel=data["channel"],
+                created_by=request.user,
+            )
+            return redirect("reservations:business_reservation_detail", pk=reservation.pk)
+    return render(
+        request,
+        "booking/business/reservations/create.html",
+        {"form": form, "properties": properties, "selected_property": selected_property},
     )

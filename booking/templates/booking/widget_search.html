@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ property.name }} - Rezervasyon</title>
+  <style>
+    :root { font-family: Arial, sans-serif; color: #17152b; }
+    body { margin: 0; padding: 16px; background: #fff; }
+    .box { max-width: 720px; margin: auto; border: 1px solid #ddd; border-radius: 12px; padding: 20px; }
+    h1 { margin: 0 0 6px; font-size: 24px; } p { color: #6f6b7d; }
+    form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: end; }
+    label { display: block; font-size: 13px; color: #6f6b7d; margin-bottom: 5px; }
+    input, button { box-sizing: border-box; width: 100%; min-height: 40px; border: 1px solid #c9c6d2; border-radius: 7px; padding: 8px; }
+    button, .reserve { background: #5041d8; color: #fff; border: 0; text-decoration: none; text-align: center; display: block; }
+    .result { margin-top: 18px; border-top: 1px solid #eee; padding-top: 16px; }
+    .reserve { padding: 11px; border-radius: 7px; margin-top: 12px; }
+    .error { color: #b42318; }
+    @media (max-width: 600px) { form { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <section class="box">
+    <h1>{{ property.name }}</h1>
+    <p>Resmi web sitenizden güvenli rezervasyon yapın.</p>
+    <form method="get">
+      {{ form.property_id }}{{ form.rate_plan_id }}
+      <div><label for="id_check_in">Giriş</label>{{ form.check_in }}</div>
+      <div><label for="id_check_out">Çıkış</label>{{ form.check_out }}</div>
+      <div><label for="id_quantity">Oda</label>{{ form.quantity }}</div>
+      <button type="submit">Müsaitliği gör</button>
+    </form>
+    {% if form.errors %}<p class="error">Tarih ve oda bilgilerini kontrol edin.</p>{% endif %}
+    {% if result %}
+      <div class="result">
+        {% if result.available %}
+          <strong>{{ rate_plan.name }} — {{ result.total_amount }} {{ rate_plan.currency }}</strong>
+          <a class="reserve" href="{% url 'reservations:guest_details' %}?{{ request.GET.urlencode }}&source=widget&widget_key={{ channel.widget_key }}">Rezervasyona devam et</a>
+        {% else %}<p class="error">Bu tarih aralığında uygun oda bulunamadı.</p>{% endif %}
+      </div>
+    {% endif %}
+  </section>
+</body>
+</html>

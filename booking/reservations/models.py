@@ -59,6 +59,46 @@ class ReservationSource(models.TextChoices):
     CHANNEL_MANAGER = "channel_manager", _("Channel Manager")
 
 
+class ReservationChannel(models.Model):
+    """A property-scoped booking channel that can be managed by the business."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="reservation_channels",
+    )
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=120)
+    website_name = models.CharField(max_length=160, blank=True)
+    website_url = models.URLField(blank=True)
+    website_domain = models.CharField(max_length=255, blank=True)
+    widget_key = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    source = models.CharField(
+        max_length=24,
+        choices=ReservationSource.choices,
+        default=ReservationSource.MANUAL,
+    )
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "code"],
+                name="unique_reservation_channel_per_property",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["property", "is_active", "sort_order"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.property.name} - {self.name}"
+
+
 class StayStatus(models.TextChoices):
     NOT_ARRIVED = "not_arrived", _("Not arrived")
     CHECKED_IN = "checked_in", _("Checked in")
@@ -101,6 +141,13 @@ class Reservation(models.Model):
         max_length=24,
         choices=ReservationSource.choices,
         default=ReservationSource.DIRECT,
+    )
+    channel = models.ForeignKey(
+        ReservationChannel,
+        on_delete=models.SET_NULL,
+        related_name="reservations",
+        null=True,
+        blank=True,
     )
     check_in = models.DateField(_("check-in"))
     check_out = models.DateField(_("check-out"))

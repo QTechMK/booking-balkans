@@ -22,6 +22,7 @@
               <div class="col-sm-6"><div class="small text-body-secondary">Giriş</div><div class="fw-semibold">{{ reservation.check_in|date:'d.m.Y' }}</div></div>
               <div class="col-sm-6"><div class="small text-body-secondary">Çıkış</div><div class="fw-semibold">{{ reservation.check_out|date:'d.m.Y' }}</div></div>
               <div class="col-sm-6"><div class="small text-body-secondary">Kaynak</div><div class="fw-semibold">{{ reservation.get_source_display }}</div></div>
+              {% if reservation.channel %}<div class="col-sm-6"><div class="small text-body-secondary">Kanal</div><div class="fw-semibold">{{ reservation.channel.name }}</div></div>{% endif %}
               <div class="col-sm-6"><div class="small text-body-secondary">Konaklama durumu</div><div class="fw-semibold">{% if reservation.stay_status == 'checked_in' %}Giriş yaptı{% elif reservation.stay_status == 'checked_out' %}Çıkış yaptı{% elif reservation.stay_status == 'early_checkout' %}Erken çıkış{% else %}Giriş bekliyor{% endif %}</div></div>
             </div>
           </div>

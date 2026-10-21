@@ -10,6 +10,7 @@
         <p class="text-body-secondary mb-0">İşletmenize ait rezervasyonları yönetin.</p>
       </div>
       {% if selected_property %}<span class="badge bg-primary-subtle text-primary px-3 py-2">{{ selected_property.name }}</span>{% endif %}
+      <a class="btn btn-primary" href="{% url 'reservations:business_reservation_create' %}{% if selected_property %}?property_id={{ selected_property.id }}{% endif %}">Yeni manuel rezervasyon</a>
     </div>
 
     <div class="card border shadow-sm mb-4">
@@ -37,6 +38,13 @@
             <select class="form-select" name="source" id="id_source">
               <option value="">Tümü</option>
               {% for value,label in source_choices %}<option value="{{ value }}" {% if filters.source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="id_channel">Kanal</label>
+            <select class="form-select" name="channel" id="id_channel">
+              <option value="">Tümü</option>
+              {% for channel in channel_choices %}<option value="{{ channel.id }}" {% if filters.channel == channel.id|stringformat:'s' %}selected{% endif %}>{{ channel.name }}</option>{% endfor %}
             </select>
           </div>
           <div class="col-md-2">
@@ -69,7 +77,7 @@
               <td><a class="fw-semibold text-decoration-none" href="{% url 'reservations:business_reservation_detail' pk=reservation.pk %}">{{ reservation.reference }}</a><div class="small text-body-secondary">{{ reservation.created_at|date:'d.m.Y H:i' }}</div></td>
               <td>{{ reservation.guest.first_name }} {{ reservation.guest.last_name }}<div class="small text-body-secondary">{{ reservation.guest.email }}</div></td>
               <td>{{ reservation.check_in|date:'d.m.Y' }}<br><span class="text-body-secondary">{{ reservation.check_out|date:'d.m.Y' }}</span></td>
-              <td>{{ reservation.get_source_display }}</td>
+              <td>{{ reservation.get_source_display }}{% if reservation.channel %}<div class="small text-body-secondary">{{ reservation.channel.name }}</div>{% endif %}</td>
               <td><span class="badge bg-primary-subtle text-primary">{{ reservation.get_status_display }}</span></td>
               <td>{% if reservation.stay_status == 'checked_in' %}Giriş yaptı{% elif reservation.stay_status == 'checked_out' %}Çıkış yaptı{% elif reservation.stay_status == 'early_checkout' %}Erken çıkış{% else %}Giriş bekliyor{% endif %}</td>
               <td class="text-end fw-semibold">{{ reservation.total_amount }} {{ reservation.currency }}</td>

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="booking-flow-main py-5"><div class="container">
+  <div class="mb-4"><a class="small text-decoration-none" href="{% url 'reservations:business_reservation_list' %}">← Rezervasyonlar</a><h1 class="h3 mt-2 mb-1">Yeni manuel rezervasyon</h1><p class="text-body-secondary mb-0">Resepsiyon, telefon, e-posta veya diğer kanallardan gelen rezervasyonu kaydedin.</p></div>
+  <div class="card border shadow-sm"><div class="card-body p-4">
+    <form method="post">{% csrf_token %}{{ form.non_field_errors }}
+      <div class="row g-3">
+        {% for field in form %}<div class="col-md-{% if field.name == 'property' or field.name == 'rate_plan' or field.name == 'channel' %}4{% else %}6{% endif %}">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}</div>{% endfor %}
+      </div>
+      <div class="d-flex justify-content-end mt-4"><button class="btn btn-primary" type="submit">Rezervasyonu oluştur</button></div>
+    </form>
+  </div></div>
+</div></main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

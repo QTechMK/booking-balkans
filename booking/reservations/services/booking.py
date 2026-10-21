@@ -7,6 +7,7 @@ from django.db import transaction
 from booking.reservations.models import Guest
 from booking.reservations.models import HoldStatus
 from booking.reservations.models import Reservation
+from booking.reservations.models import ReservationChannel
 from booking.reservations.models import ReservationHold
 from booking.reservations.models import ReservationItem
 from booking.reservations.models import ReservationSource
@@ -24,6 +25,9 @@ def book_direct(
     check_out: date,
     quantity: int,
     guest_data: dict,
+    source: str = ReservationSource.DIRECT,
+    channel: ReservationChannel | None = None,
+    created_by=None,
 ) -> Reservation:
     """Create a direct reservation after obtaining and converting a hold."""
 
@@ -49,7 +53,9 @@ def book_direct(
         property_id=property_id,
         guest=guest,
         status=ReservationStatus.CONFIRMED,
-        source=ReservationSource.DIRECT,
+        source=source,
+        channel=channel,
+        created_by=created_by,
         check_in=check_in,
         check_out=check_out,
         currency=rate_plan.currency,

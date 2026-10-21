@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import Guest
 from .models import Reservation
+from .models import ReservationChannel
 from .models import ReservationHold
 from .models import ReservationItem
 
@@ -25,13 +26,22 @@ class ReservationAdmin(admin.ModelAdmin):
         "status",
         "stay_status",
         "source",
+        "channel",
         "total_amount",
     ]
-    list_filter = ["status", "source", "property", "currency"]
+    list_filter = ["status", "source", "channel", "property", "currency"]
     search_fields = ["reference", "guest__first_name", "guest__last_name", "guest__email"]
-    autocomplete_fields = ["property", "guest", "created_by"]
+    autocomplete_fields = ["property", "guest", "created_by", "channel"]
     date_hierarchy = "check_in"
     readonly_fields = ["reference", "created_at", "updated_at"]
+
+
+@admin.register(ReservationChannel)
+class ReservationChannelAdmin(admin.ModelAdmin):
+    list_display = ["name", "code", "property", "source", "website_domain", "widget_key", "is_active", "sort_order"]
+    list_filter = ["property", "source", "is_active"]
+    search_fields = ["name", "code", "property__name"]
+    autocomplete_fields = ["property"]
 
 
 @admin.register(ReservationItem)
