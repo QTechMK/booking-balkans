@@ -32,6 +32,18 @@ class PropertySettingsForm(HotelModelForm):
         exclude = ["property"]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
+    def clean(self):
+        cleaned = super().clean()
+        latitude = cleaned.get("latitude")
+        longitude = cleaned.get("longitude")
+        if latitude is not None and not -90 <= latitude <= 90:
+            self.add_error("latitude", "Enlem -90 ile 90 arasında olmalıdır.")
+        if longitude is not None and not -180 <= longitude <= 180:
+            self.add_error("longitude", "Boylam -180 ile 180 arasında olmalıdır.")
+        if cleaned.get("check_in_time") and cleaned.get("check_out_time") and cleaned["check_in_time"] == cleaned["check_out_time"]:
+            self.add_error("check_out_time", "Check-out saati check-in saatinden farklı olmalıdır.")
+        return cleaned
+
 
 class PropertyProfileForm(HotelModelForm):
     class Meta:
@@ -69,6 +81,11 @@ class BoardTypeForm(DictionaryForm):
     class Meta(DictionaryForm.Meta):
         model = BoardType
         fields = DictionaryForm.Meta.fields + ["extra_price", "child_extra_price", "baby_extra_price", "currency", "show_online"]
+        labels = {
+            "code": "Kod", "name": "Ad", "description": "Açıklama", "is_active": "Aktif",
+            "extra_price": "Yetişkin ek fiyatı", "child_extra_price": "Çocuk ek fiyatı",
+            "baby_extra_price": "Bebek ek fiyatı", "currency": "Para birimi", "show_online": "Online göster",
+        }
 
 
 class RateTypeForm(DictionaryForm):
@@ -78,6 +95,13 @@ class RateTypeForm(DictionaryForm):
             "is_refundable", "prepayment_percent", "price_factor", "cancellation_until_hours",
             "cancellation_penalty_days", "min_nights", "max_nights", "show_online",
         ]
+        labels = {
+            "code": "Kod", "name": "Ad", "description": "Açıklama", "is_active": "Aktif",
+            "is_refundable": "İade edilebilir", "prepayment_percent": "Peşin ödeme yüzdesi",
+            "price_factor": "Fiyat katsayısı", "cancellation_until_hours": "İptal son saati",
+            "cancellation_penalty_days": "İptal ceza gecesi", "min_nights": "Minimum gece",
+            "max_nights": "Maksimum gece", "show_online": "Online göster",
+        }
 
 
 class RoomPhotoForm(HotelModelForm):
