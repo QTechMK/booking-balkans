@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -140,3 +140,19 @@ class MarketingDeliveryAdmin(admin.ModelAdmin):
 class OnlineBookingSettingsAdmin(admin.ModelAdmin):
     list_display = ("property", "booking_page_active", "online_checkin_active", "online_payment_active", "guest_portal_active")
     list_filter = ("booking_page_active", "online_checkin_active", "guest_portal_active")
+
+
+@admin.register(PropertyService)
+class PropertyServiceAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind", "property", "price", "currency", "show_online", "is_active")
+    list_filter = ("kind", "property", "show_online", "is_active")
+    search_fields = ("name", "code", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(ServiceRequest)
+class ServiceRequestAdmin(admin.ModelAdmin):
+    list_display = ("reservation", "service", "quantity", "status", "scheduled_at", "created_at")
+    list_filter = ("status", "service__kind", "reservation__property")
+    search_fields = ("reservation__reference", "reservation__guest__email", "service__name")
+    autocomplete_fields = ("reservation", "service")

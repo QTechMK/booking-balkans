@@ -24,7 +24,7 @@ from .models import (
     MaintenanceStatus,
     MaintenanceTicket,
     OnlineBookingSettings,
-    GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask,
+    GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, PropertyService, ServiceRequest,
     PropertyRole,
     TaskPriority,
     TaskGroup,
@@ -34,7 +34,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm,
+    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm,
 )
 
 
@@ -252,6 +252,14 @@ def online_settings(request):
     if _permission_denied(request, selected, "operations.online_settings.manage"):
         return HttpResponseForbidden("Bu tesis için online booking ayarlarına erişiminiz yok.")
     settings_obj = OnlineBookingSettings.objects.get_or_create(property=selected)[0] if selected else None
+    if request.method == "POST" and settings_obj and request.POST.get("action") == "service":
+        service_form = PropertyServiceForm(request.POST)
+        if service_form.is_valid():
+            service = service_form.save(commit=False)
+            service.property = selected
+            service.save()
+            messages.success(request, "Online hizmet kaydedildi.")
+        return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
     if request.method == "POST" and settings_obj:
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
             setattr(settings_obj, field, request.POST.get(field) == "on")
@@ -263,6 +271,8 @@ def online_settings(request):
     return render(request, "booking/operations/online_settings.html", {
         "title": "Online Booking Ayarları",
         "properties": properties, "selected_property": selected, "settings": settings_obj,
+        "service_form": PropertyServiceForm(),
+        "services": selected.online_services.all() if selected else PropertyService.objects.none(),
     })
 
 

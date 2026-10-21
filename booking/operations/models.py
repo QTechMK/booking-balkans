@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from booking.reservations.models import Guest
+from booking.reservations.models import Guest, Reservation
 from booking.tenancy.models import Property, Unit
 
 
@@ -300,6 +300,50 @@ class OnlineBookingSettings(models.Model):
     meta_keywords = models.CharField(max_length=255, blank=True)
     domain = models.CharField(max_length=255, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class PropertyService(models.Model):
+    class Kind(models.TextChoices):
+        EXTRA = "extra", _("Extra service")
+        LATE_CHECKOUT = "late_checkout", _("Late checkout")
+        TRANSFER = "transfer", _("Transfer")
+        ROOM_UPGRADE = "room_upgrade", _("Room upgrade")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="online_services")
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=160)
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.EXTRA)
+    description = models.TextField(blank=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default="TRY")
+    is_active = models.BooleanField(default=True)
+    show_online = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "kind", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_property_service_code")]
+
+
+class ServiceRequest(models.Model):
+    class Status(models.TextChoices):
+        REQUESTED = "requested", _("Requested")
+        CONFIRMED = "confirmed", _("Confirmed")
+        REJECTED = "rejected", _("Rejected")
+        COMPLETED = "completed", _("Completed")
+
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name="service_requests")
+    service = models.ForeignKey(PropertyService, on_delete=models.PROTECT, related_name="requests")
+    quantity = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.REQUESTED)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
 
 class AccessPermission(models.Model):
