@@ -243,6 +243,7 @@ def maintenance(request):
         "properties": properties, "selected_property": selected, "tickets": tickets,
         "units": selected.units.all() if selected else Unit.objects.none(), "users": _users_for_property(selected),
         "status_choices": MaintenanceStatus.choices, "priority_choices": TaskPriority.choices,
+        "now": timezone.now(),
     })
 
 
