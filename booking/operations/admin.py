@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -126,6 +126,14 @@ class MarketingCampaignAdmin(admin.ModelAdmin):
     list_filter = ("property", "status")
     search_fields = ("name", "property__name")
     autocomplete_fields = ("property", "segment", "template", "created_by")
+
+
+@admin.register(MarketingDelivery)
+class MarketingDeliveryAdmin(admin.ModelAdmin):
+    list_display = ("campaign", "guest", "channel", "recipient", "status", "queued_at", "sent_at")
+    list_filter = ("channel", "status", "campaign__property")
+    search_fields = ("recipient", "guest__first_name", "guest__last_name", "campaign__name")
+    autocomplete_fields = ("campaign", "guest")
 
 
 @admin.register(OnlineBookingSettings)

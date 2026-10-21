@@ -125,10 +125,35 @@ class UnitForm(forms.ModelForm):
 
 
 class GuestSegmentForm(forms.ModelForm):
+    vip_only = forms.BooleanField(required=False, label="Yalnızca VIP misafirler")
+    gdpr_required = forms.BooleanField(required=False, label="GDPR onayı olanlar")
+    country = forms.CharField(required=False, max_length=2, label="Ülke kodu")
+    has_email = forms.BooleanField(required=False, initial=True, label="E-posta adresi olanlar")
+
     class Meta:
         model = GuestSegment
         exclude = ["property", "criteria", "created_at", "updated_at"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        criteria = self.instance.criteria or {}
+        for field in ("vip_only", "gdpr_required", "has_email"):
+            self.fields[field].initial = criteria.get(field, self.fields[field].initial)
+        self.fields["country"].initial = criteria.get("country", "")
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.criteria = {
+            "vip_only": bool(self.cleaned_data.get("vip_only")),
+            "gdpr_required": bool(self.cleaned_data.get("gdpr_required")),
+            "has_email": bool(self.cleaned_data.get("has_email")),
+        }
+        if self.cleaned_data.get("country"):
+            obj.criteria["country"] = self.cleaned_data["country"].upper()
+        if commit:
+            obj.save()
+        return obj
 
 
 class MessageTemplateForm(forms.ModelForm):

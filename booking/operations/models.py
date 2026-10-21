@@ -263,6 +263,27 @@ class MarketingCampaign(models.Model):
         ordering = ["-created_at"]
 
 
+class MarketingDelivery(models.Model):
+    class Status(models.TextChoices):
+        QUEUED = "queued", _("Queued")
+        SENT = "sent", _("Sent")
+        FAILED = "failed", _("Failed")
+
+    campaign = models.ForeignKey(MarketingCampaign, on_delete=models.CASCADE, related_name="deliveries")
+    guest = models.ForeignKey(Guest, on_delete=models.CASCADE, related_name="marketing_deliveries")
+    channel = models.CharField(max_length=12, choices=MessageTemplate.Channel.choices)
+    recipient = models.CharField(max_length=255)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.QUEUED)
+    provider_message_id = models.CharField(max_length=180, blank=True)
+    error = models.TextField(blank=True)
+    queued_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-queued_at"]
+        constraints = [models.UniqueConstraint(fields=["campaign", "guest"], name="unique_marketing_delivery_guest")]
+
+
 class OnlineBookingSettings(models.Model):
     property = models.OneToOneField(Property, on_delete=models.CASCADE, related_name="online_booking_settings")
     booking_page_active = models.BooleanField(default=True)

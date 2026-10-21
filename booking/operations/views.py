@@ -23,7 +23,7 @@ from .models import (
     MaintenanceStatus,
     MaintenanceTicket,
     OnlineBookingSettings,
-    GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MessageTemplate, OperationalTask,
+    GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask,
     PropertyRole,
     TaskPriority,
     TaskGroup,
@@ -300,6 +300,33 @@ def crm_marketing(request):
     if selected and entity == "campaign":
         form.fields["segment"].queryset = selected.guest_segments.filter(is_active=True)
         form.fields["template"].queryset = selected.message_templates.filter(is_active=True)
+    if request.method == "POST" and selected and request.POST.get("action") == "prepare_campaign":
+        campaign = selected.marketing_campaigns.filter(id=request.POST.get("campaign_id")).select_related("segment", "template").first()
+        if campaign and campaign.segment and campaign.template:
+            criteria = campaign.segment.criteria or {}
+            guests = Guest.objects.filter(property=selected)
+            if criteria.get("vip_only"):
+                guests = guests.filter(profile_extension__vip=True)
+            if criteria.get("gdpr_required"):
+                guests = guests.filter(profile_extension__gdpr_confirmed=True)
+            if criteria.get("country"):
+                guests = guests.filter(country__iexact=criteria["country"])
+            if criteria.get("has_email") and campaign.template.channel == MessageTemplate.Channel.EMAIL:
+                guests = guests.exclude(email="")
+            created = 0
+            for guest in guests.iterator():
+                recipient = guest.email if campaign.template.channel == MessageTemplate.Channel.EMAIL else guest.phone
+                if not recipient:
+                    continue
+                _, was_created = MarketingDelivery.objects.get_or_create(
+                    campaign=campaign, guest=guest,
+                    defaults={"channel": campaign.template.channel, "recipient": recipient},
+                )
+                created += int(was_created)
+            campaign.status = MarketingCampaign.Status.SCHEDULED
+            campaign.save(update_fields=["status"])
+            messages.success(request, f"{created} alıcı kampanya kuyruğuna alındı.")
+        return redirect(f"{reverse('operations:crm_marketing')}?property_id={selected.id}&entity=campaign")
     if request.method == "POST" and selected and form.is_valid():
         obj = form.save(commit=False)
         obj.property = selected
