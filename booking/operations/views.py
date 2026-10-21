@@ -306,6 +306,15 @@ def online_settings(request):
             service.save()
             messages.success(request, "Online hizmet kaydedildi.")
         return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
+    if request.method == "POST" and settings_obj and request.POST.get("action") == "service_request_status":
+        service_request = ServiceRequest.objects.filter(
+            id=request.POST.get("request_id"), reservation__property=selected,
+        ).first()
+        if service_request and request.POST.get("status") in ServiceRequest.Status.values:
+            service_request.status = request.POST["status"]
+            service_request.save(update_fields=["status", "updated_at"])
+            messages.success(request, "Hizmet talebi güncellendi.")
+        return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
     if request.method == "POST" and settings_obj:
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
             setattr(settings_obj, field, request.POST.get(field) == "on")
@@ -319,6 +328,8 @@ def online_settings(request):
         "properties": properties, "selected_property": selected, "settings": settings_obj,
         "service_form": PropertyServiceForm(),
         "services": selected.online_services.all() if selected else PropertyService.objects.none(),
+        "service_requests": ServiceRequest.objects.filter(reservation__property=selected).select_related("reservation", "reservation__guest", "service")[:50] if selected else ServiceRequest.objects.none(),
+        "service_status_choices": ServiceRequest.Status.choices,
     })
 
 
