@@ -389,7 +389,9 @@ def confirmation(request):
         reference=reference,
     )
     portal_access, _ = GuestPortalAccess.objects.get_or_create(reservation=reservation)
-    return render(request, "booking/confirmation.html", {"reservation": reservation, "portal_access": portal_access})
+    from booking.operations.models import OnlineBookingSettings
+    settings_obj = OnlineBookingSettings.objects.filter(property=reservation.property).first()
+    return render(request, "booking/confirmation.html", {"reservation": reservation, "portal_access": portal_access, "portal_active": bool(settings_obj and settings_obj.guest_portal_active)})
 
 
 def guest_portal(request, token):
@@ -400,8 +402,9 @@ def guest_portal(request, token):
     reservation = portal_access.reservation
     from booking.operations.models import OnlineBookingSettings, PropertyService, ServiceRequest
     settings_obj = OnlineBookingSettings.objects.filter(property=reservation.property).first()
-    checkin_active = bool(settings_obj and settings_obj.online_checkin_active)
-    if request.method == "POST" and request.POST.get("action") == "service_request" and settings_obj:
+    portal_active = bool(settings_obj and settings_obj.guest_portal_active)
+    checkin_active = bool(portal_active and settings_obj.online_checkin_active)
+    if request.method == "POST" and request.POST.get("action") == "service_request" and portal_active and settings_obj:
         service = PropertyService.objects.filter(
             id=request.POST.get("service_id"), property=reservation.property, is_active=True, show_online=True,
         ).first()
@@ -441,10 +444,10 @@ def guest_portal(request, token):
         PropertyService.Kind.TRANSFER: "transfer_active",
         PropertyService.Kind.ROOM_UPGRADE: "room_upgrade_active",
     }
-    services = [service for service in PropertyService.objects.filter(property=reservation.property, is_active=True, show_online=True) if settings_obj and getattr(settings_obj, flag_by_kind[service.kind], False)]
+    services = [service for service in PropertyService.objects.filter(property=reservation.property, is_active=True, show_online=True) if portal_active and settings_obj and getattr(settings_obj, flag_by_kind[service.kind], False)]
     return render(request, "booking/guest_portal.html", {
         "reservation": reservation, "portal_access": portal_access,
-        "settings": settings_obj, "checkin_active": checkin_active, "form": form, "services": services,
+        "settings": settings_obj, "portal_active": portal_active, "checkin_active": checkin_active, "form": form, "services": services,
     })
 
 
