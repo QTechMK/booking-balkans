@@ -1,16 +1,18 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.db.models import BooleanField
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
-from booking.reservations.models import Guest, ReservationItem, ReservationStatus, StayStatus
+from booking.reservations.models import Guest, Reservation, ReservationItem, ReservationStatus, StayStatus
 from booking.reservations.views import _business_properties
 from booking.tenancy.models import (
     BedType, BoardType, Membership, Property, PropertySettings, RateType,
@@ -108,6 +110,50 @@ def dashboard(request):
     return render(request, "booking/operations/dashboard.html", {
         "title": "Hotel Dashboard", "properties": properties, "selected_property": selected,
         "metrics": metrics, "recent_tasks": recent_tasks, "recent_tickets": recent_tickets, "today": today,
+    })
+
+
+@login_required
+def reports(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.reports.view"):
+        return HttpResponseForbidden("Bu tesis için rapor erişiminiz yok.")
+    today = timezone.localdate()
+    start = parse_date(request.GET.get("start", "")) or today.replace(day=1)
+    end = parse_date(request.GET.get("end", "")) or today
+    if end < start:
+        start, end = end, start
+    reservations = ReservationItem.objects.filter(
+        reservation__property=selected,
+        reservation__status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED, ReservationStatus.COMPLETED],
+        reservation__check_in__lt=end + timedelta(days=1),
+        reservation__check_out__gt=start,
+    ).select_related("reservation", "reservation__guest", "unit", "unit_type") if selected else ReservationItem.objects.none()
+    room_nights = 0
+    for item in reservations:
+        overlap_start = max(item.reservation.check_in, start)
+        overlap_end = min(item.reservation.check_out, end + timedelta(days=1))
+        room_nights += max(0, (overlap_end - overlap_start).days) * item.quantity
+    reservation_headers = reservations.values("reservation_id").distinct()
+    revenue = Reservation.objects.filter(id__in=reservation_headers).aggregate(total=Sum("total_amount"))["total"] or 0
+    rooms = selected.units.filter(is_active=True).count() if selected else 0
+    available_nights = rooms * ((end - start).days + 1)
+    metrics = {
+        "reservations": reservation_headers.count(), "room_nights": room_nights,
+        "revenue": revenue, "arrivals": Reservation.objects.filter(property=selected, check_in__range=(start, end)).count() if selected else 0,
+        "departures": Reservation.objects.filter(property=selected, check_out__range=(start, end)).count() if selected else 0,
+        "occupancy": round((room_nights / available_nights) * 100, 1) if available_nights else 0,
+    }
+    if request.GET.get("format") == "csv":
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="hotel-report-{start.isoformat()}-{end.isoformat()}.csv"'
+        response.write("Metrik,Değer\n")
+        for label, value in (("Başlangıç", start), ("Bitiş", end), ("Rezervasyon", metrics["reservations"]), ("Oda gece", room_nights), ("Gelir", revenue), ("Doluluk %", metrics["occupancy"]), ("Giriş", metrics["arrivals"]), ("Çıkış", metrics["departures"])):
+            response.write(f'"{label}","{value}"\n')
+        return response
+    return render(request, "booking/operations/reports.html", {
+        "title": "Otel Raporları", "properties": properties, "selected_property": selected,
+        "start": start, "end": end, "metrics": metrics,
     })
 
 
