@@ -173,3 +173,67 @@ class OnlineBookingSettings(models.Model):
     meta_keywords = models.CharField(max_length=255, blank=True)
     domain = models.CharField(max_length=255, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class AccessPermission(models.Model):
+    code = models.SlugField(max_length=120, unique=True)
+    name = models.CharField(max_length=180)
+    module = models.CharField(max_length=80)
+    action = models.CharField(max_length=40)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["module", "code"]
+
+    def __str__(self):
+        return f"{self.module} · {self.action}"
+
+
+class PropertyRole(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="access_roles")
+    name = models.CharField(max_length=120)
+    department = models.CharField(max_length=120, blank=True)
+    permissions = models.ManyToManyField(AccessPermission, blank=True, related_name="roles")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["property", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "name"], name="unique_property_role_name")]
+
+    def __str__(self):
+        return f"{self.property.name} · {self.name}"
+
+
+class UserPropertyAccess(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="property_accesses")
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="user_accesses")
+    role = models.ForeignKey(PropertyRole, on_delete=models.PROTECT, related_name="user_accesses")
+    is_active = models.BooleanField(default=True)
+    valid_from = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    two_factor_required = models.BooleanField(default=False)
+    last_pin_change = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["user", "property", "role"], name="unique_user_property_role")]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.role_id and self.property_id and self.role.property_id != self.property_id:
+            raise ValidationError({"role": _("Role must belong to the selected property.")})
+        if self.valid_from and self.valid_until and self.valid_until < self.valid_from:
+            raise ValidationError({"valid_until": _("Validity end cannot be before start.")})
+
+
+class UserAccessLog(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="access_logs")
+    property = models.ForeignKey(Property, on_delete=models.SET_NULL, null=True, blank=True, related_name="access_logs")
+    successful = models.BooleanField(default=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    event = models.CharField(max_length=80, default="login")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["property", "created_at"]), models.Index(fields=["user", "created_at"])]

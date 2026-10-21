@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import GuestProfileExtension, HousekeepingTask, MaintenanceTicket, OperationalTask, OnlineBookingSettings, TaskGroup, TaskLocation, UnitHousekeepingState
+from .models import AccessPermission, GuestProfileExtension, HousekeepingTask, MaintenanceTicket, OperationalTask, OnlineBookingSettings, PropertyRole, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -32,6 +32,37 @@ class OperationalTaskAdmin(admin.ModelAdmin):
     list_filter = ("property", "status", "priority", "source")
     search_fields = ("title", "description", "unit__code")
     autocomplete_fields = ("property", "group", "location", "unit", "assigned_to")
+
+
+@admin.register(AccessPermission)
+class AccessPermissionAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "module", "action", "is_active")
+    list_filter = ("module", "action", "is_active")
+    search_fields = ("code", "name")
+
+
+@admin.register(PropertyRole)
+class PropertyRoleAdmin(admin.ModelAdmin):
+    list_display = ("name", "property", "department", "is_active")
+    list_filter = ("property", "is_active")
+    search_fields = ("name", "department", "property__name")
+    autocomplete_fields = ("property", "permissions")
+
+
+@admin.register(UserPropertyAccess)
+class UserPropertyAccessAdmin(admin.ModelAdmin):
+    list_display = ("user", "property", "role", "is_active", "two_factor_required", "valid_until")
+    list_filter = ("property", "role", "is_active", "two_factor_required")
+    search_fields = ("user__username", "user__email", "property__name", "role__name")
+    autocomplete_fields = ("user", "property", "role")
+
+
+@admin.register(UserAccessLog)
+class UserAccessLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "user", "property", "event", "successful", "ip_address")
+    list_filter = ("event", "successful", "property")
+    search_fields = ("user__username", "ip_address", "event")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(MaintenanceTicket)

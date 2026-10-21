@@ -24,10 +24,11 @@ from .models import (
     MaintenanceTicket,
     OnlineBookingSettings,
     OperationalTask,
+    PropertyRole,
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus,
+    TaskStatus, UserAccessLog, UserPropertyAccess,
     UnitHousekeepingState,
 )
 from .forms import (
@@ -221,6 +222,9 @@ def access_control(request):
     return render(request, "booking/operations/access_control.html", {
         "properties": properties, "selected_property": selected,
         "memberships": list(memberships) + list(property_memberships),
+        "roles": selected.access_roles.prefetch_related("permissions") if selected else PropertyRole.objects.none(),
+        "accesses": selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none(),
+        "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),
     })
 
 
