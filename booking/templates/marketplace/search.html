@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'partials/navbar.html' %}
+<main class="booking-flow-main py-5">
+  <div class="container">
+    <div class="mb-4">
+      <h1 class="h3 mb-2">Konaklama ara</h1>
+      <p class="text-body-secondary mb-0">Balkanlar'daki işletmeler arasından size uygun konaklamayı bulun.</p>
+    </div>
+
+    <div class="card border shadow-sm mb-4">
+      <div class="card-body p-4">
+        <form method="get" class="row g-3 align-items-end">
+          <div class="col-lg-4"><label class="form-label" for="id_q">Konum veya işletme</label><input class="form-control" type="search" name="q" id="id_q" value="{{ form.q.value|default:'' }}" placeholder="Örn. İstanbul veya otel adı"></div>
+          <div class="col-lg-2">{{ form.check_in.label_tag }}{{ form.check_in }}{% for error in form.check_in.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}</div>
+          <div class="col-lg-2">{{ form.check_out.label_tag }}{{ form.check_out }}{% for error in form.check_out.errors %}<div class="small text-danger">{{ error }}</div>{% endfor %}</div>
+          <div class="col-lg-2">{{ form.quantity.label_tag }}{{ form.quantity }}</div>
+          <div class="col-lg-2"><button class="btn btn-primary w-100" type="submit">Ara</button></div>
+        </form>
+      </div>
+    </div>
+
+    {% if searched %}
+      <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h5 mb-0">Arama sonuçları</h2><span class="small text-body-secondary">{{ results|length }} işletme</span></div>
+      <div class="row g-4">
+        {% for result in results %}
+          <div class="col-md-6 col-xl-4">
+            <div class="card border shadow-sm h-100">
+              <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between gap-2"><h3 class="h5 mb-1">{{ result.property.name }}</h3>{% if result.availability.available %}<span class="badge bg-success">Müsait</span>{% else %}<span class="badge bg-secondary">Uygun değil</span>{% endif %}</div>
+                <p class="text-body-secondary small mb-3">{{ result.property.city|default:result.property.country }} · {{ result.rate_plan.name }}</p>
+                {% if result.availability.available %}<div class="mt-auto"><div class="small text-body-secondary">Toplam fiyat</div><div class="fs-4 fw-semibold mb-3">{{ result.availability.total_amount }} {{ result.rate_plan.currency }}</div><a class="btn btn-primary w-100" href="{% url 'reservations:guest_details' %}?{{ result.booking_query }}">Odayı seç</a></div>{% else %}<p class="small text-body-secondary mt-auto mb-0">Seçilen tarihlerde müsait oda bulunamadı.</p>{% endif %}
+              </div>
+            </div>
+          </div>
+        {% empty %}<div class="col-12"><div class="card border shadow-sm"><div class="card-body text-center py-5 text-body-secondary">Aramanızla eşleşen aktif işletme bulunamadı.</div></div></div>{% endfor %}
+      </div>
+    {% else %}
+      <div class="card border shadow-sm"><div class="card-body text-center py-5"><h2 class="h5">Aramaya başlayın</h2><p class="text-body-secondary mb-0">Tarih ve konum seçerek müsait konaklamaları görüntüleyin.</p></div></div>
+    {% endif %}
+  </div>
+</main>
+{% include 'partials/footer.html' %}
+{% endblock content %}

@@ -3,6 +3,31 @@ from django import forms
 from .models import Guest
 
 
+class MarketplaceSearchForm(forms.Form):
+    q = forms.CharField(required=False, label="Konum veya işletme")
+    check_in = forms.DateField(
+        label="Giriş",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    check_out = forms.DateField(
+        label="Çıkış",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    quantity = forms.IntegerField(
+        label="Oda",
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("check_in") and cleaned.get("check_out"):
+            if cleaned["check_out"] <= cleaned["check_in"]:
+                self.add_error("check_out", "Çıkış tarihi giriş tarihinden sonra olmalı.")
+        return cleaned
+
+
 class BookingSearchForm(forms.Form):
     property_id = forms.IntegerField(widget=forms.HiddenInput)
     rate_plan_id = forms.IntegerField(widget=forms.HiddenInput)

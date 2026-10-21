@@ -1,5 +1,6 @@
 from datetime import date
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -18,6 +19,7 @@ from booking.tenancy.services.availability import get_availability
 
 from .forms import BookingSearchForm
 from .forms import GuestBookingForm
+from .forms import MarketplaceSearchForm
 from .models import Reservation
 from .models import ReservationSource
 from .models import ReservationStatus
@@ -33,6 +35,67 @@ def _default_search():
     )
     start = date.today() + timedelta(days=1)
     return property_, rate_plan, start, start + timedelta(days=2)
+
+
+def marketplace_search(request):
+    start = date.today() + timedelta(days=1)
+    end = start + timedelta(days=2)
+    form = MarketplaceSearchForm(
+        request.GET or None,
+        initial={"check_in": start, "check_out": end, "quantity": 1},
+    )
+    results = []
+    searched = bool(request.GET)
+    if form.is_valid() and searched:
+        cleaned = form.cleaned_data
+        properties = Property.objects.filter(is_active=True).order_by("name")
+        if cleaned["q"]:
+            term = cleaned["q"].strip()
+            properties = properties.filter(
+                Q(name__icontains=term)
+                | Q(city__icontains=term)
+                | Q(address__icontains=term)
+            )
+        for property_ in properties.prefetch_related("rate_plans"):
+            rate_plans = list(property_.rate_plans.filter(is_active=True))
+            availability = None
+            selected_rate_plan = None
+            for rate_plan in rate_plans:
+                candidate = get_availability(
+                    property_id=property_.id,
+                    rate_plan_id=rate_plan.id,
+                    check_in=cleaned["check_in"],
+                    check_out=cleaned["check_out"],
+                    quantity=cleaned["quantity"],
+                )
+                if availability is None or candidate.available:
+                    availability = candidate
+                    selected_rate_plan = rate_plan
+                if candidate.available:
+                    break
+            if selected_rate_plan:
+                booking_query = urlencode(
+                    {
+                        "property_id": property_.id,
+                        "rate_plan_id": selected_rate_plan.id,
+                        "check_in": cleaned["check_in"].isoformat(),
+                        "check_out": cleaned["check_out"].isoformat(),
+                        "quantity": cleaned["quantity"],
+                    }
+                )
+                results.append(
+                    {
+                        "property": property_,
+                        "rate_plan": selected_rate_plan,
+                        "availability": availability,
+                        "booking_query": booking_query,
+                    }
+                )
+    return render(
+        request,
+        "marketplace/search.html",
+        {"form": form, "results": results, "searched": searched},
+    )
 
 
 def search(request):
