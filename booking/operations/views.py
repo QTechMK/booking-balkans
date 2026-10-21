@@ -630,6 +630,25 @@ def room_rack(request):
                         },
                     )
                 messages.success(request, f"{item.reservation.reference} için check-out tamamlandı.")
+            elif item and action == "move_unit":
+                target = selected.units.filter(id=request.POST.get("unit_id"), is_active=True).first()
+                if not target:
+                    raise ValidationError("Geçerli bir oda seçilmedi.")
+                if target.unit_type_id != item.unit_type_id:
+                    raise ValidationError("Oda tipi rezervasyonun oda tipiyle aynı olmalıdır.")
+                if target.status in {"maintenance", "out_of_service"} or target.is_locked:
+                    raise ValidationError("Seçilen oda bakımda, kullanım dışı veya kilitli.")
+                conflict = ReservationItem.objects.filter(
+                    reservation__property=selected, unit=target,
+                    reservation__status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+                    reservation__check_in__lt=item.reservation.check_out,
+                    reservation__check_out__gt=item.reservation.check_in,
+                ).exclude(id=item.id).exists()
+                if conflict:
+                    raise ValidationError("Seçilen oda rezervasyon tarihleri içinde dolu.")
+                item.unit = target
+                item.save(update_fields=["unit", "updated_at"])
+                messages.success(request, f"{item.reservation.reference} oda {target.code} olarak güncellendi.")
         except ValidationError as exc:
             messages.error(request, str(exc))
         return redirect(f"{reverse('operations:room_rack')}?property_id={selected.id}&rack_date={selected_date.isoformat()}")
@@ -645,6 +664,9 @@ def room_rack(request):
     rooms = []
     if selected:
         states = {state.unit_id: state for state in UnitHousekeepingState.objects.filter(unit__property=selected)}
+        units_by_type = {}
+        for candidate in selected.units.filter(is_active=True).order_by("floor", "code"):
+            units_by_type.setdefault(candidate.unit_type_id, []).append(candidate)
         for unit in selected.units.select_related("unit_type", "unit_type__room_group").order_by("floor", "code"):
             item = by_unit.get(unit.id)
             housekeeping_state = states.get(unit.id)
@@ -660,14 +682,17 @@ def room_rack(request):
                 rack_status = housekeeping_state.get_status_display()
             else:
                 rack_status = "Müsait"
-            rooms.append({"unit": unit, "item": item, "status": rack_status})
+            rooms.append({"unit": unit, "item": item, "status": rack_status, "available_units": units_by_type.get(unit.unit_type_id, [])})
     unassigned = ReservationItem.objects.filter(
         reservation__property=selected, unit__isnull=True,
         reservation__status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
         reservation__check_in__lte=selected_date, reservation__check_out__gt=selected_date,
     ).select_related("reservation", "reservation__guest", "unit_type") if selected else ReservationItem.objects.none()
+    unassigned = list(unassigned)
+    for item in unassigned:
+        item.rack_units = units_by_type.get(item.unit_type_id, []) if selected else []
     return render(request, "booking/operations/room_rack.html", {
         "title": "Room Rack",
         "properties": properties, "selected_property": selected, "rack_date": selected_date,
-        "rooms": rooms, "unassigned": unassigned,
+        "rooms": rooms, "unassigned": unassigned, "units_by_type": units_by_type if selected else {},
     })
