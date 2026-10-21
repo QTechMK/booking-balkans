@@ -18,6 +18,7 @@ from booking.users.tests.factories import UserFactory
 from booking.users.views import UserRedirectView
 from booking.users.views import UserUpdateView
 from booking.users.views import user_detail_view
+from booking.tenancy.models import Membership, Organization, Property
 
 pytestmark = pytest.mark.django_db
 
@@ -80,6 +81,22 @@ class TestUserRedirectView:
 
         view.request = request
         assert view.get_redirect_url() == f"/users/{user.username}/"
+
+    def test_property_member_is_redirected_to_hotel_dashboard(self, user: User, rf: RequestFactory):
+        organization = Organization.objects.create(name="Hotel Group", slug="hotel-group")
+        property_ = Property.objects.create(organization=organization, name="Main Hotel", slug="main-hotel")
+        Membership.objects.create(
+            organization=organization,
+            user=user,
+            property=property_,
+            role="manager",
+        )
+        view = UserRedirectView()
+        request = rf.get("/fake-url")
+        request.user = user
+
+        view.request = request
+        assert view.get_redirect_url() == "/booking/business/dashboard/"
 
 
 class TestUserDetailView:

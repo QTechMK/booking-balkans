@@ -7,6 +7,7 @@ from django.views.generic import DetailView
 from django.views.generic import RedirectView
 from django.views.generic import UpdateView
 
+from booking.tenancy.models import Membership
 from booking.users.models import User
 
 
@@ -40,6 +41,8 @@ class UserRedirectView(LoginRequiredMixin, RedirectView):
     permanent = False
 
     def get_redirect_url(self) -> str:
+        if Membership.objects.filter(user=self.request.user, is_active=True).exists():
+            return reverse("operations:dashboard")
         return reverse("users:detail", kwargs={"username": self.request.user.username})
 
 
