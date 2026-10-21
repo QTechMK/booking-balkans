@@ -12,4 +12,21 @@ body { background: #f5f6fa; }
 .table td, .table th { vertical-align: middle; }
 .status-pill { min-width: 90px; display: inline-block; text-align: center; }
 .form-label { font-weight: 600; color: #4d5360; }
+.content-body { overflow-x: hidden; }
+.content-body .container-fluid { padding-left: 24px; padding-right: 24px; }
+.content-body .card { height: 100%; overflow: visible; }
+.content-body .card-header { min-height: 54px; display: flex; align-items: center; }
+.content-body form .form-control,
+.content-body form .form-select { width: 100%; min-height: 40px; }
+.content-body form textarea.form-control { min-height: 88px; }
+.content-body form select[multiple].form-select { min-height: 138px; padding: 8px 12px; }
+.content-body form .form-check { min-height: 34px; display: flex; align-items: center; gap: 8px; }
+.content-body form .form-check-input { width: 1.1rem; height: 1.1rem; margin-top: 0; }
+.content-body .table-responsive { overflow-x: auto; }
+.content-body .table { min-width: 680px; }
+.content-body .hotel-toolbar .form-select { width: auto; min-width: 220px; }
 @media (max-width: 991px) { .header .dashboard_bar { font-size: 18px; } .brand-title { display: none; } }
+@media (max-width: 767px) {
+  .content-body .container-fluid { padding-left: 14px; padding-right: 14px; }
+  .content-body .hotel-toolbar .form-select { width: 100%; }
+}

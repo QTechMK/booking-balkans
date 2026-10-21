@@ -7,21 +7,40 @@ from booking.tenancy.models import (
 from .models import AccessPermission, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, TaskGroup, TaskLocation, UserPropertyAccess
 
 
-class PropertySettingsForm(forms.ModelForm):
+class HotelModelForm(forms.ModelForm):
+    """Apply the shared Bootstrap/Tixia control classes to generated forms."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            classes = widget.attrs.get("class", "").split()
+            if isinstance(widget, forms.CheckboxInput):
+                css_class = "form-check-input"
+            elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
+                css_class = "form-select"
+            else:
+                css_class = "form-control"
+            if css_class not in classes:
+                classes.append(css_class)
+            widget.attrs["class"] = " ".join(classes)
+
+
+class PropertySettingsForm(HotelModelForm):
     class Meta:
         model = PropertySettings
         exclude = ["property"]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
 
-class PropertyProfileForm(forms.ModelForm):
+class PropertyProfileForm(HotelModelForm):
     class Meta:
         model = Property
         fields = ["name", "slug", "business_type", "address", "city", "country", "document_number", "timezone", "currency", "is_active"]
         widgets = {"address": forms.Textarea(attrs={"rows": 2})}
 
 
-class DictionaryForm(forms.ModelForm):
+class DictionaryForm(HotelModelForm):
     class Meta:
         fields = ["code", "name", "description", "is_active"]
 
@@ -61,7 +80,7 @@ class RateTypeForm(DictionaryForm):
         ]
 
 
-class RoomPhotoForm(forms.ModelForm):
+class RoomPhotoForm(HotelModelForm):
     class Meta:
         model = RoomPhoto
         fields = ["unit_type", "unit", "image", "image_url", "alt_text", "is_primary", "sort_order"]
@@ -76,7 +95,7 @@ class RoomPhotoForm(forms.ModelForm):
         return cleaned
 
 
-class TaskDictionaryForm(forms.ModelForm):
+class TaskDictionaryForm(HotelModelForm):
     class Meta:
         fields = ["code", "name", "is_active"]
 
@@ -91,41 +110,41 @@ class TaskLocationForm(TaskDictionaryForm):
         model = TaskLocation
 
 
-class OperationalTaskForm(forms.ModelForm):
+class OperationalTaskForm(HotelModelForm):
     class Meta:
         model = OperationalTask
         fields = ["group", "location", "unit", "title", "description", "status", "priority", "assigned_to", "due_at"]
         widgets = {"due_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "description": forms.Textarea(attrs={"rows": 2})}
 
 
-class GuestProfileForm(forms.ModelForm):
+class GuestProfileForm(HotelModelForm):
     class Meta:
         model = GuestProfileExtension
         fields = ["gender", "birth_date", "nationality", "identity_reference", "company_name", "tax_number", "vip", "gdpr_confirmed", "email_confirmed", "phone_confirmed", "preferences", "allergens", "loyalty_code"]
         widgets = {"birth_date": forms.DateInput(attrs={"type": "date"}), "preferences": forms.Textarea(attrs={"rows": 2}), "allergens": forms.Textarea(attrs={"rows": 2})}
 
 
-class LoyaltyTierForm(forms.ModelForm):
+class LoyaltyTierForm(HotelModelForm):
     class Meta:
         model = LoyaltyTier
         fields = ["code", "name", "minimum_points", "discount_percent", "is_active"]
 
 
-class UnitTypeForm(forms.ModelForm):
+class UnitTypeForm(HotelModelForm):
     class Meta:
         model = UnitType
         exclude = ["property", "created_at", "updated_at"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
 
-class UnitForm(forms.ModelForm):
+class UnitForm(HotelModelForm):
     class Meta:
         model = Unit
         exclude = ["property", "created_at", "updated_at"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
 
-class GuestSegmentForm(forms.ModelForm):
+class GuestSegmentForm(HotelModelForm):
     vip_only = forms.BooleanField(required=False, label="Yalnızca VIP misafirler")
     gdpr_required = forms.BooleanField(required=False, label="GDPR onayı olanlar")
     country = forms.CharField(required=False, max_length=2, label="Ülke kodu")
@@ -157,34 +176,34 @@ class GuestSegmentForm(forms.ModelForm):
         return obj
 
 
-class MessageTemplateForm(forms.ModelForm):
+class MessageTemplateForm(HotelModelForm):
     class Meta:
         model = MessageTemplate
         exclude = ["property", "updated_at"]
         widgets = {"body": forms.Textarea(attrs={"rows": 5})}
 
 
-class MarketingCampaignForm(forms.ModelForm):
+class MarketingCampaignForm(HotelModelForm):
     class Meta:
         model = MarketingCampaign
         exclude = ["property", "sent_at", "created_by", "created_at"]
         widgets = {"scheduled_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
 
 
-class PropertyServiceForm(forms.ModelForm):
+class PropertyServiceForm(HotelModelForm):
     class Meta:
         model = PropertyService
         exclude = ["property", "created_at", "updated_at"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
 
-class PropertyRoleForm(forms.ModelForm):
+class PropertyRoleForm(HotelModelForm):
     class Meta:
         model = PropertyRole
         fields = ["name", "department", "permissions", "is_active"]
 
 
-class UserPropertyAccessForm(forms.ModelForm):
+class UserPropertyAccessForm(HotelModelForm):
     class Meta:
         model = UserPropertyAccess
         fields = ["user", "role", "is_active", "valid_from", "valid_until", "two_factor_required", "last_pin_change"]
@@ -195,7 +214,7 @@ class UserPropertyAccessForm(forms.ModelForm):
         }
 
 
-class UserProfileForm(forms.ModelForm):
+class UserProfileForm(HotelModelForm):
     class Meta:
         model = get_user_model()
         fields = ["name", "email", "phone", "gender", "position", "department"]
