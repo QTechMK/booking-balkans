@@ -166,12 +166,16 @@ def housekeeping(request):
         task = HousekeepingTask.objects.filter(property=selected, id=request.POST.get("task_id")).first()
         unit = selected.units.filter(id=request.POST.get("unit_id")).first()
         if request.POST.get("action") == "create" and unit:
+            due_at = parse_datetime(request.POST.get("due_at", "")) if request.POST.get("due_at") else None
+            if due_at and timezone.is_naive(due_at):
+                due_at = timezone.make_aware(due_at)
             HousekeepingTask.objects.create(
                 property=selected, unit=unit,
                 status=request.POST.get("status", HousekeepingStatus.DIRTY),
                 priority=request.POST.get("priority", TaskPriority.NORMAL),
                 assigned_to_id=request.POST.get("assigned_to") or None,
                 note=request.POST.get("note", ""),
+                due_at=due_at,
             )
             UnitHousekeepingState.objects.update_or_create(
                 unit=unit,
@@ -181,8 +185,10 @@ def housekeeping(request):
             status = request.POST.get("status")
             if status in HousekeepingStatus.values:
                 task.status = status
-                task.inspected_at = timezone.now() if status == HousekeepingStatus.INSPECTION else task.inspected_at
-                task.save(update_fields=["status", "inspected_at", "updated_at"])
+                task.assigned_to_id = request.POST.get("assigned_to") or task.assigned_to_id
+                task.note = request.POST.get("note", task.note)
+                task.inspected_at = timezone.now() if status in {HousekeepingStatus.INSPECTION, HousekeepingStatus.CLEAN} else task.inspected_at
+                task.save(update_fields=["status", "assigned_to", "note", "inspected_at", "updated_at"])
                 UnitHousekeepingState.objects.update_or_create(
                     unit=task.unit,
                     defaults={"status": status, "note": task.note, "changed_by": request.user},
