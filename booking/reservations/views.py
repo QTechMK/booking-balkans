@@ -98,6 +98,59 @@ def marketplace_search(request):
     )
 
 
+def marketplace_property_detail(request, pk):
+    property_ = get_object_or_404(Property, pk=pk, is_active=True)
+    start = date.today() + timedelta(days=1)
+    end = start + timedelta(days=2)
+    form = MarketplaceSearchForm(
+        request.GET or None,
+        initial={"check_in": start, "check_out": end, "quantity": 1},
+    )
+    rate_results = []
+    if request.GET and form.is_valid():
+        cleaned = form.cleaned_data
+        check_in = cleaned["check_in"]
+        check_out = cleaned["check_out"]
+        quantity = cleaned["quantity"]
+    else:
+        check_in, check_out, quantity = start, end, 1
+
+    for rate_plan in property_.rate_plans.filter(is_active=True).order_by("name"):
+        availability = get_availability(
+            property_id=property_.id,
+            rate_plan_id=rate_plan.id,
+            check_in=check_in,
+            check_out=check_out,
+            quantity=quantity,
+        )
+        rate_results.append(
+            {
+                "rate_plan": rate_plan,
+                "availability": availability,
+                "booking_query": urlencode(
+                    {
+                        "property_id": property_.id,
+                        "rate_plan_id": rate_plan.id,
+                        "check_in": check_in.isoformat(),
+                        "check_out": check_out.isoformat(),
+                        "quantity": quantity,
+                    }
+                ),
+            }
+        )
+    return render(
+        request,
+        "marketplace/property_detail.html",
+        {
+            "property": property_,
+            "form": form,
+            "rate_results": rate_results,
+            "check_in": check_in,
+            "check_out": check_out,
+        },
+    )
+
+
 def search(request):
     default_property, default_rate_plan, start, end = _default_search()
     form = BookingSearchForm(
