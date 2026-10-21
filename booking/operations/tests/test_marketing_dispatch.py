@@ -47,3 +47,31 @@ def test_dispatch_marketing_skips_future_campaign(email_campaign):
     call_command("dispatch_marketing")
     email_campaign.refresh_from_db()
     assert email_campaign.status == MarketingDelivery.Status.QUEUED
+
+
+@pytest.mark.django_db
+def test_dispatch_marketing_defers_sms_without_provider(email_campaign):
+    email_campaign.channel = MessageTemplate.Channel.SMS
+    email_campaign.recipient = "+38970000000"
+    email_campaign.save(update_fields=["channel", "recipient"])
+    email_campaign.campaign.template.channel = MessageTemplate.Channel.SMS
+    email_campaign.campaign.template.save(update_fields=["channel"])
+    call_command("dispatch_marketing")
+    email_campaign.refresh_from_db()
+    assert email_campaign.status == MarketingDelivery.Status.QUEUED
+
+
+@pytest.mark.django_db
+def test_dispatch_marketing_sends_sms_to_configured_webhook(email_campaign, settings, monkeypatch):
+    email_campaign.channel = MessageTemplate.Channel.SMS
+    email_campaign.recipient = "+38970000000"
+    email_campaign.save(update_fields=["channel", "recipient"])
+    email_campaign.campaign.template.channel = MessageTemplate.Channel.SMS
+    email_campaign.campaign.template.save(update_fields=["channel"])
+    settings.MARKETING_SMS_WEBHOOK_URL = "https://provider.test/messages"
+    settings.MARKETING_SMS_WEBHOOK_TOKEN = "token"
+    monkeypatch.setattr("booking.operations.management.commands.dispatch_marketing.requests.post", lambda *args, **kwargs: type("Response", (), {"ok": True, "json": lambda self: {"message_id": "sms-1"}})())
+    call_command("dispatch_marketing")
+    email_campaign.refresh_from_db()
+    assert email_campaign.status == MarketingDelivery.Status.SENT
+    assert email_campaign.provider_message_id == "sms-1"

@@ -281,6 +281,12 @@ PAYMENT_PAYPAL_CLIENT_ID = env("PAYMENT_PAYPAL_CLIENT_ID", default="")
 PAYMENT_PAYPAL_CLIENT_SECRET = env("PAYMENT_PAYPAL_CLIENT_SECRET", default="")
 PAYMENT_PAYPAL_BASE_URL = env("PAYMENT_PAYPAL_BASE_URL", default="https://api-m.sandbox.paypal.com")
 
+# Optional channel-provider webhooks for CRM campaign delivery.
+MARKETING_SMS_WEBHOOK_URL = env("MARKETING_SMS_WEBHOOK_URL", default="")
+MARKETING_SMS_WEBHOOK_TOKEN = env("MARKETING_SMS_WEBHOOK_TOKEN", default="")
+MARKETING_WHATSAPP_WEBHOOK_URL = env("MARKETING_WHATSAPP_WEBHOOK_URL", default="")
+MARKETING_WHATSAPP_WEBHOOK_TOKEN = env("MARKETING_WHATSAPP_WEBHOOK_TOKEN", default="")
+
 
 # django-allauth
 # ------------------------------------------------------------------------------
