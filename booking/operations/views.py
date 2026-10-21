@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db.models import BooleanField
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
-from booking.reservations.models import Guest
+from booking.reservations.models import Guest, ReservationItem, ReservationStatus, StayStatus
 from booking.reservations.views import _business_properties
 from booking.tenancy.models import (
     BedType, BoardType, Membership, Property, PropertySettings, RateType,
@@ -206,4 +208,58 @@ def hotel_dictionaries(request):
         "properties": properties, "selected_property": selected, "active_entity": active,
         "form": form, "lists": lists, "selected_items": lists[active],
         "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "room_photo": "Oda fotoğrafı", "board_type": "Board Type", "rate_type": "Rate Type"},
+    })
+
+
+@login_required
+def room_rack(request):
+    properties, selected = _selected_property(request)
+    selected_date = parse_date(request.POST.get("rack_date") or request.GET.get("rack_date", "")) or timezone.localdate()
+    if request.method == "POST" and selected:
+        item = ReservationItem.objects.filter(
+            id=request.POST.get("item_id"), reservation__property=selected,
+        ).select_related("reservation", "unit").first()
+        action = request.POST.get("action")
+        try:
+            if item and action == "check_in":
+                item.check_in(actor=request.user)
+                messages.success(request, f"{item.reservation.reference} için check-in tamamlandı.")
+            elif item and action == "check_out":
+                item.check_out(actor=request.user)
+                messages.success(request, f"{item.reservation.reference} için check-out tamamlandı.")
+        except ValidationError as exc:
+            messages.error(request, str(exc))
+        return redirect(f"{reverse('operations:room_rack')}?property_id={selected.id}&rack_date={selected_date.isoformat()}")
+
+    occupied = ReservationItem.objects.filter(
+        reservation__property=selected,
+        reservation__status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        reservation__check_in__lte=selected_date,
+        reservation__check_out__gt=selected_date,
+        unit__isnull=False,
+    ).select_related("reservation", "reservation__guest", "unit", "unit_type") if selected else ReservationItem.objects.none()
+    by_unit = {item.unit_id: item for item in occupied}
+    rooms = []
+    if selected:
+        for unit in selected.units.select_related("unit_type", "unit_type__room_group").order_by("floor", "code"):
+            item = by_unit.get(unit.id)
+            if unit.status == "maintenance":
+                rack_status = "Bakım"
+            elif unit.status == "out_of_service":
+                rack_status = "Kullanım dışı"
+            elif item and item.stay_status == StayStatus.CHECKED_IN:
+                rack_status = "Konaklıyor"
+            elif item:
+                rack_status = "Giriş bekliyor"
+            else:
+                rack_status = "Müsait"
+            rooms.append({"unit": unit, "item": item, "status": rack_status})
+    unassigned = ReservationItem.objects.filter(
+        reservation__property=selected, unit__isnull=True,
+        reservation__status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        reservation__check_in__lte=selected_date, reservation__check_out__gt=selected_date,
+    ).select_related("reservation", "reservation__guest", "unit_type") if selected else ReservationItem.objects.none()
+    return render(request, "booking/operations/room_rack.html", {
+        "properties": properties, "selected_property": selected, "rack_date": selected_date,
+        "rooms": rooms, "unassigned": unassigned,
     })
