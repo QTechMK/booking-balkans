@@ -3,6 +3,7 @@ from django import forms
 from booking.tenancy.models import (
     BedType, BoardType, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView,
 )
+from .models import OperationalTask, TaskGroup, TaskLocation
 
 
 class PropertySettingsForm(forms.ModelForm):
@@ -62,3 +63,25 @@ class RoomPhotoForm(forms.ModelForm):
         if not cleaned.get("unit_type") and not cleaned.get("unit"):
             raise forms.ValidationError("Fotoğraf bir oda tipine veya fiziksel odaya bağlanmalıdır.")
         return cleaned
+
+
+class TaskDictionaryForm(forms.ModelForm):
+    class Meta:
+        fields = ["code", "name", "is_active"]
+
+
+class TaskGroupForm(TaskDictionaryForm):
+    class Meta(TaskDictionaryForm.Meta):
+        model = TaskGroup
+
+
+class TaskLocationForm(TaskDictionaryForm):
+    class Meta(TaskDictionaryForm.Meta):
+        model = TaskLocation
+
+
+class OperationalTaskForm(forms.ModelForm):
+    class Meta:
+        model = OperationalTask
+        fields = ["group", "location", "unit", "title", "description", "status", "priority", "assigned_to", "due_at"]
+        widgets = {"due_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "description": forms.Textarea(attrs={"rows": 2})}

@@ -21,6 +21,63 @@ class TaskPriority(models.TextChoices):
     URGENT = "urgent", _("Urgent")
 
 
+class TaskStatus(models.TextChoices):
+    OPEN = "open", _("Open")
+    IN_PROGRESS = "in_progress", _("In progress")
+    WAITING = "waiting", _("Waiting")
+    DONE = "done", _("Done")
+    CANCELLED = "cancelled", _("Cancelled")
+
+
+class TaskDictionaryBase(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE)
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=160)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["property", "name"]
+
+
+class TaskGroup(TaskDictionaryBase):
+    class Meta(TaskDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_task_group_code_per_property")]
+
+
+class TaskLocation(TaskDictionaryBase):
+    class Meta(TaskDictionaryBase.Meta):
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_task_location_code_per_property")]
+
+
+class OperationalTask(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="operational_tasks")
+    group = models.ForeignKey(TaskGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks")
+    location = models.ForeignKey(TaskLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks")
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name="operational_tasks")
+    title = models.CharField(max_length=180)
+    description = models.TextField(blank=True)
+    source = models.CharField(max_length=40, default="manual")
+    status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.OPEN)
+    priority = models.CharField(max_length=12, choices=TaskPriority.choices, default=TaskPriority.NORMAL)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="operational_tasks")
+    due_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["status", "due_at", "-created_at"]
+        indexes = [models.Index(fields=["property", "status"]), models.Index(fields=["property", "due_at"])]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        for field in ("group", "location", "unit"):
+            value = getattr(self, f"{field}_id")
+            if value and getattr(getattr(self, field), "property_id") != self.property_id:
+                raise ValidationError({field: _("Task definition must belong to the same property.")})
+
+
 class HousekeepingTask(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="housekeeping_tasks")
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="housekeeping_tasks")

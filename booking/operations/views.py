@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db.models import BooleanField
@@ -22,12 +23,16 @@ from .models import (
     MaintenanceStatus,
     MaintenanceTicket,
     OnlineBookingSettings,
+    OperationalTask,
     TaskPriority,
+    TaskGroup,
+    TaskLocation,
+    TaskStatus,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertySettingsForm, RateTypeForm,
-    RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm,
+    OperationalTaskForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm,
 )
 
 
@@ -127,12 +132,50 @@ def maintenance(request):
 @login_required
 def tasks(request):
     properties, selected = _selected_property(request)
-    tickets = MaintenanceTicket.objects.filter(property=selected) if selected else MaintenanceTicket.objects.none()
-    housekeeping_tasks = HousekeepingTask.objects.filter(property=selected) if selected else HousekeepingTask.objects.none()
+    task = OperationalTask.objects.filter(property=selected, id=request.POST.get("task_id")).first() if selected else None
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "create":
+            form = OperationalTaskForm(request.POST)
+            _task_form_querysets(form, selected)
+            if form.is_valid():
+                obj = form.save(commit=False); obj.property = selected; obj.source = "manual"; obj.save()
+                messages.success(request, "Görev oluşturuldu.")
+        elif task and action == "update":
+            form = OperationalTaskForm(request.POST, instance=task)
+            _task_form_querysets(form, selected)
+            if form.is_valid():
+                obj = form.save(commit=False)
+                if obj.status == TaskStatus.DONE and not obj.completed_at:
+                    obj.completed_at = timezone.now()
+                elif obj.status != TaskStatus.DONE:
+                    obj.completed_at = None
+                obj.save(); messages.success(request, "Görev güncellendi.")
+        elif action in {"group", "location"}:
+            model = TaskGroup if action == "group" else TaskLocation
+            if request.POST.get("code") and request.POST.get("name"):
+                model.objects.create(property=selected, code=request.POST["code"], name=request.POST["name"])
+                messages.success(request, "Görev sözlüğü kaydedildi.")
+        return redirect(f"{reverse('operations:tasks')}?property_id={selected.id}")
+    form = OperationalTaskForm()
+    if selected: _task_form_querysets(form, selected)
+    tasks_qs = OperationalTask.objects.filter(property=selected).select_related("group", "location", "unit", "assigned_to") if selected else OperationalTask.objects.none()
     return render(request, "booking/operations/tasks.html", {
-        "properties": properties, "selected_property": selected, "tickets": tickets,
-        "housekeeping_tasks": housekeeping_tasks,
+        "properties": properties, "selected_property": selected, "tasks": tasks_qs,
+        "form": form, "task_groups": TaskGroup.objects.filter(property=selected) if selected else TaskGroup.objects.none(),
+        "task_locations": TaskLocation.objects.filter(property=selected) if selected else TaskLocation.objects.none(),
+        "status_choices": TaskStatus.choices, "priority_choices": TaskPriority.choices,
     })
+
+
+def _task_form_querysets(form, property_):
+    form.fields["group"].queryset = TaskGroup.objects.filter(property=property_, is_active=True)
+    form.fields["location"].queryset = TaskLocation.objects.filter(property=property_, is_active=True)
+    form.fields["unit"].queryset = property_.units.filter(is_active=True)
+    user_ids = Membership.objects.filter(
+        Q(organization=property_.organization, property__isnull=True) | Q(property=property_), is_active=True,
+    ).values_list("user_id", flat=True)
+    form.fields["assigned_to"].queryset = get_user_model().objects.filter(id__in=user_ids)
 
 
 @login_required

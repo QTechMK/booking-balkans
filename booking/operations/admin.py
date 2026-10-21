@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import GuestProfileExtension, HousekeepingTask, MaintenanceTicket, OnlineBookingSettings, UnitHousekeepingState
+from .models import GuestProfileExtension, HousekeepingTask, MaintenanceTicket, OperationalTask, OnlineBookingSettings, TaskGroup, TaskLocation, UnitHousekeepingState
 
 
 @admin.register(HousekeepingTask)
@@ -16,6 +16,22 @@ class UnitHousekeepingStateAdmin(admin.ModelAdmin):
     list_filter = ("status", "unit__property")
     search_fields = ("unit__code", "note")
     autocomplete_fields = ("unit", "changed_by")
+
+
+@admin.register(TaskGroup, TaskLocation)
+class TaskDictionaryAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "property", "is_active")
+    list_filter = ("property", "is_active")
+    search_fields = ("name", "code", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(OperationalTask)
+class OperationalTaskAdmin(admin.ModelAdmin):
+    list_display = ("title", "property", "status", "priority", "assigned_to", "due_at", "source")
+    list_filter = ("property", "status", "priority", "source")
+    search_fields = ("title", "description", "unit__code")
+    autocomplete_fields = ("property", "group", "location", "unit", "assigned_to")
 
 
 @admin.register(MaintenanceTicket)
