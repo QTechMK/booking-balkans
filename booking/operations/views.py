@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db.models import BooleanField
+from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -53,9 +54,30 @@ def _users_for_property(property_):
     ).select_related("user").values_list("user", "user__username")
 
 
+def _has_operation_permission(request, property_, code):
+    if not property_ or request.user.is_superuser:
+        return True
+    explicit = UserPropertyAccess.objects.filter(
+        user=request.user, property=property_, is_active=True,
+        role__is_active=True,
+    ).filter(Q(valid_from__isnull=True) | Q(valid_from__lte=timezone.localdate())) \
+      .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate()))
+    if explicit.exists():
+        return explicit.filter(role__permissions__code=code, role__permissions__is_active=True).exists()
+    return Membership.objects.filter(
+        user=request.user, organization=property_.organization, is_active=True,
+    ).filter(Q(property__isnull=True) | Q(property=property_)).exists()
+
+
+def _permission_denied(request, property_, code):
+    return bool(property_ and not _has_operation_permission(request, property_, code))
+
+
 @login_required
 def dashboard(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.dashboard.view"):
+        return HttpResponseForbidden("Bu tesis için dashboard erişiminiz yok.")
     today = timezone.localdate()
     if selected:
         rooms_total = selected.units.filter(is_active=True).count()
@@ -92,6 +114,8 @@ def dashboard(request):
 @login_required
 def housekeeping(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.housekeeping.manage"):
+        return HttpResponseForbidden("Bu tesis için housekeeping erişiminiz yok.")
     if request.method == "POST" and selected:
         task = HousekeepingTask.objects.filter(property=selected, id=request.POST.get("task_id")).first()
         unit = selected.units.filter(id=request.POST.get("unit_id")).first()
@@ -134,6 +158,8 @@ def housekeeping(request):
 @login_required
 def maintenance(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.maintenance.manage"):
+        return HttpResponseForbidden("Bu tesis için teknik servis erişiminiz yok.")
     if request.method == "POST" and selected:
         action = request.POST.get("action")
         ticket = MaintenanceTicket.objects.filter(property=selected, id=request.POST.get("ticket_id")).first()
@@ -171,6 +197,8 @@ def maintenance(request):
 @login_required
 def tasks(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.tasks.manage"):
+        return HttpResponseForbidden("Bu tesis için görev yönetimi erişiminiz yok.")
     task = OperationalTask.objects.filter(property=selected, id=request.POST.get("task_id")).first() if selected else None
     if request.method == "POST" and selected:
         action = request.POST.get("action")
@@ -221,6 +249,8 @@ def _task_form_querysets(form, property_):
 @login_required
 def online_settings(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.online_settings.manage"):
+        return HttpResponseForbidden("Bu tesis için online booking ayarlarına erişiminiz yok.")
     settings_obj = OnlineBookingSettings.objects.get_or_create(property=selected)[0] if selected else None
     if request.method == "POST" and settings_obj:
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
@@ -239,6 +269,8 @@ def online_settings(request):
 @login_required
 def crm_guests(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.crm.guests.view"):
+        return HttpResponseForbidden("Bu tesis için CRM erişiminiz yok.")
     guests = Guest.objects.filter(property=selected).select_related("profile_extension", "loyalty_account") if selected else Guest.objects.none()
     q = request.GET.get("q", "").strip()
     if q:
@@ -288,6 +320,8 @@ def crm_guests(request):
 @login_required
 def crm_marketing(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.crm.marketing.manage"):
+        return HttpResponseForbidden("Bu tesis için CRM pazarlama erişiminiz yok.")
     entity = request.POST.get("entity") or request.GET.get("entity", "segment")
     forms = {
         "segment": GuestSegmentForm(request.POST or None),
@@ -346,6 +380,8 @@ def crm_marketing(request):
 @login_required
 def access_control(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.access.manage"):
+        return HttpResponseForbidden("Bu tesis için yetki yönetimi erişiminiz yok.")
     memberships = Membership.objects.filter(
         organization=selected.organization if selected else None,
         property__isnull=True,
@@ -367,6 +403,8 @@ def access_control(request):
 @login_required
 def property_settings(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.property.settings.manage"):
+        return HttpResponseForbidden("Bu tesis için property settings erişiminiz yok.")
     settings_obj = PropertySettings.objects.filter(property=selected).first() if selected else None
     form = PropertySettingsForm(request.POST or None, instance=settings_obj)
     property_form = PropertyProfileForm(request.POST or None, instance=selected) if selected else PropertyProfileForm()
@@ -389,6 +427,8 @@ def property_settings(request):
 @login_required
 def hotel_dictionaries(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.hotel.dictionaries.manage"):
+        return HttpResponseForbidden("Bu tesis için sözlük yönetimi erişiminiz yok.")
     form_map = {
         "room_group": (RoomGroup, RoomGroupForm), "bed_type": (BedType, BedTypeForm),
         "room_view": (RoomView, RoomViewForm), "room_location": (RoomLocation, RoomLocationForm),
@@ -426,6 +466,8 @@ def hotel_dictionaries(request):
 @login_required
 def room_master(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.room.master.manage"):
+        return HttpResponseForbidden("Bu tesis için room master erişiminiz yok.")
     entity = request.POST.get("entity") or request.GET.get("entity", "unit_type")
     if entity not in {"unit_type", "unit"}:
         entity = "unit_type"
@@ -466,6 +508,8 @@ def room_master(request):
 @login_required
 def room_rack(request):
     properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front.office.manage"):
+        return HttpResponseForbidden("Bu tesis için front office erişiminiz yok.")
     selected_date = parse_date(request.POST.get("rack_date") or request.GET.get("rack_date", "")) or timezone.localdate()
     if request.method == "POST" and selected:
         item = ReservationItem.objects.filter(
