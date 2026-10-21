@@ -2,6 +2,18 @@
 
 ## Production deploy
 
+Tekrarlanabilir deploy ve smoke test için:
+
+```bash
+cd /var/www/booking-balkans
+bash utility/deploy_hotel_manager.sh /var/www/booking-balkans https://bookingbalkans.com.tr
+```
+
+Script; GitHub pull, Django check, migration, static toplama, servis restartı,
+static CSS kontrolü ve login yönlendirmeli business dashboard kontrolünü yapar.
+
+Elle çalıştırma seçeneği:
+
 ```bash
 cd /var/www/booking-balkans
 git pull --ff-only origin main
