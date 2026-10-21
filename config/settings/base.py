@@ -94,6 +94,7 @@ LOCAL_APPS = [
     "booking.users",
     "booking.tenancy",
     "booking.reservations",
+    "booking.operations",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
