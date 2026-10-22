@@ -617,9 +617,9 @@ def access_control(request):
                     access.last_pin_change = timezone.now()
                     access.save(update_fields=["pin_hash", "last_pin_change"])
                     UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="pin_changed", metadata={"target_user_id": target_user.id, "action": "replace_pin"})
-                    messages.success(request, "KullanÄ±cÄ± PIN'i gÃ¼ncellendi.")
+                    messages.success(request, "Kullanıcı PIN'i güncellendi.")
                 else:
-                    messages.error(request, "Bu kullanÄ±cÄ±nÄ±n seÃ§ili tesiste aktif eriÅŸimi bulunmuyor.")
+                    messages.error(request, "Bu kullanıcının seçili tesiste aktif erişimi bulunmuyor.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={target_user.id if target_user else ''}")
         if action == "role" and role_form.is_valid():
             role = role_form.save(commit=False)
