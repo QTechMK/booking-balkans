@@ -1,4 +1,37 @@
 {% extends 'booking/operations/_shell.html' %}
 {% block operations_content %}
-<div class="support-workspace"><div class="support-tabs"><a href="{% url 'operations:support_center' %}?property_id={{ selected_property.id }}">Destek talepleri</a><a class="is-active" href="{% url 'operations:support_faq' %}?property_id={{ selected_property.id }}">FAQ</a><a href="{% url 'operations:support_education' %}?property_id={{ selected_property.id }}">Eğitim talebi</a><a href="{% url 'operations:support_video' %}?property_id={{ selected_property.id }}">Video kütüphanesi</a><a href="{% url 'operations:support_referral' %}?property_id={{ selected_property.id }}">Davet et</a></div><div class="row g-3"><div class="col-xl-4"><section class="card"><div class="card-header"><strong>Yeni kategori</strong></div><div class="card-body"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="category"><input type="hidden" name="property_id" value="{{ selected_property.id }}">{% for field in category_form %}<div class="mb-2"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}<button class="btn btn-primary">Kategori kaydet</button></form></div></section><section class="card mt-3"><div class="card-header"><strong>Yeni FAQ</strong></div><div class="card-body"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="item"><input type="hidden" name="property_id" value="{{ selected_property.id }}">{% for field in item_form %}<div class="mb-2"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}<button class="btn btn-primary">FAQ kaydet</button></form></div></section></div><div class="col-xl-8"><section class="card"><div class="card-header"><form class="d-flex gap-2"><input type="hidden" name="property_id" value="{{ selected_property.id }}"><input class="form-control" name="q" value="{{ query }}" placeholder="Soru veya cevap ara"><button class="btn btn-outline-primary">Ara</button></form></div><div class="card-body">{% for faq in faqs %}<article class="support-faq-item"><span class="small text-muted">{{ faq.category.name }}</span><h3>{{ faq.question }}</h3><p>{{ faq.answer|linebreaksbr }}</p></article>{% empty %}<div class="text-muted">FAQ kaydı bulunamadı.</div>{% endfor %}</div></section></div></div></div>
+<div class="support-workspace">
+  <div class="support-tabs">
+    <a href="{% url 'operations:support_center' %}?property_id={{ selected_property.id }}">Destek talepleri</a>
+    <a class="is-active" href="{% url 'operations:support_faq' %}?property_id={{ selected_property.id }}">FAQ</a>
+    <a href="{% url 'operations:support_education' %}?property_id={{ selected_property.id }}">Eğitim talebi</a>
+    <a href="{% url 'operations:support_video' %}?property_id={{ selected_property.id }}">Video kütüphanesi</a>
+    <a href="{% url 'operations:support_referral' %}?property_id={{ selected_property.id }}">Davet et</a>
+  </div>
+
+  <div class="alert alert-info" role="status">
+    FAQ kategorileri ve içerikleri yalnızca sistem yöneticisi tarafından tanımlanır. Bu ekrandan mevcut içerikleri arayabilir ve görüntüleyebilirsiniz.
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <form class="d-flex gap-2" method="get">
+        <input type="hidden" name="property_id" value="{{ selected_property.id }}">
+        <input class="form-control" name="q" value="{{ query }}" placeholder="Soru veya cevap ara">
+        <button class="btn btn-outline-primary" type="submit">Ara</button>
+      </form>
+    </div>
+    <div class="card-body">
+      {% for faq in faqs %}
+        <article class="support-faq-item">
+          <span class="small text-muted">{{ faq.category.name }}</span>
+          <h3>{{ faq.question }}</h3>
+          <p>{{ faq.answer|linebreaksbr }}</p>
+        </article>
+      {% empty %}
+        <div class="text-muted">FAQ kaydı bulunamadı.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
 {% endblock operations_content %}

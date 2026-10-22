@@ -42,7 +42,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportFAQCategoryForm, SupportFAQItemForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -199,31 +199,13 @@ def support_faq(request):
     properties, selected, denied = _support_context(request)
     if denied:
         return HttpResponseForbidden("Bu tesis için FAQ yetkiniz yok.")
-    category_form = SupportFAQCategoryForm(request.POST or None, prefix="category")
-    item_form = SupportFAQItemForm(request.POST or None, prefix="item")
-    if selected:
-        item_form.fields["category"].queryset = selected.support_faq_categories.filter(is_active=True)
-    if request.method == "POST" and selected:
-        action = request.POST.get("action")
-        if action == "category":
-            category_form = SupportFAQCategoryForm(request.POST, prefix="category")
-            if category_form.is_valid():
-                obj = category_form.save(commit=False); obj.property = selected; obj.save(); messages.success(request, "FAQ kategorisi kaydedildi.")
-        elif action == "item":
-            item_form = SupportFAQItemForm(request.POST, prefix="item")
-            item_form.fields["category"].queryset = selected.support_faq_categories.filter(is_active=True)
-            if item_form.is_valid():
-                obj = item_form.save(commit=False)
-                if obj.category.property_id != selected.id:
-                    item_form.add_error("category", "Kategori seçili tesise ait değil.")
-                else:
-                    obj.property = selected; obj.save(); messages.success(request, "FAQ maddesi kaydedildi.")
-        return redirect(f"{reverse('operations:support_faq')}?property_id={selected.id}")
+    if request.method == "POST":
+        return HttpResponseForbidden("FAQ içerikleri yalnızca sistem yöneticisi tarafından yönetilebilir.")
     query = request.GET.get("q", "")
     faqs = selected.support_faq_items.select_related("category").filter(is_active=True) if selected else SupportFAQItem.objects.none()
     if query:
         faqs = faqs.filter(Q(question__icontains=query) | Q(answer__icontains=query))
-    return render(request, "booking/operations/support_faq.html", {"title": "FAQ ve Yardım", "properties": properties, "selected_property": selected, "category_form": category_form, "item_form": item_form, "categories": selected.support_faq_categories.filter(is_active=True) if selected else SupportFAQCategory.objects.none(), "faqs": faqs, "query": query})
+    return render(request, "booking/operations/support_faq.html", {"title": "FAQ ve Yardım", "properties": properties, "selected_property": selected, "categories": selected.support_faq_categories.filter(is_active=True) if selected else SupportFAQCategory.objects.none(), "faqs": faqs, "query": query})
 
 
 @login_required
