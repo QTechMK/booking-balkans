@@ -103,6 +103,7 @@ PLANNED_SCREENS = {
     "manager_support_form": {"module": "setup", "module_label": "SETUP", "label": "Manager Support Form", "title": "Manager Support Form", "description": "Otel yöneticisi destek formu."},
     "correction_form": {"module": "setup", "module_label": "SETUP", "label": "Correction Form", "title": "Correction Form", "description": "Veri ve tanım düzeltme talebi formu."},
     "carbon_certificate": {"module": "setup", "module_label": "SETUP", "label": "Carbon Certificate", "title": "Carbon Certificate", "description": "Karbon sertifikası ve sürdürülebilirlik kayıtları."},
+    "mobile_app": {"module": "mobile_app", "module_label": "MOBILE APP", "label": "Mobile App", "title": "Mobile App", "description": "Mobil uygulama ekranları ve tesis mobil operasyonları."},
 
     "front_office_status": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Status", "title": "Front Office Status", "description": "Ön büro operasyon durumları ve hızlı filtreler."},
     "group_reservations": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Group Reservations", "title": "Group Reservations", "description": "Grup rezervasyonu ve grup konaklama yönetimi."},
@@ -112,7 +113,7 @@ PLANNED_SCREENS = {
     "quick_room_assignment": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Quick Room Assignment", "title": "Quick Room Assignment", "description": "Rezervasyona hızlı oda atama ekranı."},
     "quick_posting": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Quick Posting", "title": "Quick Posting", "description": "Folyoya hızlı işlem gönderme ekranı."},
     "folio_balances": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Reservation Folio Balances", "title": "Reservation Folio Balances", "description": "Rezervasyonların açık folyo bakiyeleri."},
-    "front_cash": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Front Cash", "title": "Front Cash", "description": "Ön kasa tahsilat ve kasa hareketleri."},
+    "front_cash": {"module": "front_cash", "module_label": "FRONT CASH", "label": "Front Cash", "title": "Front Cash", "description": "Ön kasa tahsilat ve kasa hareketleri."},
     "credit_accounts": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Credit Accounts", "title": "Credit Accounts", "description": "Kredili cari hesaplar ve limitleri."},
     "daily_currency_rates": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Daily Currency Rates & Entry", "title": "Daily Currency Rates & Entry", "description": "Günlük döviz kurları ve kur girişi."},
     "folio_routing": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Folio Routing List", "title": "Folio Routing List", "description": "Folio yönlendirme kuralları."},

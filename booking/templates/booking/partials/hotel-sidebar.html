@@ -29,7 +29,6 @@
     <li><a href="{% url 'operations:quick_room_assignment' %}">Quick Room Assignment</a></li>
     <li><a href="{% url 'operations:quick_posting' %}">Quick Posting</a></li>
     <li><a href="{% url 'operations:folio_balances' %}">Reservation Folio Balances</a></li>
-    <li><a href="{% url 'operations:front_cash' %}">Front Cash</a></li>
     <li><a href="{% url 'operations:credit_accounts' %}">Credit Accounts</a></li>
     <li><a href="{% url 'operations:daily_currency_rates' %}">Daily Currency Rates &amp; Entry</a></li>
     <li><a href="{% url 'operations:folio_routing' %}">Folio Routing List</a></li>
@@ -131,11 +130,11 @@
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-wallet"></i><span class="nav-text">Ön Kasa</span></a><ul>
-    <li class="nav-module-note" aria-disabled="true"><span class="nav-text">Ön kasa ekranı hazırlanıyor</span></li>
+    <li><a href="{% url 'operations:front_cash' %}">Front Cash</a></li>
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-mobile"></i><span class="nav-text">Mobil Uygulama</span></a><ul>
-    <li class="nav-module-note" aria-disabled="true"><span class="nav-text">Mobil ekranlar hazırlanıyor</span></li>
+    <li><a href="{% url 'operations:mobile_app' %}">Mobile App</a></li>
   </ul></li>
 
   <li><a href="{% url 'operations:access_control' %}"><i class="flaticon-381-networking"></i><span class="nav-text">Kullanıcı ve Yetki</span></a></li>

@@ -18,6 +18,7 @@ urlpatterns = [
     path("business/setup/manager-support/", views.planned_screen, {"screen_key": "manager_support_form"}, name="manager_support_form"),
     path("business/setup/correction-form/", views.planned_screen, {"screen_key": "correction_form"}, name="correction_form"),
     path("business/setup/carbon-certificate/", views.planned_screen, {"screen_key": "carbon_certificate"}, name="carbon_certificate"),
+    path("business/mobile-app/", views.planned_screen, {"screen_key": "mobile_app"}, name="mobile_app"),
     path("business/front-office/status/", views.planned_screen, {"screen_key": "front_office_status"}, name="front_office_status"),
     path("business/front-office/group-reservations/", views.planned_screen, {"screen_key": "group_reservations"}, name="group_reservations"),
     path("business/front-office/tour-operator-integrations/", views.planned_screen, {"screen_key": "tour_operator_integrations"}, name="tour_operator_integrations"),
