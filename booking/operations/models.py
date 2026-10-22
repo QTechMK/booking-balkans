@@ -652,3 +652,28 @@ class FrontOfficeCallRequest(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class DepartmentDefinition(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="department_definitions")
+    code = models.SlugField(max_length=40)
+    name = models.CharField(max_length=120)
+    department_type = models.CharField(max_length=80, blank=True)
+    default_revenue_code = models.CharField(max_length=40, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["code"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_department_definition_code")]
+
+
+class RevenueCode(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="revenue_codes")
+    code = models.SlugField(max_length=40)
+    name = models.CharField(max_length=120)
+    vat_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["code"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_revenue_code")]

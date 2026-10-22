@@ -37,12 +37,12 @@ from .models import (
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus, UserAccessLog, UserPropertyAccess, FrontOfficeCallRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
+    TaskStatus, UserAccessLog, UserPropertyAccess, DepartmentDefinition, FrontOfficeCallRequest, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportFAQCategoryForm, SupportFAQItemForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportFAQCategoryForm, SupportFAQItemForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -109,6 +109,23 @@ def front_office(request):
     elif tab == "cancelled":
         reservations = reservations.filter(status=ReservationStatus.CANCELLED)
     return render(request, "booking/operations/front_office.html", {"title": "Front Office", "properties": properties, "selected_property": selected, "reservations": reservations[:250], "tab": tab, "today": today, "tabs": [("all", "Tümü"), ("expected_arrivals", "Beklenen gelişler"), ("in_house", "In-house"), ("expected_departures", "Beklenen çıkışlar"), ("departures", "Ayrılanlar"), ("no_show", "No-show"), ("cancelled", "İptaller")]})
+
+
+@login_required
+def accounting_definitions(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.hotel.dictionaries.manage"):
+        return HttpResponseForbidden("Bu tesis için muhasebe tanımları yetkiniz yok.")
+    department_form = DepartmentDefinitionForm(request.POST or None, prefix="department")
+    revenue_form = RevenueCodeForm(request.POST or None, prefix="revenue")
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "department" and department_form.is_valid():
+            obj = department_form.save(commit=False); obj.property = selected; obj.save(); messages.success(request, "Departman tanımı kaydedildi.")
+        elif action == "revenue" and revenue_form.is_valid():
+            obj = revenue_form.save(commit=False); obj.property = selected; obj.save(); messages.success(request, "Gelir kodu kaydedildi.")
+        return redirect(f"{reverse('operations:accounting_definitions')}?property_id={selected.id}")
+    return render(request, "booking/operations/accounting_definitions.html", {"title": "Muhasebe Tanımları", "properties": properties, "selected_property": selected, "department_form": department_form, "revenue_form": revenue_form, "departments": selected.department_definitions.all() if selected else DepartmentDefinition.objects.none(), "revenue_codes": selected.revenue_codes.all() if selected else RevenueCode.objects.none()})
 
 
 @login_required

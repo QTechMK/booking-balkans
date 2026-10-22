@@ -32,13 +32,14 @@
   <span class="hotel-module-nav-label">ONLINE BOOKING</span>
   <a href="{% url 'operations:online_settings' %}">Online Booking Ayarları</a>
 </nav>
-{% elif request.resolver_match.url_name == 'property_settings' or request.resolver_match.url_name == 'hotel_dictionaries' or request.resolver_match.url_name == 'room_master' %}
+{% elif request.resolver_match.url_name == 'property_settings' or request.resolver_match.url_name == 'hotel_dictionaries' or request.resolver_match.url_name == 'room_master' or request.resolver_match.url_name == 'accounting_definitions' %}
 <nav class="hotel-module-nav" aria-label="Otel tanımları modülü">
   <span class="hotel-module-nav-label">OTEL TANIMLARI</span>
   <a href="{% url 'operations:property_settings' %}">Tesis Ayarları</a>
   <a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a>
   <a href="{% url 'operations:room_master' %}">Oda Tanımları</a>
   <a href="{% url 'operations:online_settings' %}">Online Booking</a>
+  <a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tanımları</a>
 </nav>
 {% elif request.resolver_match.url_name == 'support_center' or request.resolver_match.url_name == 'support_faq' or request.resolver_match.url_name == 'support_education' or request.resolver_match.url_name == 'support_referral' or request.resolver_match.url_name == 'support_video' %}
 <nav class="hotel-module-nav" aria-label="Destek modülü">

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, DepartmentDefinition, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, RevenueCode, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -209,3 +209,11 @@ class FrontOfficeCallRequestAdmin(admin.ModelAdmin):
     list_filter = ("property", "status")
     search_fields = ("name", "phone", "email", "note")
     autocomplete_fields = ("property", "guest", "reservation", "created_by")
+
+
+@admin.register(DepartmentDefinition, RevenueCode)
+class AccountingDefinitionAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "property", "is_active")
+    list_filter = ("property", "is_active")
+    search_fields = ("code", "name", "property__name")
+    autocomplete_fields = ("property",)

@@ -20,6 +20,7 @@ urlpatterns = [
     path("business/access/", views.access_control, name="access_control"),
     path("business/front-office/", views.front_office, name="front_office"),
     path("business/front-office/calls/", views.call_requests, name="call_requests"),
+    path("business/accounting-definitions/", views.accounting_definitions, name="accounting_definitions"),
     path("business/support/", views.support_center, name="support_center"),
     path("business/support/faq/", views.support_faq, name="support_faq"),
     path("business/support/education/", views.support_education, name="support_education"),

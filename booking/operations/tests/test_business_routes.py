@@ -23,6 +23,7 @@ BUSINESS_ROUTES = (
     "/booking/business/support/video/",
     "/booking/business/front-office/",
     "/booking/business/front-office/calls/",
+    "/booking/business/accounting-definitions/",
 )
 
 
