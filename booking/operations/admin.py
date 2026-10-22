@@ -68,7 +68,7 @@ class UserPropertyAccessAdmin(admin.ModelAdmin):
 
 @admin.register(UserAccessLog)
 class UserAccessLogAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "user", "property", "event", "successful", "ip_address")
+    list_display = ("created_at", "actor", "user", "property", "event", "successful", "ip_address")
     list_filter = ("event", "successful", "property")
     search_fields = ("user__username", "ip_address", "event")
     readonly_fields = ("created_at",)

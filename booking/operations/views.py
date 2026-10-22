@@ -567,10 +567,12 @@ def access_control(request):
             role.property = selected
             role.save()
             role_form.save_m2m()
+            UserAccessLog.objects.create(actor=request.user, property=selected, event="role_created")
             messages.success(request, "Property rolü kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}")
         if action == "profile" and profile_user and profile_form.is_valid():
             profile_form.save()
+            UserAccessLog.objects.create(actor=request.user, user=profile_user, property=selected, event="user_profile_updated")
             messages.success(request, "Kullanıcı profili kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={profile_user.id}")
         if action == "access" and access_form.is_valid():
@@ -581,6 +583,7 @@ def access_control(request):
                 access.pin_hash = make_password(pin)
                 access.last_pin_change = timezone.now()
             access.save()
+            UserAccessLog.objects.create(actor=request.user, user=access.user, property=selected, event="property_access_assigned")
             messages.success(request, "Kullanıcı property erişimi kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}")
     memberships = Membership.objects.filter(

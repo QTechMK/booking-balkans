@@ -457,6 +457,7 @@ class UserPropertyAccess(models.Model):
 
 class UserAccessLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="access_logs")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="access_actions")
     property = models.ForeignKey(Property, on_delete=models.SET_NULL, null=True, blank=True, related_name="access_logs")
     successful = models.BooleanField(default=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)

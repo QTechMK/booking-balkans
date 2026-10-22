@@ -34,7 +34,7 @@
 
   <section class="security-panel" data-security-panel="logs">
     <div class="security-panel-heading"><h2>Son giriş logları</h2><span>Başarılı ve başarısız giriş denemeleri</span></div>
-    <div class="security-table-wrap security-log-table"><table class="table table-sm"><thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Olay</th><th>Sonuç</th><th>IP</th></tr></thead><tbody>{% for log in logs %}<tr><td>{{ log.created_at|date:'d.m.Y H:i' }}</td><td>{{ log.user|default:'-' }}</td><td>{{ log.event }}</td><td>{% if log.successful %}<span class="text-success">Başarılı</span>{% else %}<span class="text-danger">Başarısız</span>{% endif %}</td><td>{{ log.ip_address|default:'-' }}</td></tr>{% empty %}<tr><td colspan="5">Giriş logu bulunamadı.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="security-table-wrap security-log-table"><table class="table table-sm"><thead><tr><th>Tarih</th><th>İşlemi yapan</th><th>Etkilenen kullanıcı</th><th>Olay</th><th>Sonuç</th><th>IP</th></tr></thead><tbody>{% for log in logs %}<tr><td>{{ log.created_at|date:'d.m.Y H:i' }}</td><td>{{ log.actor|default:'Sistem' }}</td><td>{{ log.user|default:'-' }}</td><td>{{ log.event }}</td><td>{% if log.successful %}<span class="text-success">Başarılı</span>{% else %}<span class="text-danger">Başarısız</span>{% endif %}</td><td>{{ log.ip_address|default:'-' }}</td></tr>{% empty %}<tr><td colspan="6">Giriş veya yetki değişikliği logu bulunamadı.</td></tr>{% endfor %}</tbody></table></div>
   </section>
 </div>
 {% endblock security_content %}
