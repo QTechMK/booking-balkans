@@ -87,6 +87,16 @@ body { background: #f5f6fa; }
 .content-body main.py-5 .table { font-size: .77rem; }
 .content-body main.py-5 .table thead th { position: sticky; top: 0; z-index: 2; background: #eef1f6; white-space: nowrap; }
 .content-body main.py-5 .table td, .content-body main.py-5 .table th { padding: .38rem .5rem; }
+.hotel-rates-grid { display: grid; grid-template-columns: minmax(320px, .8fr) minmax(520px, 1.6fr); gap: .7rem; }
+.hotel-rates-page .card { min-width: 0; }
+.hotel-dense-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem .8rem; }
+.hotel-dense-field { display: grid; gap: .22rem; min-width: 0; }
+.hotel-dense-field label { color: #596579; font-size: .73rem; font-weight: 600; }
+.hotel-dense-field input, .hotel-dense-field select, .hotel-dense-field textarea { width: 100%; min-height: 32px; border: 1px solid #d6dce6; border-radius: 3px; font-size: .78rem; }
+.hotel-dense-actions { display: flex; gap: .4rem; align-items: center; grid-column: 1 / -1; padding-top: .2rem; }
+.hotel-grid-scroll { max-height: calc(100vh - 300px) !important; }
+@media (max-width: 1000px) { .hotel-rates-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .hotel-dense-form { grid-template-columns: 1fr; } .hotel-dense-actions { grid-column: auto; } }
 .security-workspace { border: 1px solid #dce2eb; background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
 .security-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem .85rem; border-bottom: 1px solid #e1e5ec; background: #f7f8fb; }
 .security-toolbar strong, .security-toolbar span { display: block; }
