@@ -550,6 +550,13 @@ def access_control(request):
             ).values_list("user_id", flat=True),
         ).order_by("username")
         access_form.fields["user"].queryset = staff_users
+    user_status = request.GET.get("user_status", "active")
+    if user_status not in {"active", "passive", "all"}:
+        user_status = "active"
+    if user_status == "active":
+        staff_users = staff_users.filter(is_active=True)
+    elif user_status == "passive":
+        staff_users = staff_users.filter(is_active=False)
     profile_user_id = request.POST.get("profile_user_id") or request.GET.get("profile_user_id")
     profile_user = staff_users.filter(id=profile_user_id).first() if profile_user_id else None
     profile_form = UserProfileForm(request.POST or None, instance=profile_user, prefix="profile")
@@ -588,6 +595,7 @@ def access_control(request):
         "title": "Kullanıcı ve Yetki",
         "properties": properties, "selected_property": selected,
         "memberships": list(memberships) + list(property_memberships),
+        "user_status": user_status,
         "roles": selected.access_roles.prefetch_related("permissions") if selected else PropertyRole.objects.none(),
         "accesses": selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none(),
         "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),

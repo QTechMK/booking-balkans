@@ -181,6 +181,9 @@ body { background: #f5f6fa; }
 .security-panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .7rem; }
 .security-panel-heading h2 { margin: 0; font-size: .95rem; color: #29344b; }
 .security-panel-heading span { color: #7a8494; font-size: .72rem; }
+.security-user-status-tabs { display: flex; gap: .2rem; border-bottom: 1px solid #dce2eb; }
+.security-user-status-tabs a { padding: .35rem .65rem; color: #657084; font-size: .72rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+.security-user-status-tabs a.is-active, .security-user-status-tabs a:hover { color: #2130b8; background: #f3f5ff; border-bottom-color: #2130b8; }
 .security-selector { display: grid; grid-template-columns: 125px minmax(220px, 420px); align-items: center; gap: .5rem; margin-bottom: .8rem; }
 .security-selector label, .security-field label { color: #596579; font-size: .73rem; font-weight: 600; }
 .security-form-grid { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: .55rem .8rem; align-items: start; }
