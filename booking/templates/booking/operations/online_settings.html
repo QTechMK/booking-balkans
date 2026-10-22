@@ -36,4 +36,23 @@
   <section id="gallery" class="hotel-definition-panel"><div class="definition-heading"><h2>Otel galerisi</h2><span>Oda tipi veya fiziksel oda için online görsel ekleyin.</span></div><div class="definition-editor-grid"><form method="post" enctype="multipart/form-data" class="definition-form-grid">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="action" value="photo">{% for field in photo_form %}<div class="definition-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}<button class="btn btn-primary definition-submit">Görseli kaydet</button></form><div class="online-photo-grid">{% for photo in photos %}<article class="online-photo-card">{% if photo.image %}<img src="{{ photo.image.url }}" alt="{{ photo.alt_text }}">{% elif photo.image_url %}<img src="{{ photo.image_url }}" alt="{{ photo.alt_text }}">{% endif %}<div><strong>{% if photo.unit_type %}{{ photo.unit_type.name }}{% else %}{{ photo.unit.name }}{% endif %}</strong><small>{{ photo.alt_text|default:'Alt metin yok' }}</small></div></article>{% empty %}<div class="online-photo-empty">Henüz online görsel eklenmedi.</div>{% endfor %}</div></div></section>
   <section id="requests" class="hotel-definition-panel"><div class="definition-heading"><h2>Misafir hizmet talepleri</h2><span>Online kanaldan gelen talepleri ve durumlarını takip edin.</span></div><div class="hotel-grid-scroll"><table class="table table-sm align-middle"><thead><tr><th>Misafir</th><th>Hizmet</th><th>Adet</th><th>Durum</th><th></th></tr></thead><tbody>{% for item in service_requests %}<tr><td>{{ item.reservation.guest }}</td><td>{{ item.service.name }}</td><td>{{ item.quantity }}</td><td colspan="2"><form method="post" class="d-flex gap-2 align-items-center">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="action" value="service_request_status"><input type="hidden" name="request_id" value="{{ item.id }}"><select class="form-select form-select-sm" name="status">{% for value,label in service_status_choices %}<option value="{{ value }}" {% if item.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn btn-sm btn-outline-primary">Güncelle</button></form></td></tr>{% empty %}<tr><td colspan="5" class="text-center py-4 text-muted">Bekleyen hizmet talebi yok.</td></tr>{% endfor %}</tbody></table></div></section>
 </div>
+<script>
+  (() => {
+    const tabs = [...document.querySelectorAll('.online-booking-workspace .hotel-definition-tabs a')];
+    const panels = [...document.querySelectorAll('.online-booking-workspace .hotel-definition-panel')];
+    const activate = () => {
+      const id = window.location.hash.slice(1) || 'booking';
+      const selected = panels.some((panel) => panel.id === id) ? id : 'booking';
+      panels.forEach((panel) => { panel.hidden = panel.id !== selected; });
+      tabs.forEach((tab) => {
+        const active = tab.getAttribute('href') === `#${selected}`;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    };
+    tabs.forEach((tab) => tab.addEventListener('click', () => window.requestAnimationFrame(activate)));
+    window.addEventListener('hashchange', activate);
+    activate();
+  })();
+</script>
 {% endblock operations_content %}
