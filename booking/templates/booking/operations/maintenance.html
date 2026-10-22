@@ -12,7 +12,8 @@
           <label class="form-label">Açıklama</label><textarea name="description" class="form-control mb-2"></textarea>
           <label class="form-label">Öncelik</label><select name="priority" class="form-select mb-2">{% for value,label in priority_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
           <label class="form-label">Atanan personel</label><select name="assigned_to" class="form-select mb-2"><option value="">Atama yok</option>{% for user_id,username in users %}<option value="{{ user_id }}">{{ username }}</option>{% endfor %}</select>
-          <label class="form-label">SLA son tarihi</label><input type="datetime-local" name="sla_due_at" class="form-control mb-3">
+          <label class="form-label">SLA son tarihi</label><input type="datetime-local" name="sla_due_at" class="form-control mb-2">
+          <label class="form-label">Tahmini maliyet</label><input type="number" step="0.01" name="estimated_cost" class="form-control mb-3">
           <button class="btn btn-primary w-100">Talep oluştur</button>
         </form>
       </div>
@@ -25,7 +26,7 @@
         {% for ticket in tickets %}
         <tr{% if ticket.sla_due_at and ticket.sla_due_at < now and ticket.status != 'resolved' and ticket.status != 'cancelled' %} class="table-danger"{% endif %}>
           <td class="fw-semibold">{{ ticket.title }}<div class="small text-body-secondary">{{ ticket.get_priority_display }} · {{ ticket.created_at|date:'d.m.Y H:i' }}</div></td>
-          <td>{{ ticket.unit.code|default:'Tesis' }}</td>
+          <td>{{ ticket.unit.code|default:'Tesis' }}{% if ticket.estimated_cost %}<div class="small text-muted">Tahmini: {{ ticket.estimated_cost }}</div>{% endif %}</td>
           <td><form method="post">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="action" value="status"><input type="hidden" name="ticket_id" value="{{ ticket.id }}"><select name="status" class="form-select form-select-sm mb-1">{% for value,label in status_choices %}<option value="{{ value }}" {% if ticket.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><select name="assigned_to" class="form-select form-select-sm mb-1"><option value="">Atama yok</option>{% for user_id,username in users %}<option value="{{ user_id }}" {% if ticket.assigned_to_id == user_id %}selected{% endif %}>{{ username }}</option>{% endfor %}</select><textarea name="resolution_note" class="form-control form-control-sm mb-1" placeholder="Çözüm notu">{{ ticket.resolution_note }}</textarea><button class="btn btn-sm btn-outline-primary">Güncelle</button></form></td>
           <td>{% if ticket.sla_due_at %}{{ ticket.sla_due_at|date:'d.m.Y H:i' }}{% if ticket.sla_due_at < now and ticket.status != 'resolved' and ticket.status != 'cancelled' %}<div class="small fw-semibold text-danger">SLA aşıldı</div>{% endif %}{% else %}-{% endif %}</td>
           <td>{{ ticket.resolution_note|default:'-' }}</td>

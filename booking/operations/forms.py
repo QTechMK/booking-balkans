@@ -137,8 +137,13 @@ class TaskLocationForm(TaskDictionaryForm):
 class OperationalTaskForm(HotelModelForm):
     class Meta:
         model = OperationalTask
-        fields = ["group", "location", "unit", "title", "description", "status", "priority", "assigned_to", "due_at"]
-        widgets = {"due_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "description": forms.Textarea(attrs={"rows": 2})}
+        fields = ["group", "location", "unit", "title", "description", "status", "priority", "assigned_to", "due_at", "sla_due_at", "completion_note"]
+        widgets = {
+            "due_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "sla_due_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "description": forms.Textarea(attrs={"rows": 2}),
+            "completion_note": forms.Textarea(attrs={"rows": 2}),
+        }
 
 
 class GuestProfileForm(HotelModelForm):

@@ -6,6 +6,14 @@ from .base import *  # noqa: F403
 from .base import TEMPLATES
 from .base import env
 
+# Keep SQLite as the default local test database, but allow the concurrency
+# suite to run against a real PostgreSQL database when explicitly requested.
+# Example:
+# TEST_DATABASE_URL=postgresql://booking_test:***@127.0.0.1:5432/booking_test
+TEST_DATABASE_URL = env("TEST_DATABASE_URL", default="")
+if TEST_DATABASE_URL:
+    DATABASES["default"] = env.db_url_config(TEST_DATABASE_URL)
+
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key

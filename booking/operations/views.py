@@ -175,6 +175,7 @@ def housekeeping(request):
                 status=request.POST.get("status", HousekeepingStatus.DIRTY),
                 priority=request.POST.get("priority", TaskPriority.NORMAL),
                 assigned_to_id=request.POST.get("assigned_to") or None,
+                shift=request.POST.get("shift", "").strip(),
                 note=request.POST.get("note", ""),
                 due_at=due_at,
             )
@@ -187,9 +188,11 @@ def housekeeping(request):
             if status in HousekeepingStatus.values:
                 task.status = status
                 task.assigned_to_id = request.POST.get("assigned_to") or task.assigned_to_id
+                task.shift = request.POST.get("shift", task.shift).strip()
                 task.note = request.POST.get("note", task.note)
                 task.inspected_at = timezone.now() if status in {HousekeepingStatus.INSPECTION, HousekeepingStatus.CLEAN} else task.inspected_at
-                task.save(update_fields=["status", "assigned_to", "note", "inspected_at", "updated_at"])
+                task.inspected_by = request.user if status in {HousekeepingStatus.INSPECTION, HousekeepingStatus.CLEAN} else task.inspected_by
+                task.save(update_fields=["status", "assigned_to", "shift", "note", "inspected_at", "inspected_by", "updated_at"])
                 UnitHousekeepingState.objects.update_or_create(
                     unit=task.unit,
                     defaults={"status": status, "note": task.note, "changed_by": request.user},
@@ -227,16 +230,20 @@ def maintenance(request):
                 priority=request.POST.get("priority", TaskPriority.NORMAL),
                 assigned_to_id=request.POST.get("assigned_to") or None, created_by=request.user,
                 sla_due_at=sla_due_at,
+                estimated_cost=request.POST.get("estimated_cost") or None,
             )
         elif ticket and action == "status" and request.POST.get("status") in MaintenanceStatus.values:
             ticket.status = request.POST["status"]
             ticket.assigned_to_id = request.POST.get("assigned_to") or None
             ticket.resolution_note = request.POST.get("resolution_note", "").strip()
+            ticket.actual_cost = request.POST.get("actual_cost") or None
             if ticket.status == MaintenanceStatus.RESOLVED:
                 ticket.resolved_at = timezone.now()
+                ticket.resolved_by = request.user
             else:
                 ticket.resolved_at = None
-            ticket.save(update_fields=["status", "assigned_to", "resolution_note", "resolved_at", "updated_at"])
+                ticket.resolved_by = None
+            ticket.save(update_fields=["status", "assigned_to", "resolution_note", "actual_cost", "resolved_at", "resolved_by", "updated_at"])
         return redirect(f"{reverse('operations:maintenance')}?property_id={selected.id}")
     tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else MaintenanceTicket.objects.none()
     return render(request, "booking/operations/maintenance.html", {
@@ -269,8 +276,10 @@ def tasks(request):
                 obj = form.save(commit=False)
                 if obj.status == TaskStatus.DONE and not obj.completed_at:
                     obj.completed_at = timezone.now()
+                    obj.completed_by = request.user
                 elif obj.status != TaskStatus.DONE:
                     obj.completed_at = None
+                    obj.completed_by = None
                 obj.save(); messages.success(request, "Görev güncellendi.")
         elif action in {"group", "location"}:
             model = TaskGroup if action == "group" else TaskLocation
