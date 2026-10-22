@@ -18,7 +18,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils import timezone
@@ -38,6 +38,7 @@ from booking.tenancy.models import RoomView
 from booking.tenancy.models import BoardType
 from booking.tenancy.models import RateType
 from booking.tenancy.services.availability import get_availability
+from booking.operations.models import UserAccessLog, UserPropertyAccess
 
 from .forms import BookingSearchForm
 from .forms import GuestBookingForm
@@ -579,9 +580,30 @@ def _selected_business_property(request):
     return properties, selected or properties.first()
 
 
+def _business_permission_denied(request, property_, code):
+    if not property_ or request.user.is_superuser:
+        return False
+    accesses = UserPropertyAccess.objects.filter(
+        user=request.user, property=property_, is_active=True, role__is_active=True,
+    ).filter(Q(valid_from__isnull=True) | Q(valid_from__lte=timezone.localdate())) \
+     .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate()))
+    if not accesses.exists():
+        return False
+    allowed = accesses.filter(role__permissions__code=code, role__permissions__is_active=True).exists()
+    if not allowed:
+        UserAccessLog.objects.create(
+            user=request.user, property=property_, successful=False,
+            event="permission_denied", user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+            metadata={"permission": code, "path": request.path, "method": request.method},
+        )
+    return not allowed
+
+
 @login_required
 def business_inventory(request):
     properties, selected_property = _selected_business_property(request)
+    if _business_permission_denied(request, selected_property, "operations.room.master.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in oda ve envanter yÃ¶netimi yetkiniz yok.")
     edit_unit_type = selected_property.unit_types.filter(id=request.GET.get("edit_unit_type")).first() if selected_property else None
     edit_unit = selected_property.units.filter(id=request.GET.get("edit_unit")).first() if selected_property else None
     unit_type_form = BusinessUnitTypeForm(instance=edit_unit_type, prefix="unit_type")
@@ -635,6 +657,8 @@ def business_inventory(request):
 @login_required
 def business_rate_plans(request):
     properties, selected_property = _selected_business_property(request)
+    if _business_permission_denied(request, selected_property, "operations.hotel.dictionaries.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in fiyat tanÄ±mlarÄ± yetkiniz yok.")
     edit_rate_plan = selected_property.rate_plans.filter(id=request.GET.get("edit_rate_plan")).first() if selected_property else None
     form = BusinessRatePlanForm(instance=edit_rate_plan, prefix="rate")
     if selected_property:
@@ -666,6 +690,8 @@ def business_rate_plans(request):
 @login_required
 def business_rate_calendar(request):
     properties, selected_property = _selected_business_property(request)
+    if _business_permission_denied(request, selected_property, "operations.hotel.dictionaries.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in fiyat takvimi yetkiniz yok.")
     rate_plan_id = request.POST.get("rate_plan_id") or request.GET.get("rate_plan_id")
     rate_plans = selected_property.rate_plans.filter(is_active=True) if selected_property else RatePlan.objects.none()
     selected_rate_plan = rate_plans.filter(id=rate_plan_id).first() if rate_plan_id else rate_plans.first()
@@ -737,6 +763,8 @@ def business_reservation_list(request):
     selected_property = properties.filter(id=property_id).first() if property_id else None
     if not selected_property:
         selected_property = properties.first()
+    if _business_permission_denied(request, selected_property, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in rezervasyon yÃ¶netimi yetkiniz yok.")
 
     reservations = Reservation.objects.none()
     if selected_property:
@@ -804,6 +832,8 @@ def business_reservation_detail(request, pk):
         ),
         pk=pk,
     )
+    if _business_permission_denied(request, reservation.property, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in rezervasyon yÃ¶netimi yetkiniz yok.")
     if request.method == "POST":
         action = request.POST.get("action")
         if action in {"check_in", "check_out"}:
@@ -828,6 +858,8 @@ def business_reservation_detail(request, pk):
                 messages.success(request, "Rezervasyon iptal edildi.")
             return redirect("reservations:business_reservation_detail", pk=reservation.pk)
         if action == "post_folio":
+            if _business_permission_denied(request, reservation.property, "operations.financial.payments.manage"):
+                return HttpResponseForbidden("Folio ödeme işlemi için finansal yetkiniz yok.")
             try:
                 amount = Decimal(request.POST.get("amount", "0"))
             except (TypeError, ValueError, InvalidOperation):
@@ -870,6 +902,8 @@ def business_reservation_detail(request, pk):
 @login_required
 def business_reservation_calendar(request):
     properties, selected_property = _selected_business_property(request)
+    if _business_permission_denied(request, selected_property, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in rezervasyon takvimi yetkiniz yok.")
     start = parse_date(request.GET.get("start", "")) or date.today()
     end = parse_date(request.GET.get("end", "")) or (start + timedelta(days=30))
     if end < start:
@@ -900,6 +934,8 @@ def business_channel_list(request):
     selected_property = properties.filter(id=property_id).first() if property_id else None
     if not selected_property:
         selected_property = properties.first()
+    if _business_permission_denied(request, selected_property, "operations.online_settings.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in kanal yÃ¶netimi yetkiniz yok.")
 
     edit_channel = selected_property.reservation_channels.filter(id=request.GET.get("edit_channel")).first() if selected_property else None
     form = ReservationChannelForm(instance=edit_channel, data=request.POST or None)
@@ -939,6 +975,8 @@ def business_channel_list(request):
 @login_required
 def business_channel_rate_rules(request):
     properties, selected_property = _selected_business_property(request)
+    if _business_permission_denied(request, selected_property, "operations.online_settings.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in kanal kuralÄ± yetkiniz yok.")
     edit_rule = (
         selected_property.channel_rate_rules.filter(id=request.GET.get("edit_rule")).first()
         if selected_property else None
@@ -974,6 +1012,8 @@ def business_channel_rate_rules(request):
 @login_required
 def business_price_parity(request):
     properties, selected_property = _selected_business_property(request)
+    if _business_permission_denied(request, selected_property, "operations.online_settings.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in fiyat eÅŸitliÄŸi yetkiniz yok.")
     form = BusinessPriceParityObservationForm(property_=selected_property) if selected_property else None
     if request.method == "POST" and selected_property:
         form = BusinessPriceParityObservationForm(request.POST, property_=selected_property)
@@ -1002,6 +1042,8 @@ def business_reservation_create(request):
     properties = _business_properties(request.user).order_by("name")
     property_id = request.POST.get("property") or request.GET.get("property_id")
     selected_property = properties.filter(id=property_id).first() if property_id else properties.first()
+    if _business_permission_denied(request, selected_property, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in rezervasyon oluÅŸturma yetkiniz yok.")
     form = BusinessManualReservationForm(
         request.POST or None,
         properties=properties,
