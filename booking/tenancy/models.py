@@ -559,6 +559,12 @@ class ChannelRateRuleType(models.TextChoices):
     FIXED = "fixed", _("Fixed amount")
 
 
+class ChannelRateRuleDayScope(models.TextChoices):
+    ALL = "all", _("All days")
+    WEEKDAY = "weekday", _("Weekdays")
+    WEEKEND = "weekend", _("Weekends")
+
+
 class ChannelRateRule(models.Model):
     """A property-scoped adjustment applied to a rate for one sales channel.
 
@@ -590,6 +596,8 @@ class ChannelRateRule(models.Model):
         default=ChannelRateRuleType.PERCENT,
     )
     adjustment = models.DecimalField(max_digits=8, decimal_places=2)
+    day_scope = models.CharField(max_length=12, choices=ChannelRateRuleDayScope.choices, default=ChannelRateRuleDayScope.ALL)
+    external_rate_code = models.CharField(max_length=120, blank=True)
     priority = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -354,6 +354,12 @@ class OnlineBookingSettings(models.Model):
     instagram_url = models.URLField(blank=True)
     whatsapp_url = models.URLField(blank=True)
     google_business_url = models.URLField(blank=True)
+    online_ratecode = models.CharField(max_length=120, blank=True)
+    ical_sync_active = models.BooleanField(default=False)
+    ical_feed_url = models.URLField(max_length=1000, blank=True)
+    booking_page_version = models.PositiveIntegerField(default=1)
+    booking_page_published_at = models.DateTimeField(null=True, blank=True)
+    booking_page_publish_status = models.CharField(max_length=20, default="draft")
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -654,6 +660,114 @@ class FrontOfficeCallRequest(models.Model):
         ordering = ["-created_at"]
 
 
+class FrontCashTransaction(models.Model):
+    class TransactionType(models.TextChoices):
+        RECEIPT = "receipt", _("Receipt")
+        PAYMENT = "payment", _("Payment")
+        REFUND = "refund", _("Refund")
+        ADJUSTMENT = "adjustment", _("Adjustment")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="front_cash_transactions")
+    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, null=True, blank=True, related_name="front_cash_transactions")
+    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, null=True, blank=True, related_name="front_cash_transactions")
+    transaction_type = models.CharField(max_length=16, choices=TransactionType.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="TRY")
+    reference = models.CharField(max_length=120, blank=True)
+    description = models.CharField(max_length=255, blank=True)
+    posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="front_cash_transactions")
+    posted_at = models.DateTimeField(auto_now_add=True)
+    is_voided = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-posted_at"]
+        indexes = [models.Index(fields=["property", "posted_at"]), models.Index(fields=["property", "transaction_type"])]
+
+
+class CreditAccount(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="credit_accounts")
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=180)
+    tax_number = models.CharField(max_length=80, blank=True)
+    credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default="TRY")
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_credit_account_code")]
+
+
+class FolioRoutingRule(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="folio_routing_rules")
+    name = models.CharField(max_length=160)
+    source_department = models.CharField(max_length=120)
+    target_folio = models.CharField(max_length=80, default="guest")
+    revenue_code = models.CharField(max_length=80, blank=True)
+    is_active = models.BooleanField(default=True)
+    priority = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["priority", "name"]
+
+
+class GuestMedicalDailyRecord(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="guest_medical_daily_records")
+    guest = models.ForeignKey(Guest, on_delete=models.PROTECT, related_name="medical_daily_records")
+    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, null=True, blank=True, related_name="medical_daily_records")
+    record_date = models.DateField()
+    note = models.TextField()
+    restricted = models.BooleanField(default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_medical_daily_records")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-record_date", "-created_at"]
+
+
+class LostAndFoundItem(models.Model):
+    class Status(models.TextChoices):
+        STORED = "stored", _("Stored")
+        CLAIMED = "claimed", _("Claimed")
+        DISPOSED = "disposed", _("Disposed")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="lost_and_found_items")
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name="lost_and_found_items")
+    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, null=True, blank=True, related_name="lost_and_found_items")
+    description = models.CharField(max_length=255)
+    found_location = models.CharField(max_length=160, blank=True)
+    found_at = models.DateTimeField()
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.STORED)
+    storage_reference = models.CharField(max_length=120, blank=True)
+    claimant_name = models.CharField(max_length=160, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_lost_and_found_items")
+
+
+class HotelPhoneBookEntry(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="phone_book_entries")
+    name = models.CharField(max_length=160)
+    department = models.CharField(max_length=120, blank=True)
+    phone = models.CharField(max_length=40)
+    extension = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+
+class ParkEntry(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="park_entries")
+    plate_number = models.CharField(max_length=32)
+    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, null=True, blank=True, related_name="park_entries")
+    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, null=True, blank=True, related_name="park_entries")
+    entry_at = models.DateTimeField()
+    exit_at = models.DateTimeField(null=True, blank=True)
+    parking_space = models.CharField(max_length=40, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_park_entries")
+
+
 class DepartmentDefinition(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="department_definitions")
     code = models.SlugField(max_length=40)
@@ -677,6 +791,104 @@ class RevenueCode(models.Model):
     class Meta:
         ordering = ["code"]
         constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_revenue_code")]
+
+
+class CurrencyDefinition(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="currency_definitions")
+    code = models.CharField(max_length=3)
+    name = models.CharField(max_length=80)
+    symbol = models.CharField(max_length=8, blank=True)
+    decimal_places = models.PositiveSmallIntegerField(default=2)
+    is_base = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["property", "code"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_currency_definition_code")]
+
+
+class DailyCurrencyRate(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="daily_currency_rates")
+    rate_date = models.DateField()
+    from_currency = models.CharField(max_length=3)
+    to_currency = models.CharField(max_length=3)
+    rate = models.DecimalField(max_digits=16, decimal_places=8)
+    source = models.CharField(max_length=80, blank=True)
+    is_manual = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-rate_date", "from_currency", "to_currency"]
+        constraints = [models.UniqueConstraint(fields=["property", "rate_date", "from_currency", "to_currency"], name="unique_daily_currency_rate")]
+
+
+class BankAccount(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="bank_accounts")
+    name = models.CharField(max_length=160)
+    bank_name = models.CharField(max_length=160, blank=True)
+    account_number = models.CharField(max_length=80, blank=True)
+    iban = models.CharField(max_length=80, blank=True)
+    swift = models.CharField(max_length=40, blank=True)
+    currency = models.CharField(max_length=3, default="TRY")
+    is_active = models.BooleanField(default=True)
+    secret_ref = models.CharField(max_length=180, blank=True, help_text="Secret manager reference for protected banking data.")
+
+
+class NotificationDefinition(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="notification_definitions")
+    code = models.SlugField(max_length=100)
+    name = models.CharField(max_length=160)
+    event = models.CharField(max_length=100)
+    channel = models.CharField(max_length=20, default="email")
+    subject = models.CharField(max_length=180, blank=True)
+    body = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_notification_definition_code")]
+
+
+class ApiKeyDefinition(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="api_key_definitions")
+    name = models.CharField(max_length=160)
+    provider = models.CharField(max_length=80)
+    key_hash = models.CharField(max_length=128)
+    secret_ref = models.CharField(max_length=180, blank=True, help_text="Secret manager reference; never store the raw API key.")
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class EcrDevice(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="ecr_devices")
+    name = models.CharField(max_length=160)
+    model = models.CharField(max_length=120, blank=True)
+    terminal_id = models.CharField(max_length=120, blank=True)
+    revenue_group_mapping = models.JSONField(default=dict, blank=True)
+    vat_mapping = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+
+
+class StandardCharge(models.Model):
+    class ChargeType(models.TextChoices):
+        PACKAGE = "package", _("Package")
+        TAX = "tax", _("Tax")
+        RENTABLE = "rentable", _("Rentable")
+        BOARD = "board", _("Board")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="standard_charges")
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=160)
+    charge_type = models.CharField(max_length=16, choices=ChargeType.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default="TRY")
+    vat_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_standard_charge_code")]
 
 
 class Invoice(models.Model):

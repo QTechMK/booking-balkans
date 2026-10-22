@@ -62,6 +62,12 @@ class ReservationSource(models.TextChoices):
 class ReservationChannel(models.Model):
     """A property-scoped booking channel that can be managed by the business."""
 
+    class SetupStatus(models.TextChoices):
+        NOT_STARTED = "not_started", _("Not started")
+        REGISTERED = "registered", _("Registered")
+        CONNECTED = "connected", _("Connected")
+        ERROR = "error", _("Error")
+
     property = models.ForeignKey(
         Property,
         on_delete=models.CASCADE,
@@ -78,6 +84,17 @@ class ReservationChannel(models.Model):
         choices=ReservationSource.choices,
         default=ReservationSource.MANUAL,
     )
+    setup_status = models.CharField(max_length=20, choices=SetupStatus.choices, default=SetupStatus.NOT_STARTED)
+    external_id = models.CharField(max_length=160, blank=True)
+    external_currency = models.CharField(max_length=3, blank=True)
+    rate_multiplier = models.DecimalField(max_digits=8, decimal_places=4, default=1)
+    send_availability = models.BooleanField(default=True)
+    send_rates = models.BooleanField(default=True)
+    receive_reservations = models.BooleanField(default=True)
+    mapping_completed = models.BooleanField(default=False)
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_sync_error = models.TextField(blank=True)
+    credentials_ref = models.CharField(max_length=180, blank=True, help_text="Secret manager reference; never store channel credentials here.")
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,6 +114,54 @@ class ReservationChannel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.property.name} - {self.name}"
+
+
+class ChannelRoomTypeMapping(models.Model):
+    """Maps a channel room/rate code to the internal hotel inventory."""
+
+    channel = models.ForeignKey(ReservationChannel, on_delete=models.CASCADE, related_name="room_type_mappings")
+    unit_type = models.ForeignKey(UnitType, on_delete=models.CASCADE, related_name="channel_mappings")
+    rate_plan = models.ForeignKey(RatePlan, on_delete=models.CASCADE, null=True, blank=True, related_name="channel_mappings")
+    external_room_code = models.CharField(max_length=120)
+    external_rate_code = models.CharField(max_length=120, blank=True)
+    external_room_name = models.CharField(max_length=180, blank=True)
+    is_active = models.BooleanField(default=True)
+    last_fetched_at = models.DateTimeField(null=True, blank=True)
+    last_pushed_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["channel", "external_room_code", "external_rate_code"]
+        constraints = [models.UniqueConstraint(fields=["channel", "external_room_code", "external_rate_code"], name="unique_channel_room_rate_mapping")]
+
+
+class ChannelSyncEvent(models.Model):
+    class Direction(models.TextChoices):
+        INBOUND = "inbound", _("Inbound")
+        OUTBOUND = "outbound", _("Outbound")
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", _("Queued")
+        RUNNING = "running", _("Running")
+        SUCCESS = "success", _("Success")
+        FAILED = "failed", _("Failed")
+
+    channel = models.ForeignKey(ReservationChannel, on_delete=models.CASCADE, related_name="sync_events")
+    direction = models.CharField(max_length=12, choices=Direction.choices)
+    event_type = models.CharField(max_length=60)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.QUEUED)
+    request_reference = models.CharField(max_length=180, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["channel", "status", "created_at"])]
 
 
 class StayStatus(models.TextChoices):
@@ -149,6 +214,13 @@ class Reservation(models.Model):
         null=True,
         blank=True,
     )
+    voucher_no = models.CharField(max_length=120, blank=True)
+    nationality = models.CharField(max_length=80, blank=True)
+    board_type = models.CharField(max_length=80, blank=True)
+    market = models.CharField(max_length=120, blank=True)
+    segment = models.CharField(max_length=120, blank=True)
+    given_room_type = models.CharField(max_length=160, blank=True)
+    given_board_type = models.CharField(max_length=80, blank=True)
     check_in = models.DateField(_("check-in"))
     check_out = models.DateField(_("check-out"))
     currency = models.CharField(_("currency"), max_length=3, default="TRY")
