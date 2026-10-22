@@ -89,6 +89,19 @@ body { background: #f5f6fa; }
 .content-body main.py-5 .table td, .content-body main.py-5 .table th { padding: .38rem .5rem; }
 .hotel-rates-grid { display: grid; grid-template-columns: minmax(320px, .8fr) minmax(520px, 1.6fr); gap: .7rem; }
 .hotel-rates-page .card { min-width: 0; }
+.hotel-erp-actions { display: flex; align-items: center; gap: .6rem; }
+.hotel-erp-property-name { color: #657084; font-size: .76rem; }
+.reservation-status-tabs { display: flex; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid #d9dee8; overflow-x: auto; white-space: nowrap; }
+.reservation-status-tabs a { padding: .55rem .8rem; color: #657084; border-bottom: 3px solid transparent; font-size: .76rem; font-weight: 600; text-decoration: none; }
+.reservation-status-tabs a:hover, .reservation-status-tabs a.is-active { color: #2130b8; background: #f3f5ff; border-bottom-color: #2130b8; }
+.reservation-filter-panel, .reservation-grid-card { margin-bottom: 8px; }
+.reservation-filter-panel .card-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.reservation-filter-grid { display: grid; grid-template-columns: 1.1fr 1.6fr repeat(3, 1fr) 1fr 1fr auto; gap: .55rem; align-items: end; }
+.reservation-filter-grid label { display: block; margin-bottom: .2rem; color: #596579; font-size: .7rem; font-weight: 600; }
+.reservation-filter-actions { display: flex; gap: .35rem; }
+.hotel-reservation-list-page .hotel-grid-scroll { max-height: calc(100vh - 385px) !important; }
+@media (max-width: 1200px) { .reservation-filter-grid { grid-template-columns: repeat(4, minmax(150px, 1fr)); } .reservation-filter-actions { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .hotel-erp-actions, .reservation-filter-panel .card-header { align-items: flex-start; flex-direction: column; } .reservation-filter-grid { grid-template-columns: 1fr; } .reservation-filter-actions { grid-column: auto; } }
 .hotel-dense-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem .8rem; }
 .hotel-dense-field { display: grid; gap: .22rem; min-width: 0; }
 .hotel-dense-field label { color: #596579; font-size: .73rem; font-weight: 600; }
