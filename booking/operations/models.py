@@ -437,6 +437,8 @@ class UserPropertyAccess(models.Model):
     is_active = models.BooleanField(default=True)
     valid_from = models.DateField(null=True, blank=True)
     valid_until = models.DateField(null=True, blank=True)
+    allowed_from_time = models.TimeField(null=True, blank=True)
+    allowed_until_time = models.TimeField(null=True, blank=True)
     two_factor_required = models.BooleanField(default=False)
     last_pin_change = models.DateTimeField(null=True, blank=True)
     allowed_ip = models.GenericIPAddressField(null=True, blank=True)
@@ -457,6 +459,8 @@ class UserPropertyAccess(models.Model):
             raise ValidationError({"role": _("Role must belong to the selected property.")})
         if self.valid_from and self.valid_until and self.valid_until < self.valid_from:
             raise ValidationError({"valid_until": _("Validity end cannot be before start.")})
+        if bool(self.allowed_from_time) != bool(self.allowed_until_time):
+            raise ValidationError({"allowed_from_time": _("Both access times must be provided together.")})
 
 
 class UserAccessLog(models.Model):

@@ -247,10 +247,12 @@ class UserPropertyAccessForm(HotelModelForm):
 
     class Meta:
         model = UserPropertyAccess
-        fields = ["user", "role", "is_active", "valid_from", "valid_until", "two_factor_required", "last_pin_change", "allowed_ip", "device_label", "purchase_approval_required", "bypass_price_control", "own_cash_only", "pos_access", "financial_access", "pin"]
+        fields = ["user", "role", "is_active", "valid_from", "valid_until", "allowed_from_time", "allowed_until_time", "two_factor_required", "last_pin_change", "allowed_ip", "device_label", "purchase_approval_required", "bypass_price_control", "own_cash_only", "pos_access", "financial_access", "pin"]
         widgets = {
             "valid_from": forms.DateInput(attrs={"type": "date"}),
             "valid_until": forms.DateInput(attrs={"type": "date"}),
+            "allowed_from_time": forms.TimeInput(attrs={"type": "time"}),
+            "allowed_until_time": forms.TimeInput(attrs={"type": "time"}),
             "last_pin_change": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "allowed_ip": forms.TextInput(attrs={"autocomplete": "off", "inputmode": "numeric"}),
             "device_label": forms.TextInput(attrs={"autocomplete": "off"}),

@@ -24,6 +24,8 @@ class RequiredPropertyMFAMiddleware:
             return redirect(f"{target}?{query}")
         if self._blocked_by_network_policy(request):
             return HttpResponseForbidden("Bu kullanıcı için IP veya cihaz erişim kısıtı nedeniyle erişim engellendi.")
+        if self._blocked_by_time_policy(request):
+            return HttpResponseForbidden("Bu kullanÄ±cÄ±nÄ±n tanÄ±mlÄ± eriÅŸim saatleri dÄ±ÅŸÄ±nda eriÅŸim engellendi.")
         return self.get_response(request)
 
     @staticmethod
@@ -71,5 +73,36 @@ class RequiredPropertyMFAMiddleware:
             UserAccessLog.objects.create(
                 user=request.user, property=access.property, successful=False,
                 event="network_policy_denied", ip_address=ip or None, user_agent=user_agent[:500],
+            )
+        return True
+
+    @staticmethod
+    def _blocked_by_time_policy(request):
+        if not request.user.is_authenticated or not request.path.startswith("/booking/business/"):
+            return False
+        if request.user.is_superuser or request.path.startswith("/accounts/"):
+            return False
+        property_id = request.POST.get("property_id") or request.GET.get("property_id")
+        accesses = UserPropertyAccess.objects.filter(
+            user=request.user, is_active=True, role__is_active=True,
+        ).filter(Q(valid_from__isnull=True) | Q(valid_from__lte=timezone.localdate())) \
+         .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate()))
+        if property_id and str(property_id).isdigit():
+            accesses = accesses.filter(property_id=int(property_id))
+        restricted = [access for access in accesses if access.allowed_from_time and access.allowed_until_time]
+        if not restricted:
+            return False
+        current = timezone.localtime().time()
+
+        def in_window(access):
+            start, end = access.allowed_from_time, access.allowed_until_time
+            return start <= current <= end if start <= end else current >= start or current <= end
+
+        if any(in_window(access) for access in restricted):
+            return False
+        for access in restricted:
+            UserAccessLog.objects.create(
+                user=request.user, property=access.property, successful=False,
+                event="time_policy_denied", user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
             )
         return True
