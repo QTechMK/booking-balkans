@@ -42,7 +42,7 @@ from .models import (
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPropertyAccessForm, UserProfileForm,
+    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -573,6 +573,7 @@ def access_control(request):
         return HttpResponseForbidden("Bu tesis için yetki yönetimi erişiminiz yok.")
     role_form = PropertyRoleForm(request.POST or None, prefix="role")
     access_form = UserPropertyAccessForm(request.POST or None, prefix="access")
+    pin_form = UserPinChangeForm(request.POST or None, prefix="pin")
     staff_users = get_user_model().objects.none()
     if selected:
         role_form.fields["permissions"].queryset = AccessPermission.objects.filter(is_active=True)
@@ -603,6 +604,19 @@ def access_control(request):
                 Authenticator.objects.filter(user=target_user).delete()
                 UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="mfa_reset_by_admin")
                 messages.success(request, "Kullanıcının 2FA kurulumu ve recovery code'ları sıfırlandı.")
+            return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={target_user.id if target_user else ''}")
+        if action == "pin" and pin_form.is_valid():
+            target_user = staff_users.filter(id=request.POST.get("pin_user_id")).first()
+            if target_user:
+                access = UserPropertyAccess.objects.filter(user=target_user, property=selected, is_active=True).order_by("id").first()
+                if access:
+                    access.pin_hash = make_password(pin_form.cleaned_data["pin"])
+                    access.last_pin_change = timezone.now()
+                    access.save(update_fields=["pin_hash", "last_pin_change"])
+                    UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="pin_changed")
+                    messages.success(request, "KullanÄ±cÄ± PIN'i gÃ¼ncellendi.")
+                else:
+                    messages.error(request, "Bu kullanÄ±cÄ±nÄ±n seÃ§ili tesiste aktif eriÅŸimi bulunmuyor.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={target_user.id if target_user else ''}")
         if action == "role" and role_form.is_valid():
             role = role_form.save(commit=False)
@@ -639,6 +653,7 @@ def access_control(request):
     mfa_totp = Authenticator.objects.filter(user=profile_user, type=Authenticator.Type.TOTP).first() if profile_user else None
     mfa_recovery = Authenticator.objects.filter(user=profile_user, type=Authenticator.Type.RECOVERY_CODES).first() if profile_user else None
     mfa_unused_count = len(mfa_recovery.wrap().get_unused_codes()) if mfa_recovery else 0
+    profile_user_access = UserPropertyAccess.objects.filter(user=profile_user, property=selected, is_active=True).order_by("id").first() if profile_user and selected else None
     return render(request, "booking/operations/access_control.html", {
         "title": "Kullanıcı ve Yetki",
         "properties": properties, "selected_property": selected,
@@ -648,8 +663,9 @@ def access_control(request):
         "permission_catalog": AccessPermission.objects.filter(is_active=True) if selected else AccessPermission.objects.none(),
         "accesses": selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none(),
         "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),
-        "role_form": role_form, "access_form": access_form, "staff_users": staff_users,
+        "role_form": role_form, "access_form": access_form, "pin_form": pin_form, "staff_users": staff_users,
         "profile_user": profile_user, "profile_form": profile_form,
+        "profile_user_access": profile_user_access,
         "mfa_enabled": bool(profile_user and is_mfa_enabled(profile_user)),
         "mfa_totp": mfa_totp, "mfa_recovery": mfa_recovery, "mfa_unused_count": mfa_unused_count,
         "can_manage_user_mfa": _can_manage_user_mfa(request, selected),

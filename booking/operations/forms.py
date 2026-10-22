@@ -259,6 +259,28 @@ class UserPropertyAccessForm(HotelModelForm):
         }
 
 
+class UserPinChangeForm(forms.Form):
+    pin = forms.CharField(
+        min_length=4,
+        max_length=8,
+        label="Yeni PIN",
+        validators=[RegexValidator(r"^\d{4,8}$", "PIN yalnÄ±zca 4â€“8 rakamdan oluÅŸmalÄ±dÄ±r.")],
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "inputmode": "numeric", "pattern": "[0-9]{4,8}"}),
+    )
+    pin_confirm = forms.CharField(
+        min_length=4,
+        max_length=8,
+        label="PIN tekrar",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "inputmode": "numeric", "pattern": "[0-9]{4,8}"}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("pin") and cleaned.get("pin") != cleaned.get("pin_confirm"):
+            self.add_error("pin_confirm", "PIN alanlarÄ± aynÄ± olmalÄ±dÄ±r.")
+        return cleaned
+
+
 class UserProfileForm(HotelModelForm):
     class Meta:
         model = get_user_model()
