@@ -4,6 +4,7 @@
   <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a>
   <a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a>
   <a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a>
+</nav>
 {% elif request.resolver_match.url_name == 'business_channel_list' or request.resolver_match.url_name == 'business_channel_rate_rules' or request.resolver_match.url_name == 'business_price_parity' %}
 <nav class="hotel-module-nav" aria-label="Kanal yönetimi modülü">
   <span class="hotel-module-nav-label">KANAL YÖNETİMİ</span>
@@ -17,8 +18,6 @@
   <a href="{% url 'reservations:business_inventory' %}">Envanter</a>
   <a href="{% url 'reservations:business_rate_plans' %}">Rate Planlar</a>
   <a href="{% url 'reservations:business_rate_calendar' %}">Fiyat Takvimi</a>
-  <a href="{% url 'reservations:business_channel_rate_rules' %}">Kanal Fiyat Kuralları</a>
-  <a href="{% url 'reservations:business_price_parity' %}">Fiyat Paritesi</a>
 </nav>
 {% elif request.resolver_match.url_name == 'crm_guests' or request.resolver_match.url_name == 'crm_marketing' %}
 <nav class="hotel-module-nav" aria-label="CRM modülü">
