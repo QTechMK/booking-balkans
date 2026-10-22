@@ -96,6 +96,28 @@ body { background: #f5f6fa; }
 .calendar-action-grid, .calendar-data-grid, .inventory-editor-grid, .inventory-data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; margin-top: .7rem; }
 .calendar-action-grid .card, .calendar-data-grid .card, .inventory-editor-grid .card, .inventory-data-grid .card { min-width: 0; }
 .hotel-calendar-page .card, .hotel-inventory-page .card { border-radius: 3px; }
+.hotel-definition-workspace { border: 1px solid #dce2eb; background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
+.hotel-definition-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem .85rem; background: #f7f8fb; border-bottom: 1px solid #e1e5ec; }
+.hotel-definition-toolbar strong { color: #29344b; font-size: .9rem; }
+.hotel-definition-toolbar span { color: #7a8494; font-size: .72rem; }
+.hotel-definition-tabs { display: flex; gap: 2px; border-bottom: 1px solid #dce2eb; padding: 0 .45rem; overflow-x: auto; }
+.hotel-definition-tabs a { padding: .65rem .85rem; border-bottom: 3px solid transparent; color: #657084; font-size: .77rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.hotel-definition-tabs a:hover, .hotel-definition-tabs a.is-active { color: #2130b8; background: #f3f5ff; border-bottom-color: #2130b8; }
+.hotel-definition-panel { padding: .85rem; border-bottom: 1px solid #e1e5ec; }
+.hotel-definition-panel:last-child { border-bottom: 0; }
+.definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .7rem; }
+.definition-heading h2 { margin: 0; color: #29344b; font-size: .95rem; }
+.definition-heading span { color: #7a8494; font-size: .72rem; }
+.definition-form-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: .55rem .8rem; align-items: start; }
+.definition-field { display: grid; gap: .2rem; min-width: 0; }
+.definition-field-wide { grid-column: 1 / -1; }
+.definition-field label { color: #596579; font-size: .72rem; font-weight: 600; }
+.definition-field input, .definition-field select, .definition-field textarea { width: 100%; min-height: 32px; border: 1px solid #d6dce6; border-radius: 3px; font-size: .78rem; }
+.definition-submit { grid-column: 1 / -1; justify-self: start; }
+.definition-editor-grid { display: grid; grid-template-columns: minmax(330px, .75fr) minmax(560px, 1.7fr); gap: .7rem; padding: .85rem; }
+.definition-editor-grid > .card { min-width: 0; }
+@media (max-width: 1000px) { .definition-editor-grid { grid-template-columns: 1fr; } .definition-form-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); } }
+@media (max-width: 600px) { .hotel-definition-toolbar, .definition-heading { align-items: flex-start; flex-direction: column; } .definition-form-grid { grid-template-columns: 1fr; } }
 @media (max-width: 800px) { .calendar-filter-grid, .calendar-action-grid, .calendar-data-grid, .inventory-editor-grid, .inventory-data-grid { grid-template-columns: 1fr; } }
 .hotel-rates-page .card { min-width: 0; }
 .hotel-erp-actions { display: flex; align-items: center; gap: .6rem; }
