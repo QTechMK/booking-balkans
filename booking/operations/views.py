@@ -605,7 +605,7 @@ def access_control(request):
             target_user = staff_users.filter(id=request.POST.get("mfa_user_id")).first()
             if target_user:
                 Authenticator.objects.filter(user=target_user).delete()
-                UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="mfa_reset_by_admin")
+                UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="mfa_reset_by_admin", metadata={"target_user_id": target_user.id, "action": "reset_authenticators"})
                 messages.success(request, "Kullanıcının 2FA kurulumu ve recovery code'ları sıfırlandı.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={target_user.id if target_user else ''}")
         if action == "pin" and pin_form.is_valid():
@@ -616,7 +616,7 @@ def access_control(request):
                     access.pin_hash = make_password(pin_form.cleaned_data["pin"])
                     access.last_pin_change = timezone.now()
                     access.save(update_fields=["pin_hash", "last_pin_change"])
-                    UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="pin_changed")
+                    UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="pin_changed", metadata={"target_user_id": target_user.id, "action": "replace_pin"})
                     messages.success(request, "KullanÄ±cÄ± PIN'i gÃ¼ncellendi.")
                 else:
                     messages.error(request, "Bu kullanÄ±cÄ±nÄ±n seÃ§ili tesiste aktif eriÅŸimi bulunmuyor.")
@@ -626,12 +626,12 @@ def access_control(request):
             role.property = selected
             role.save()
             role_form.save_m2m()
-            UserAccessLog.objects.create(actor=request.user, property=selected, event="role_created")
+            UserAccessLog.objects.create(actor=request.user, property=selected, event="role_created", metadata={"role_id": role.id, "role": role.name, "department": role.department, "permission_codes": list(role.permissions.values_list("code", flat=True))})
             messages.success(request, "Property rolü kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}")
         if action == "profile" and profile_user and profile_form.is_valid():
             profile_form.save()
-            UserAccessLog.objects.create(actor=request.user, user=profile_user, property=selected, event="user_profile_updated")
+            UserAccessLog.objects.create(actor=request.user, user=profile_user, property=selected, event="user_profile_updated", metadata={"target_user_id": profile_user.id, "changed_fields": profile_form.changed_data})
             messages.success(request, "Kullanıcı profili kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={profile_user.id}")
         if action == "access" and access_form.is_valid():
@@ -642,7 +642,7 @@ def access_control(request):
                 access.pin_hash = make_password(pin)
                 access.last_pin_change = timezone.now()
             access.save()
-            UserAccessLog.objects.create(actor=request.user, user=access.user, property=selected, event="property_access_assigned")
+            UserAccessLog.objects.create(actor=request.user, user=access.user, property=selected, event="property_access_assigned", metadata={"target_user_id": access.user_id, "role_id": access.role_id, "role": access.role.name, "department": access.role.department, "financial_access": access.financial_access, "two_factor_required": access.two_factor_required})
             messages.success(request, "Kullanıcı property erişimi kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}")
     memberships = Membership.objects.filter(
