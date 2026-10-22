@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 
 from booking.tenancy.models import (
@@ -233,7 +234,16 @@ class PropertyRoleForm(HotelModelForm):
 
 
 class UserPropertyAccessForm(HotelModelForm):
-    pin = forms.CharField(required=False, max_length=32, strip=True, widget=forms.PasswordInput(render_value=False))
+    pin = forms.CharField(
+        required=False,
+        min_length=4,
+        max_length=8,
+        strip=True,
+        label="PIN",
+        help_text="4–8 rakam. Yeni PIN girilmezse mevcut PIN korunur.",
+        validators=[RegexValidator(r"^\d{4,8}$", "PIN yalnızca 4–8 rakamdan oluşmalıdır.")],
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "inputmode": "numeric", "pattern": "[0-9]{4,8}"}, render_value=False),
+    )
 
     class Meta:
         model = UserPropertyAccess
@@ -242,6 +252,8 @@ class UserPropertyAccessForm(HotelModelForm):
             "valid_from": forms.DateInput(attrs={"type": "date"}),
             "valid_until": forms.DateInput(attrs={"type": "date"}),
             "last_pin_change": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "allowed_ip": forms.TextInput(attrs={"autocomplete": "off", "inputmode": "numeric"}),
+            "device_label": forms.TextInput(attrs={"autocomplete": "off"}),
         }
 
 
