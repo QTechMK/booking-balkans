@@ -134,10 +134,17 @@ body { background: #f5f6fa; }
 .hotel-definition-tabs a { padding: .65rem .85rem; border-bottom: 3px solid transparent; color: #657084; font-size: .77rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .hotel-definition-tabs a:hover, .hotel-definition-tabs a.is-active { color: #2130b8; background: #f3f5ff; border-bottom-color: #2130b8; }
 .hotel-definition-panel { display: none; padding: .85rem; border-bottom: 1px solid #e1e5ec; }
+.hotel-definition-panel[hidden] { display: none !important; }
 .hotel-definition-panel:target { display: block; }
 .hotel-definition-workspace > .hotel-definition-panel:first-of-type { display: block; }
 .hotel-definition-workspace > .hotel-definition-panel:has(~ .hotel-definition-panel:target) { display: none; }
 .hotel-definition-panel:last-child { border-bottom: 0; }
+.online-booking-workspace .hotel-definition-panel { min-width: 0; }
+.online-booking-workspace .definition-editor-grid { grid-template-columns: minmax(320px, .9fr) minmax(0, 1.6fr); align-items: start; }
+.online-booking-workspace .definition-editor-grid > * { min-width: 0; }
+.online-booking-workspace .definition-form-grid { align-content: start; }
+.online-booking-workspace .hotel-grid-scroll { min-width: 0; overflow-x: auto; }
+@media (max-width: 1000px) { .online-booking-workspace .definition-editor-grid { grid-template-columns: 1fr; } }
 .definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .7rem; }
 .definition-heading h2 { margin: 0; color: #29344b; font-size: .95rem; }
 .definition-heading span { color: #7a8494; font-size: .72rem; }
