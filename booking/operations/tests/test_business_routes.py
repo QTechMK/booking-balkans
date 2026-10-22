@@ -27,6 +27,7 @@ BUSINESS_ROUTES = (
     "/booking/business/invoices/",
     "/booking/business/payment-gateways/",
     "/booking/business/night-audit/",
+    "/booking/business/agencies/",
 )
 
 
