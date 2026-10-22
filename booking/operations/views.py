@@ -617,6 +617,7 @@ def access_control(request):
         "memberships": list(memberships) + list(property_memberships),
         "user_status": user_status,
         "roles": selected.access_roles.prefetch_related("permissions") if selected else PropertyRole.objects.none(),
+        "permission_catalog": AccessPermission.objects.filter(is_active=True) if selected else AccessPermission.objects.none(),
         "accesses": selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none(),
         "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),
         "role_form": role_form, "access_form": access_form, "staff_users": staff_users,

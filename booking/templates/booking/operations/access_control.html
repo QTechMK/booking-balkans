@@ -21,6 +21,7 @@
   </section>
 
   <section class="security-panel" data-security-panel="role">
+    <div class="security-permission-catalog"><strong>İzin kataloğu</strong><span>Finansal ve POS izinleri rol tanımındaki seçimlerden atanır.</span><div class="security-permission-list">{% for permission in permission_catalog %}<span class="security-permission-badge {% if permission.module == 'financial' or permission.module == 'pos' %}security-permission-financial{% endif %}">{{ permission.module }} · {{ permission.action }}</span>{% endfor %}</div></div>
     <div class="security-panel-heading"><h2>Property rolü oluştur</h2><span>ElektraWeb kullanıcı tanımlarındaki rol ve izin matrisi</span></div>
     <form method="post" class="security-form-grid security-role-form">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="action" value="role">{% for field in role_form %}<div class="security-field"><label>{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}<button class="btn btn-primary security-submit">Rolü kaydet</button></form>
     <div class="security-table-wrap"><table class="table table-sm"><thead><tr><th>Rol</th><th>Departman</th><th>İzin sayısı</th></tr></thead><tbody>{% for role in roles %}<tr><td>{{ role.name }}</td><td>{{ role.department|default:'-' }}</td><td>{{ role.permissions.all|length }}</td></tr>{% empty %}<tr><td colspan="3">Rol tanımı yok.</td></tr>{% endfor %}</tbody></table></div>

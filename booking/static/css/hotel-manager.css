@@ -216,6 +216,12 @@ body { background: #f5f6fa; }
 .security-table-wrap { max-height: 285px; overflow: auto; border: 1px solid #e1e5ec; margin-top: .85rem; }
 .security-table-wrap .table { min-width: 620px; }
 .security-table-wrap .table thead th { position: sticky; top: 0; z-index: 1; }
+.security-permission-list { display: flex; flex-wrap: wrap; gap: .2rem; }
+.security-permission-badge { display: inline-flex; padding: .16rem .32rem; border: 1px solid #dfe4ec; background: #f7f8fb; color: #596579; font-size: .65rem; white-space: nowrap; }
+.security-permission-financial { border-color: #e8d9a8; background: #fff8dc; color: #765d16; }
+.security-permission-catalog { display: grid; gap: .35rem; margin-top: .75rem; padding: .6rem .7rem; border: 1px solid #e1e5ec; background: #fafbfc; }
+.security-permission-catalog strong { color: #29344b; font-size: .75rem; }
+.security-permission-catalog > span { color: #7a8494; font-size: .7rem; }
 @keyframes security-fade-in { from { opacity: .35; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
 .hotel-security-page .hotel-erp-content > .row:first-child > [class*="col-"] { width: auto; padding: 0; }
 .hotel-security-page .hotel-erp-content > .row:first-child > [class*="col-"] { width: auto; padding: 0; }
