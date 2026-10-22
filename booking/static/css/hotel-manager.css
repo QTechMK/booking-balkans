@@ -59,6 +59,30 @@ body { background: #f5f6fa; }
 .hotel-erp-page .form-control, .hotel-erp-page .form-select { border-radius: 3px; font-size: .78rem; min-height: 33px; }
 .hotel-erp-page .alert { border-radius: 3px; padding: .55rem .75rem; margin-bottom: 8px; }
 .hotel-erp-page .row { --bs-gutter-x: .65rem; --bs-gutter-y: .65rem; }
+/* Shared dense workspace for reservation, inventory, rate and channel screens. */
+.booking-flow-main { padding-top: .75rem !important; padding-bottom: .75rem !important; }
+.booking-flow-main > .container { width: 100%; max-width: 1920px; padding-left: 0; padding-right: 0; }
+.booking-flow-main > .container > .d-flex:first-child { margin-bottom: .65rem !important; }
+.booking-flow-main h1, .booking-flow-main h2, .booking-flow-main h3 { color: #29344b; }
+.booking-flow-main .card { border: 1px solid #dfe4ec; border-radius: 3px; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
+.booking-flow-main .card-header { min-height: 40px; padding: .5rem .75rem; background: #f7f8fb; border-bottom: 1px solid #e1e5ec; }
+.booking-flow-main .card-body { padding: .7rem .75rem; }
+.booking-flow-main .table-responsive { max-height: calc(100vh - 335px); overflow: auto; border: 1px solid #e1e5ec; }
+.booking-flow-main .table { margin-bottom: 0; font-size: .77rem; }
+.booking-flow-main .table thead th { position: sticky; top: 0; z-index: 2; background: #eef1f6; color: #586274; padding: .38rem .5rem; white-space: nowrap; }
+.booking-flow-main .table td { padding: .34rem .5rem; white-space: nowrap; border-color: #e9edf2; }
+.booking-flow-main .table tbody tr { transition: background-color .15s ease; }
+.booking-flow-main .table tbody tr:hover { background: #f1f4ff; }
+.booking-flow-main form .form-control, .booking-flow-main form .form-select { min-height: 33px; border-radius: 3px; font-size: .78rem; }
+.booking-flow-main .row { --bs-gutter-x: .65rem; --bs-gutter-y: .65rem; }
+.booking-flow-main .btn { border-radius: 3px; }
+.content-body main.py-5 { padding-top: .75rem !important; padding-bottom: .75rem !important; }
+.content-body main.py-5 > .container { width: 100%; max-width: 1920px; }
+.content-body main.py-5 .card { border-radius: 3px; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
+.content-body main.py-5 .table-responsive { max-height: calc(100vh - 335px); overflow: auto; }
+.content-body main.py-5 .table { font-size: .77rem; }
+.content-body main.py-5 .table thead th { position: sticky; top: 0; z-index: 2; background: #eef1f6; white-space: nowrap; }
+.content-body main.py-5 .table td, .content-body main.py-5 .table th { padding: .38rem .5rem; }
 .security-workspace { border: 1px solid #dce2eb; background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
 .security-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem .85rem; border-bottom: 1px solid #e1e5ec; background: #f7f8fb; }
 .security-toolbar strong, .security-toolbar span { display: block; }
