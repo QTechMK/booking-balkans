@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from booking.tenancy.models import (
     BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
-from .models import AccessPermission, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
+from .models import AccessPermission, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
 
 
 class HotelModelForm(forms.ModelForm):
@@ -341,3 +341,10 @@ class SupportReferralForm(HotelModelForm):
         model = SupportReferral
         fields = ["business_name", "contact_name", "contact_email", "contact_phone", "message"]
         widgets = {"message": forms.Textarea(attrs={"rows": 4})}
+
+
+class FrontOfficeCallRequestForm(HotelModelForm):
+    class Meta:
+        model = FrontOfficeCallRequest
+        fields = ["name", "phone", "email", "note", "callback_at", "status"]
+        widgets = {"note": forms.Textarea(attrs={"rows": 3}), "callback_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}

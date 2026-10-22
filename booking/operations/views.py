@@ -37,12 +37,12 @@ from .models import (
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus, UserAccessLog, UserPropertyAccess, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
+    TaskStatus, UserAccessLog, UserPropertyAccess, FrontOfficeCallRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportFAQCategoryForm, SupportFAQItemForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportFAQCategoryForm, SupportFAQItemForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -86,6 +86,49 @@ def _support_context(request):
     if _permission_denied(request, selected, "operations.support.manage"):
         return properties, selected, True
     return properties, selected, False
+
+
+@login_required
+def front_office(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için Front Office yetkiniz yok.")
+    tab = request.GET.get("tab", "all")
+    today = timezone.localdate()
+    reservations = Reservation.objects.filter(property=selected).select_related("guest", "channel").prefetch_related("items") if selected else Reservation.objects.none()
+    if tab == "expected_arrivals":
+        reservations = reservations.filter(status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED], check_in__gte=today)
+    elif tab == "in_house":
+        reservations = reservations.filter(items__stay_status=StayStatus.CHECKED_IN).distinct()
+    elif tab == "expected_departures":
+        reservations = reservations.filter(items__stay_status=StayStatus.CHECKED_IN, check_out__gte=today).distinct()
+    elif tab == "departures":
+        reservations = reservations.filter(items__stay_status__in=[StayStatus.CHECKED_OUT, StayStatus.EARLY_CHECKOUT]).distinct()
+    elif tab == "no_show":
+        reservations = reservations.filter(status=ReservationStatus.NO_SHOW)
+    elif tab == "cancelled":
+        reservations = reservations.filter(status=ReservationStatus.CANCELLED)
+    return render(request, "booking/operations/front_office.html", {"title": "Front Office", "properties": properties, "selected_property": selected, "reservations": reservations[:250], "tab": tab, "today": today, "tabs": [("all", "Tümü"), ("expected_arrivals", "Beklenen gelişler"), ("in_house", "In-house"), ("expected_departures", "Beklenen çıkışlar"), ("departures", "Ayrılanlar"), ("no_show", "No-show"), ("cancelled", "İptaller")]})
+
+
+@login_required
+def call_requests(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için çağrı listesi yetkiniz yok.")
+    form = FrontOfficeCallRequestForm(request.POST or None)
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "create" and form.is_valid():
+            obj = form.save(commit=False); obj.property = selected; obj.created_by = request.user; obj.save(); messages.success(request, "Çağrı talebi kaydedildi.")
+        elif action == "status":
+            obj = selected.front_office_call_requests.filter(id=request.POST.get("call_id")).first()
+            status = request.POST.get("status")
+            if obj and status in dict(FrontOfficeCallRequest.Status.choices):
+                obj.status = status; obj.save(update_fields=["status", "updated_at"]); messages.success(request, "Çağrı durumu güncellendi.")
+        return redirect(f"{reverse('operations:call_requests')}?property_id={selected.id}")
+    calls = selected.front_office_call_requests.select_related("guest", "reservation", "created_by") if selected else FrontOfficeCallRequest.objects.none()
+    return render(request, "booking/operations/call_requests.html", {"title": "Çağrı Listesi", "properties": properties, "selected_property": selected, "form": form, "calls": calls[:250], "status_choices": FrontOfficeCallRequest.Status.choices})
 
 
 @login_required

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -201,3 +201,11 @@ class SupportAuditEventAdmin(admin.ModelAdmin):
 @admin.register(SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportVideoCategory, SupportVideo, SupportEducationRequest, SupportReferral)
 class SupportCatalogAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
+
+
+@admin.register(FrontOfficeCallRequest)
+class FrontOfficeCallRequestAdmin(admin.ModelAdmin):
+    list_display = ("name", "property", "phone", "status", "callback_at", "created_at")
+    list_filter = ("property", "status")
+    search_fields = ("name", "phone", "email", "note")
+    autocomplete_fields = ("property", "guest", "reservation", "created_by")

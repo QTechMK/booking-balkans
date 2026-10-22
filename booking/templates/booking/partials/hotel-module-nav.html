@@ -1,9 +1,11 @@
-{% if request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' %}
+{% if request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' or request.resolver_match.url_name == 'front_office' or request.resolver_match.url_name == 'call_requests' %}
 <nav class="hotel-module-nav" aria-label="Rezervasyon modülü">
   <span class="hotel-module-nav-label">REZERVASYON</span>
   <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a>
   <a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a>
   <a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a>
+  <a href="{% url 'operations:front_office' %}">Front Office Listeleri</a>
+  <a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a>
 </nav>
 {% elif request.resolver_match.url_name == 'business_channel_list' or request.resolver_match.url_name == 'business_channel_rate_rules' or request.resolver_match.url_name == 'business_price_parity' %}
 <nav class="hotel-module-nav" aria-label="Kanal yönetimi modülü">

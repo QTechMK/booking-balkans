@@ -628,3 +628,27 @@ class SupportReferral(models.Model):
     message = models.TextField(blank=True)
     status = models.CharField(max_length=20, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class FrontOfficeCallRequest(models.Model):
+    class Status(models.TextChoices):
+        NEW = "new", _("Yeni")
+        CONTACTED = "contacted", _("Geri dönüş yapıldı")
+        CONVERTED = "converted", _("Rezervasyona dönüştü")
+        CLOSED = "closed", _("Kapatıldı")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="front_office_call_requests")
+    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, null=True, blank=True, related_name="call_requests")
+    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, null=True, blank=True, related_name="call_requests")
+    name = models.CharField(max_length=160)
+    phone = models.CharField(max_length=40, blank=True)
+    email = models.EmailField(blank=True)
+    note = models.TextField(blank=True)
+    callback_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.NEW, db_index=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_call_requests")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
