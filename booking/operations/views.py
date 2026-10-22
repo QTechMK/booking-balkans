@@ -100,6 +100,8 @@ def dashboard(request):
             "dirty": HousekeepingTask.objects.filter(property=selected, status=HousekeepingStatus.DIRTY).count(),
             "maintenance": MaintenanceTicket.objects.filter(property=selected, status__in=[MaintenanceStatus.OPEN, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.WAITING]).count(),
             "tasks": OperationalTask.objects.filter(property=selected, status__in=[TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.WAITING]).count(),
+            "overdue_sla": OperationalTask.objects.filter(property=selected, sla_due_at__lt=timezone.now(), status__in=[TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.WAITING]).count(),
+            "overdue_maintenance": MaintenanceTicket.objects.filter(property=selected, sla_due_at__lt=timezone.now(), status__in=[MaintenanceStatus.OPEN, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.WAITING]).count(),
             "guests": Guest.objects.filter(property=selected).count(),
             "arrivals": ReservationItem.objects.filter(reservation__property=selected, reservation__check_in=today).count(),
             "departures": ReservationItem.objects.filter(reservation__property=selected, reservation__check_out=today).count(),
@@ -107,7 +109,7 @@ def dashboard(request):
         recent_tasks = OperationalTask.objects.filter(property=selected).select_related("assigned_to")[:8]
         recent_tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit")[:8]
     else:
-        metrics = {key: 0 for key in ["rooms_total", "occupied", "occupancy_percent", "dirty", "maintenance", "tasks", "guests", "arrivals", "departures"]}
+        metrics = {key: 0 for key in ["rooms_total", "occupied", "occupancy_percent", "dirty", "maintenance", "tasks", "overdue_sla", "overdue_maintenance", "guests", "arrivals", "departures"]}
         recent_tasks = OperationalTask.objects.none()
         recent_tickets = MaintenanceTicket.objects.none()
     return render(request, "booking/operations/dashboard.html", {
@@ -223,12 +225,16 @@ def housekeeping(request):
     status = request.GET.get("status")
     if status in HousekeepingStatus.values:
         tasks_qs = tasks_qs.filter(status=status)
+    floor = request.GET.get("floor", "").strip()
+    if floor:
+        tasks_qs = tasks_qs.filter(unit__floor=floor)
+    floors = selected.units.exclude(floor="").values_list("floor", flat=True).distinct().order_by("floor") if selected else []
     return render(request, "booking/operations/housekeeping.html", {
         "title": "Housekeeping",
         "properties": properties, "selected_property": selected, "tasks": tasks_qs,
         "units": selected.units.select_related("unit_type") if selected else Unit.objects.none(),
         "users": _users_for_property(selected), "status_choices": HousekeepingStatus.choices,
-        "priority_choices": TaskPriority.choices, "now": timezone.now(),
+        "priority_choices": TaskPriority.choices, "floors": floors, "selected_floor": floor, "now": timezone.now(),
     })
 
 
@@ -279,12 +285,16 @@ def maintenance(request):
             )
         return redirect(f"{reverse('operations:maintenance')}?property_id={selected.id}")
     tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else MaintenanceTicket.objects.none()
+    floor = request.GET.get("floor", "").strip()
+    if floor:
+        tickets = tickets.filter(unit__floor=floor)
+    floors = selected.units.exclude(floor="").values_list("floor", flat=True).distinct().order_by("floor") if selected else []
     return render(request, "booking/operations/maintenance.html", {
         "title": "Teknik Servis",
         "properties": properties, "selected_property": selected, "tickets": tickets,
         "units": selected.units.all() if selected else Unit.objects.none(), "users": _users_for_property(selected),
         "status_choices": MaintenanceStatus.choices, "priority_choices": TaskPriority.choices,
-        "now": timezone.now(),
+        "now": timezone.now(), "floors": floors, "selected_floor": floor,
     })
 
 
@@ -323,13 +333,17 @@ def tasks(request):
     form = OperationalTaskForm()
     if selected: _task_form_querysets(form, selected)
     tasks_qs = OperationalTask.objects.filter(property=selected).select_related("group", "location", "unit", "assigned_to") if selected else OperationalTask.objects.none()
+    floor = request.GET.get("floor", "").strip()
+    if floor:
+        tasks_qs = tasks_qs.filter(unit__floor=floor)
+    floors = selected.units.exclude(floor="").values_list("floor", flat=True).distinct().order_by("floor") if selected else []
     return render(request, "booking/operations/tasks.html", {
         "title": "Görev Yönetimi",
         "properties": properties, "selected_property": selected, "tasks": tasks_qs,
         "form": form, "task_groups": TaskGroup.objects.filter(property=selected) if selected else TaskGroup.objects.none(),
         "task_locations": TaskLocation.objects.filter(property=selected) if selected else TaskLocation.objects.none(),
         "status_choices": TaskStatus.choices, "priority_choices": TaskPriority.choices,
-        "now": timezone.now(),
+        "now": timezone.now(), "floors": floors, "selected_floor": floor,
     })
 
 
