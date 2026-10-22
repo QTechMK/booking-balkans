@@ -1,10 +1,15 @@
-{% if request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' or request.resolver_match.url_name == 'business_walk_in' or request.resolver_match.url_name == 'front_office' or request.resolver_match.url_name == 'call_requests' %}
+{% if request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' or request.resolver_match.url_name == 'business_walk_in' %}
 <nav class="hotel-module-nav" aria-label="Rezervasyon modülü">
   <span class="hotel-module-nav-label">REZERVASYON</span>
   <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a>
   <a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a>
   <a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a>
   <a href="{% url 'reservations:business_walk_in' %}">Walk-in Kayıt</a>
+</nav>
+{% elif request.resolver_match.url_name == 'front_office' or request.resolver_match.url_name == 'call_requests' or request.resolver_match.url_name == 'room_rack' %}
+<nav class="hotel-module-nav" aria-label="Resepsiyon ve ön büro modülü">
+  <span class="hotel-module-nav-label">RESEPSİYON / ÖN BÜRO</span>
+  <a href="{% url 'operations:room_rack' %}">Room Rack</a>
   <a href="{% url 'operations:front_office' %}">Front Office Listeleri</a>
   <a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a>
 </nav>
@@ -52,6 +57,32 @@
 <nav class="hotel-module-nav" aria-label="Acente modülü">
   <span class="hotel-module-nav-label">ACENTE YÖNETİMİ</span>
   <a href="{% url 'operations:agencies' %}">Acente Listesi</a>
+</nav>
+{% elif request.resolver_match.url_name == 'housekeeping' %}
+<nav class="hotel-module-nav" aria-label="Kat hizmetleri modülü">
+  <span class="hotel-module-nav-label">KAT HİZMETLERİ</span>
+  <a href="{% url 'operations:housekeeping' %}">Housekeeping</a>
+</nav>
+{% elif request.resolver_match.url_name == 'maintenance' %}
+<nav class="hotel-module-nav" aria-label="Teknik servis modülü">
+  <span class="hotel-module-nav-label">TEKNİK SERVİS</span>
+  <a href="{% url 'operations:maintenance' %}">Bakım ve Arıza</a>
+</nav>
+{% elif request.resolver_match.url_name == 'tasks' %}
+<nav class="hotel-module-nav" aria-label="Görev yönetimi modülü">
+  <span class="hotel-module-nav-label">GÖREV YÖNETİMİ</span>
+  <a href="{% url 'operations:tasks' %}">Görevler</a>
+</nav>
+{% elif request.resolver_match.url_name == 'access_control' %}
+<nav class="hotel-module-nav" aria-label="Kullanıcı ve yetki modülü">
+  <span class="hotel-module-nav-label">KULLANICI VE YETKİ</span>
+  <a href="{% url 'operations:access_control' %}">Kullanıcı ve Yetki</a>
+</nav>
+{% elif request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'reports' %}
+<nav class="hotel-module-nav" aria-label="Raporlar modülü">
+  <span class="hotel-module-nav-label">RAPORLAR</span>
+  <a href="{% url 'operations:dashboard' %}">Dashboard</a>
+  <a href="{% url 'operations:reports' %}">Operasyon Raporları</a>
 </nav>
 {% elif request.resolver_match.url_name == 'support_center' or request.resolver_match.url_name == 'support_faq' or request.resolver_match.url_name == 'support_education' or request.resolver_match.url_name == 'support_referral' or request.resolver_match.url_name == 'support_video' %}
 <nav class="hotel-module-nav" aria-label="Destek modülü">

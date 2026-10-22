@@ -6,32 +6,79 @@
 <div class="deznav"><div class="deznav-scroll"><ul class="metismenu" id="menu">
   <li class="nav-label">OTEL YÖNETİMİ</li>
   <li><a href="{% url 'operations:dashboard' %}"><i class="flaticon-381-home"></i><span class="nav-text">Dashboard</span></a></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-home"></i><span class="nav-text">Front Office</span></a><ul>
-    <li><a href="{% url 'operations:room_rack' %}">Oda Rack / Oda Durumu</a></li><li><a href="{% url 'operations:front_office' %}">Front Office Listeleri</a></li><li><a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a></li><li><a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a></li><li><a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a></li><li><a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a></li><li><a href="{% url 'operations:reports' %}">Operasyon Raporları</a></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Rezervasyon</span></a><ul>
+    <li><a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a></li>
+    <li><a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a></li>
+    <li><a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a></li>
+    <li><a href="{% url 'reservations:business_walk_in' %}">Walk-in Kayıt</a></li>
   </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-settings-2"></i><span class="nav-text">Otel Tanımları</span></a><ul>
-    <li><a href="{% url 'operations:property_settings' %}">Tesis Ayarları</a></li><li><a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a></li><li><a href="{% url 'operations:room_master' %}">Oda Tanımları</a></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-home"></i><span class="nav-text">Resepsiyon / Ön Büro</span></a><ul>
+    <li><a href="{% url 'operations:room_rack' %}">Room Rack</a></li>
+    <li><a href="{% url 'operations:front_office' %}">Front Office Listeleri</a></li>
+    <li><a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a></li>
+    <li><a href="{% url 'operations:reports' %}">Operasyon Raporları</a></li>
   </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Fiyat ve Envanter</span></a><ul>
-    <li><a href="{% url 'reservations:business_inventory' %}">Envanter</a></li><li><a href="{% url 'reservations:business_rate_plans' %}">Rate Planlar</a></li><li><a href="{% url 'reservations:business_rate_calendar' %}">Fiyat Takvimi</a></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-calendar"></i><span class="nav-text">Gün Sonu</span></a><ul>
+    <li><a href="{% url 'operations:night_audit' %}">Night Audit</a></li>
+    <li><a href="{% url 'operations:reports' %}">Gün Sonu Raporları</a></li>
   </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-link"></i><span class="nav-text">Kanal Yönetimi</span></a><ul>
-    <li><a href="{% url 'reservations:business_channel_list' %}">Rezervasyon Kanalları</a></li><li><a href="{% url 'reservations:business_channel_rate_rules' %}">Kanal Fiyat Kuralları</a></li><li><a href="{% url 'reservations:business_price_parity' %}">Fiyat Paritesi</a></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">CRM</span></a><ul>
+    <li><a href="{% url 'operations:crm_guests' %}">Misafir Profilleri</a></li>
+    <li><a href="{% url 'operations:crm_marketing' %}">Pazarlama ve Kampanyalar</a></li>
   </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Operasyon</span></a><ul>
-    <li><a href="{% url 'operations:housekeeping' %}">Housekeeping</a></li><li><a href="{% url 'operations:maintenance' %}">Teknik Servis / Bakım</a></li><li><a href="{% url 'operations:tasks' %}">Görev Yönetimi</a></li>
-  </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Muhasebe</span></a><ul>
-    <li><a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tanımları</a></li><li><a href="{% url 'operations:invoices' %}">Fatura Listesi</a></li><li><a href="{% url 'operations:payment_gateways' %}">Ödeme Geçitleri</a></li><li><a href="{% url 'operations:night_audit' %}">Night Audit</a></li>
-  </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">Acente Yönetimi</span></a><ul>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">Acente / Extranet</span></a><ul>
     <li><a href="{% url 'operations:agencies' %}">Acente Listesi</a></li>
   </ul></li>
-  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">Misafir ve CRM</span></a><ul>
-    <li><a href="{% url 'operations:crm_guests' %}">Misafir Profilleri</a></li><li><a href="{% url 'operations:crm_marketing' %}">Kampanya ve Şablonlar</a></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-link"></i><span class="nav-text">Online Rezervasyon</span></a><ul>
+    <li><a href="{% url 'operations:online_settings' %}">Online Booking Ayarları</a></li>
+    <li><a href="{% url 'reservations:business_channel_list' %}">Rezervasyon Kanalları</a></li>
+    <li><a href="{% url 'reservations:business_channel_rate_rules' %}">Kanal Fiyat Kuralları</a></li>
+    <li><a href="{% url 'reservations:business_price_parity' %}">Fiyat Paritesi</a></li>
+    <li><a href="{% url 'operations:payment_gateways' %}">Ödeme Geçitleri</a></li>
   </ul></li>
-  <li><a href="{% url 'operations:online_settings' %}"><i class="flaticon-381-smartphone"></i><span class="nav-text">Online Booking</span></a></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Fiyat ve Envanter</span></a><ul>
+    <li><a href="{% url 'reservations:business_inventory' %}">Envanter</a></li>
+    <li><a href="{% url 'reservations:business_rate_plans' %}">Rate Planlar</a></li>
+    <li><a href="{% url 'reservations:business_rate_calendar' %}">Fiyat Takvimi</a></li>
+  </ul></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-settings-2"></i><span class="nav-text">Otel Tanımları</span></a><ul>
+    <li><a href="{% url 'operations:property_settings' %}">Tesis Ayarları</a></li>
+    <li><a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a></li>
+    <li><a href="{% url 'operations:room_master' %}">Oda Tanımları</a></li>
+  </ul></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Kat Hizmetleri</span></a><ul>
+    <li><a href="{% url 'operations:housekeeping' %}">Housekeeping</a></li>
+  </ul></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-settings-2"></i><span class="nav-text">Teknik Servis</span></a><ul>
+    <li><a href="{% url 'operations:maintenance' %}">Bakım ve Arıza</a></li>
+  </ul></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Görev Yönetimi</span></a><ul>
+    <li><a href="{% url 'operations:tasks' %}">Görevler</a></li>
+  </ul></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Fatura</span></a><ul>
+    <li><a href="{% url 'operations:invoices' %}">Fatura Listesi</a></li>
+  </ul></li>
+
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Muhasebe</span></a><ul>
+    <li><a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tanımları</a></li>
+  </ul></li>
+
   <li><a href="{% url 'operations:access_control' %}"><i class="flaticon-381-networking"></i><span class="nav-text">Kullanıcı ve Yetki</span></a></li>
-  <li><a href="{% url 'operations:support_center' %}"><i class="flaticon-381-help-1"></i><span class="nav-text">Destek Merkezi</span></a></li>
-  <li class="nav-label">SİSTEM</li><li><a href="/admin/"><i class="flaticon-381-settings-1"></i><span class="nav-text">Django Admin</span></a></li><li><a href="/accounts/logout/"><i class="flaticon-381-exit"></i><span class="nav-text">Çıkış</span></a></li>
+  <li><a href="{% url 'operations:support_center' %}"><i class="flaticon-381-help-1"></i><span class="nav-text">Teknik Ayarlar ve Destek</span></a></li>
+
+  <li class="nav-label">SİSTEM</li>
+  <li><a href="/admin/"><i class="flaticon-381-settings-1"></i><span class="nav-text">Django Admin</span></a></li>
+  <li><a href="/accounts/logout/"><i class="flaticon-381-exit"></i><span class="nav-text">Çıkış</span></a></li>
 </ul><div class="copyright"><p>Booking Balkans<br>Hotel Manager</p></div></div></div>
