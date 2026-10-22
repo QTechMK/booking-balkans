@@ -27,6 +27,7 @@ from .models import (
     HousekeepingTaskHistory,
     MaintenanceStatus,
     MaintenanceTicket,
+    MaintenanceTicketHistory,
     OnlineBookingSettings,
     AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, PropertyService, ServiceRequest,
     PropertyRole,
@@ -243,7 +244,7 @@ def maintenance(request):
             sla_due_at = parse_datetime(request.POST.get("sla_due_at", ""))
             if sla_due_at and timezone.is_naive(sla_due_at):
                 sla_due_at = timezone.make_aware(sla_due_at)
-            MaintenanceTicket.objects.create(
+            new_ticket = MaintenanceTicket.objects.create(
                 property=selected,
                 unit=selected.units.filter(id=request.POST.get("unit_id")).first(),
                 title=request.POST["title"], description=request.POST.get("description", ""),
@@ -251,6 +252,12 @@ def maintenance(request):
                 assigned_to_id=request.POST.get("assigned_to") or None, created_by=request.user,
                 sla_due_at=sla_due_at,
                 estimated_cost=request.POST.get("estimated_cost") or None,
+            )
+            MaintenanceTicketHistory.objects.create(
+                ticket=new_ticket, property=selected, status=new_ticket.status,
+                assigned_to=new_ticket.assigned_to, resolution_note=new_ticket.resolution_note,
+                estimated_cost=new_ticket.estimated_cost, actual_cost=new_ticket.actual_cost,
+                changed_by=request.user,
             )
         elif ticket and action == "status" and request.POST.get("status") in MaintenanceStatus.values:
             ticket.status = request.POST["status"]
@@ -264,6 +271,12 @@ def maintenance(request):
                 ticket.resolved_at = None
                 ticket.resolved_by = None
             ticket.save(update_fields=["status", "assigned_to", "resolution_note", "actual_cost", "resolved_at", "resolved_by", "updated_at"])
+            MaintenanceTicketHistory.objects.create(
+                ticket=ticket, property=selected, status=ticket.status,
+                assigned_to=ticket.assigned_to, resolution_note=ticket.resolution_note,
+                estimated_cost=ticket.estimated_cost, actual_cost=ticket.actual_cost,
+                changed_by=request.user,
+            )
         return redirect(f"{reverse('operations:maintenance')}?property_id={selected.id}")
     tickets = MaintenanceTicket.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else MaintenanceTicket.objects.none()
     return render(request, "booking/operations/maintenance.html", {

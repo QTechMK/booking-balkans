@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -78,6 +78,14 @@ class MaintenanceTicketAdmin(admin.ModelAdmin):
     list_display = ("title", "property", "unit", "status", "priority", "assigned_to")
     list_filter = ("property", "status", "priority")
     search_fields = ("title", "description")
+
+
+@admin.register(MaintenanceTicketHistory)
+class MaintenanceTicketHistoryAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "ticket", "status", "assigned_to", "changed_by", "actual_cost")
+    list_filter = ("property", "status")
+    search_fields = ("ticket__title", "resolution_note")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(GuestProfileExtension)

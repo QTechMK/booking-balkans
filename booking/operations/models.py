@@ -165,6 +165,22 @@ class MaintenanceTicket(models.Model):
         indexes = [models.Index(fields=["property", "status"]), models.Index(fields=["property", "sla_due_at"])]
 
 
+class MaintenanceTicketHistory(models.Model):
+    ticket = models.ForeignKey(MaintenanceTicket, on_delete=models.CASCADE, related_name="history")
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="maintenance_history")
+    status = models.CharField(max_length=24, choices=MaintenanceStatus.choices)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="maintenance_history_assignments")
+    resolution_note = models.TextField(blank=True)
+    estimated_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    actual_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="maintenance_history_changes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["property", "ticket", "created_at"])]
+
+
 class GuestProfileExtension(models.Model):
     guest = models.OneToOneField(Guest, on_delete=models.CASCADE, related_name="profile_extension")
     gender = models.CharField(max_length=24, blank=True)
