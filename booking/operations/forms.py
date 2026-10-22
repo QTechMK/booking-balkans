@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from booking.tenancy.models import (
     BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
-from .models import AccessPermission, DepartmentDefinition, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, Invoice, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PaymentGateway, PropertyRole, PropertyService, RevenueCode, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
+from .models import AccessPermission, Agency, DepartmentDefinition, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, Invoice, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PaymentGateway, PropertyRole, PropertyService, RevenueCode, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
 
 
 class HotelModelForm(forms.ModelForm):
@@ -373,3 +373,10 @@ class PaymentGatewayForm(HotelModelForm):
     class Meta:
         model = PaymentGateway
         exclude = ["property"]
+
+
+class AgencyForm(HotelModelForm):
+    class Meta:
+        model = Agency
+        exclude = ["property"]
+        widgets = {"notes": forms.Textarea(attrs={"rows": 3})}

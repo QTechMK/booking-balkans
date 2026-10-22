@@ -37,12 +37,12 @@ from .models import (
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus, UserAccessLog, UserPropertyAccess, DepartmentDefinition, FrontOfficeCallRequest, Invoice, NightAuditRun, PaymentGateway, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
+    TaskStatus, UserAccessLog, UserPropertyAccess, Agency, DepartmentDefinition, FrontOfficeCallRequest, Invoice, NightAuditRun, PaymentGateway, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, InvoiceForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PaymentGatewayForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    AgencyForm, DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, InvoiceForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PaymentGatewayForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -231,6 +231,22 @@ def night_audit(request):
         return redirect(f"{reverse('operations:night_audit')}?property_id={selected.id}")
     runs = selected.night_audit_runs.select_related("actor")[:100] if selected else NightAuditRun.objects.none()
     return render(request, "booking/operations/night_audit.html", {"title": "Gün Sonu / Night Audit", "properties": properties, "selected_property": selected, "runs": runs})
+
+
+@login_required
+def agencies(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için acente yetkiniz yok.")
+    form = AgencyForm(request.POST or None)
+    if request.method == "POST" and selected and form.is_valid():
+        agency = form.save(commit=False)
+        agency.property = selected
+        agency.save()
+        messages.success(request, "Acente kaydedildi.")
+        return redirect(f"{reverse('operations:agencies')}?property_id={selected.id}")
+    agencies_qs = selected.agencies.all() if selected else Agency.objects.none()
+    return render(request, "booking/operations/agencies.html", {"title": "Acente Yönetimi", "properties": properties, "selected_property": selected, "form": form, "agencies": agencies_qs})
 
 
 @login_required

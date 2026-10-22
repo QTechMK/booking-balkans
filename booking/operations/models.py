@@ -737,3 +737,27 @@ class NightAuditRun(models.Model):
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="night_audit_runs")
     summary = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
+
+
+class Agency(models.Model):
+    class PaymentMethod(models.TextChoices):
+        INVOICE = "invoice", _("Invoice")
+        CARD = "card", _("Card")
+        PREPAID = "prepaid", _("Prepaid")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="agencies")
+    code = models.SlugField(max_length=60)
+    name = models.CharField(max_length=180)
+    contact_name = models.CharField(max_length=160, blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    commission_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    payment_method = models.CharField(max_length=16, choices=PaymentMethod.choices, default=PaymentMethod.INVOICE)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_agency_code_per_property")]

@@ -27,6 +27,7 @@ urlpatterns = [
     path("business/payment-gateways/", views.payment_gateways, name="payment_gateways"),
     path("business/payment-gateways/<int:gateway_id>/", views.payment_gateway_detail, name="payment_gateway_detail"),
     path("business/night-audit/", views.night_audit, name="night_audit"),
+    path("business/agencies/", views.agencies, name="agencies"),
     path("business/support/", views.support_center, name="support_center"),
     path("business/support/faq/", views.support_faq, name="support_faq"),
     path("business/support/education/", views.support_education, name="support_education"),
