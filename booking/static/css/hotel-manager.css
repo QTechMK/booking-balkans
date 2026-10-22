@@ -33,6 +33,10 @@ body { background: #f5f6fa; }
 
 /* ElektraWeb-inspired Hotel ERP workspace: compact toolbar, tabs and dense grids. */
 .hotel-erp-page { font-size: .82rem; color: #303743; }
+.hotel-module-nav { display: flex; align-items: center; gap: 2px; min-height: 38px; margin: -4px 0 10px; padding: 0 6px; border-bottom: 1px solid #d9dee8; background: #fff; box-shadow: 0 1px 2px rgba(30,40,60,.05); overflow-x: auto; white-space: nowrap; }
+.hotel-module-nav-label { color: #7b8494; font-size: .65rem; font-weight: 700; letter-spacing: .08em; padding: 0 10px 0 4px; }
+.hotel-module-nav a { display: inline-flex; align-items: center; min-height: 38px; padding: 0 11px; color: #596579; border-bottom: 3px solid transparent; font-size: .78rem; font-weight: 600; text-decoration: none; transition: color .18s ease, background .18s ease, border-color .18s ease; }
+.hotel-module-nav a:hover { color: #2130b8; background: #f3f5ff; border-bottom-color: #6a75dc; }
 .hotel-erp-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 58px; margin: -4px 0 8px; }
 .hotel-erp-heading h1 { margin: 0; color: #242d3d; font-size: 1.35rem; font-weight: 700; }
 .hotel-erp-kicker { display: block; color: #7b8494; font-size: .65rem; font-weight: 700; letter-spacing: .11em; margin-bottom: 2px; }
