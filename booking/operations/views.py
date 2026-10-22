@@ -41,7 +41,7 @@ from .models import (
     UnitHousekeepingState,
 )
 from .forms import (
-    BedTypeForm, BoardTypeForm, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
+    BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
     GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
@@ -591,6 +591,9 @@ def access_control(request):
         staff_users = staff_users.filter(is_active=True)
     elif user_status == "passive":
         staff_users = staff_users.filter(is_active=False)
+    department_filter = request.GET.get("department", "")
+    if department_filter:
+        staff_users = staff_users.filter(department=department_filter)
     profile_user_id = request.POST.get("profile_user_id") or request.GET.get("profile_user_id")
     profile_user = staff_users.filter(id=profile_user_id).first() if profile_user_id else None
     profile_form = UserProfileForm(request.POST or None, instance=profile_user, prefix="profile")
@@ -654,14 +657,17 @@ def access_control(request):
     mfa_recovery = Authenticator.objects.filter(user=profile_user, type=Authenticator.Type.RECOVERY_CODES).first() if profile_user else None
     mfa_unused_count = len(mfa_recovery.wrap().get_unused_codes()) if mfa_recovery else 0
     profile_user_access = UserPropertyAccess.objects.filter(user=profile_user, property=selected, is_active=True).order_by("id").first() if profile_user and selected else None
+    accesses = selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none()
+    if department_filter:
+        accesses = accesses.filter(Q(user__department=department_filter) | Q(role__department=department_filter))
     return render(request, "booking/operations/access_control.html", {
         "title": "Kullanıcı ve Yetki",
         "properties": properties, "selected_property": selected,
         "memberships": list(memberships) + list(property_memberships),
-        "user_status": user_status,
+        "user_status": user_status, "department_filter": department_filter, "department_choices": DEPARTMENT_CHOICES,
         "roles": selected.access_roles.prefetch_related("permissions") if selected else PropertyRole.objects.none(),
         "permission_catalog": AccessPermission.objects.filter(is_active=True) if selected else AccessPermission.objects.none(),
-        "accesses": selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none(),
+        "accesses": accesses,
         "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),
         "role_form": role_form, "access_form": access_form, "pin_form": pin_form, "staff_users": staff_users,
         "profile_user": profile_user, "profile_form": profile_form,

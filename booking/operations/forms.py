@@ -227,7 +227,19 @@ class PropertyServiceForm(HotelModelForm):
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
 
+DEPARTMENT_CHOICES = (
+    ("Front Office", "Front Office"),
+    ("Reservations", "Reservations"),
+    ("Housekeeping", "Housekeeping"),
+    ("Maintenance", "Maintenance"),
+    ("Finance", "Finance"),
+    ("Management", "Management"),
+)
+
+
 class PropertyRoleForm(HotelModelForm):
+    department = forms.ChoiceField(choices=(("", "Departman seçin"),) + DEPARTMENT_CHOICES, required=False, label="Departman")
+
     class Meta:
         model = PropertyRole
         fields = ["name", "department", "permissions", "is_active"]
