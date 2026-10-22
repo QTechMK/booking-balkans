@@ -4,6 +4,7 @@ from django.conf import settings as django_settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q, Sum
 from django.db.models import BooleanField
@@ -568,6 +569,10 @@ def access_control(request):
         if action == "access" and access_form.is_valid():
             access = access_form.save(commit=False)
             access.property = selected
+            pin = access_form.cleaned_data.get("pin")
+            if pin:
+                access.pin_hash = make_password(pin)
+                access.last_pin_change = timezone.now()
             access.save()
             messages.success(request, "Kullanıcı property erişimi kaydedildi.")
             return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}")

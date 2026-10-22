@@ -435,6 +435,14 @@ class UserPropertyAccess(models.Model):
     valid_until = models.DateField(null=True, blank=True)
     two_factor_required = models.BooleanField(default=False)
     last_pin_change = models.DateTimeField(null=True, blank=True)
+    allowed_ip = models.GenericIPAddressField(null=True, blank=True)
+    device_label = models.CharField(max_length=120, blank=True)
+    pin_hash = models.CharField(max_length=128, blank=True)
+    purchase_approval_required = models.BooleanField(default=False)
+    bypass_price_control = models.BooleanField(default=False)
+    own_cash_only = models.BooleanField(default=False)
+    pos_access = models.BooleanField(default=False)
+    financial_access = models.BooleanField(default=False)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "property", "role"], name="unique_user_property_role")]

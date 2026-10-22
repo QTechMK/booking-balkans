@@ -233,9 +233,11 @@ class PropertyRoleForm(HotelModelForm):
 
 
 class UserPropertyAccessForm(HotelModelForm):
+    pin = forms.CharField(required=False, max_length=32, strip=True, widget=forms.PasswordInput(render_value=False))
+
     class Meta:
         model = UserPropertyAccess
-        fields = ["user", "role", "is_active", "valid_from", "valid_until", "two_factor_required", "last_pin_change"]
+        fields = ["user", "role", "is_active", "valid_from", "valid_until", "two_factor_required", "last_pin_change", "allowed_ip", "device_label", "purchase_approval_required", "bypass_price_control", "own_cash_only", "pos_access", "financial_access", "pin"]
         widgets = {
             "valid_from": forms.DateInput(attrs={"type": "date"}),
             "valid_until": forms.DateInput(attrs={"type": "date"}),

@@ -59,10 +59,11 @@ class PropertyRoleAdmin(admin.ModelAdmin):
 
 @admin.register(UserPropertyAccess)
 class UserPropertyAccessAdmin(admin.ModelAdmin):
-    list_display = ("user", "property", "role", "is_active", "two_factor_required", "valid_until")
+    list_display = ("user", "property", "role", "is_active", "two_factor_required", "allowed_ip", "device_label", "financial_access", "valid_until")
     list_filter = ("property", "role", "is_active", "two_factor_required")
     search_fields = ("user__username", "user__email", "property__name", "role__name")
     autocomplete_fields = ("user", "property", "role")
+    exclude = ("pin_hash",)
 
 
 @admin.register(UserAccessLog)
