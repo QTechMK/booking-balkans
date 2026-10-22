@@ -10,7 +10,7 @@
     <li><a href="{% url 'operations:room_rack' %}">Oda Rack / Oda Durumu</a></li><li><a href="{% url 'operations:front_office' %}">Front Office Listeleri</a></li><li><a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a></li><li><a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a></li><li><a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a></li><li><a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a></li><li><a href="{% url 'operations:reports' %}">Operasyon Raporları</a></li>
   </ul></li>
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-settings-2"></i><span class="nav-text">Otel Tanımları</span></a><ul>
-    <li><a href="{% url 'operations:property_settings' %}">Tesis Ayarları</a></li><li><a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a></li><li><a href="{% url 'operations:room_master' %}">Oda Tanımları</a></li><li><a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tanımları</a></li>
+    <li><a href="{% url 'operations:property_settings' %}">Tesis Ayarları</a></li><li><a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a></li><li><a href="{% url 'operations:room_master' %}">Oda Tanımları</a></li>
   </ul></li>
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Fiyat ve Envanter</span></a><ul>
     <li><a href="{% url 'reservations:business_inventory' %}">Envanter</a></li><li><a href="{% url 'reservations:business_rate_plans' %}">Rate Planlar</a></li><li><a href="{% url 'reservations:business_rate_calendar' %}">Fiyat Takvimi</a></li>
@@ -20,6 +20,12 @@
   </ul></li>
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Operasyon</span></a><ul>
     <li><a href="{% url 'operations:housekeeping' %}">Housekeeping</a></li><li><a href="{% url 'operations:maintenance' %}">Teknik Servis / Bakım</a></li><li><a href="{% url 'operations:tasks' %}">Görev Yönetimi</a></li>
+  </ul></li>
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Muhasebe</span></a><ul>
+    <li><a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tanımları</a></li><li><a href="{% url 'operations:invoices' %}">Fatura Listesi</a></li><li><a href="{% url 'operations:payment_gateways' %}">Ödeme Geçitleri</a></li><li><a href="{% url 'operations:night_audit' %}">Night Audit</a></li>
+  </ul></li>
+  <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">Acente Yönetimi</span></a><ul>
+    <li><a href="{% url 'operations:agencies' %}">Acente Listesi</a></li>
   </ul></li>
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">Misafir ve CRM</span></a><ul>
     <li><a href="{% url 'operations:crm_guests' %}">Misafir Profilleri</a></li><li><a href="{% url 'operations:crm_marketing' %}">Kampanya ve Şablonlar</a></li>
