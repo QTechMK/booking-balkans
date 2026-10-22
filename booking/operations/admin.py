@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -8,6 +8,14 @@ class HousekeepingTaskAdmin(admin.ModelAdmin):
     list_display = ("unit", "status", "priority", "assigned_to", "updated_at")
     list_filter = ("property", "status", "priority")
     search_fields = ("unit__code", "note")
+
+
+@admin.register(HousekeepingTaskHistory)
+class HousekeepingTaskHistoryAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "unit", "status", "shift", "assigned_to", "changed_by")
+    list_filter = ("property", "status", "shift")
+    search_fields = ("unit__code", "note")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(UnitHousekeepingState)

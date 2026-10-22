@@ -103,6 +103,22 @@ class HousekeepingTask(models.Model):
         return f"{self.unit.code} - {self.get_status_display()}"
 
 
+class HousekeepingTaskHistory(models.Model):
+    task = models.ForeignKey(HousekeepingTask, on_delete=models.CASCADE, related_name="history")
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="housekeeping_history")
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="housekeeping_history")
+    status = models.CharField(max_length=24, choices=HousekeepingStatus.choices)
+    shift = models.CharField(max_length=40, blank=True)
+    note = models.TextField(blank=True)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="housekeeping_history_assignments")
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="housekeeping_history_changes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["property", "unit", "created_at"])]
+
+
 class UnitHousekeepingState(models.Model):
     """Canonical current housekeeping state for a physical room."""
 

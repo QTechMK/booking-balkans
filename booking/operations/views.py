@@ -24,6 +24,7 @@ from .models import (
     GuestProfileExtension,
     HousekeepingStatus,
     HousekeepingTask,
+    HousekeepingTaskHistory,
     MaintenanceStatus,
     MaintenanceTicket,
     OnlineBookingSettings,
@@ -170,7 +171,7 @@ def housekeeping(request):
             due_at = parse_datetime(request.POST.get("due_at", "")) if request.POST.get("due_at") else None
             if due_at and timezone.is_naive(due_at):
                 due_at = timezone.make_aware(due_at)
-            HousekeepingTask.objects.create(
+            new_task = HousekeepingTask.objects.create(
                 property=selected, unit=unit,
                 status=request.POST.get("status", HousekeepingStatus.DIRTY),
                 priority=request.POST.get("priority", TaskPriority.NORMAL),
@@ -178,6 +179,11 @@ def housekeeping(request):
                 shift=request.POST.get("shift", "").strip(),
                 note=request.POST.get("note", ""),
                 due_at=due_at,
+            )
+            HousekeepingTaskHistory.objects.create(
+                task=new_task, property=selected, unit=unit, status=new_task.status,
+                shift=new_task.shift, note=new_task.note, assigned_to=new_task.assigned_to,
+                changed_by=request.user,
             )
             UnitHousekeepingState.objects.update_or_create(
                 unit=unit,
@@ -193,6 +199,11 @@ def housekeeping(request):
                 task.inspected_at = timezone.now() if status in {HousekeepingStatus.INSPECTION, HousekeepingStatus.CLEAN} else task.inspected_at
                 task.inspected_by = request.user if status in {HousekeepingStatus.INSPECTION, HousekeepingStatus.CLEAN} else task.inspected_by
                 task.save(update_fields=["status", "assigned_to", "shift", "note", "inspected_at", "inspected_by", "updated_at"])
+                HousekeepingTaskHistory.objects.create(
+                    task=task, property=selected, unit=task.unit, status=task.status,
+                    shift=task.shift, note=task.note, assigned_to=task.assigned_to,
+                    changed_by=request.user,
+                )
                 UnitHousekeepingState.objects.update_or_create(
                     unit=task.unit,
                     defaults={"status": status, "note": task.note, "changed_by": request.user},
