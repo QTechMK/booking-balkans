@@ -10,7 +10,6 @@
     <a class="{% if request.resolver_match.url_name == 'housekeeping' %}is-active{% endif %}" href="{% url 'operations:housekeeping' %}"><i class="fa fa-broom"></i> Housekeeping</a>
     <a class="{% if request.resolver_match.url_name == 'tasks' %}is-active{% endif %}" href="{% url 'operations:tasks' %}"><i class="fa fa-tasks"></i> Görevler</a>
     <a class="{% if request.resolver_match.url_name == 'maintenance' %}is-active{% endif %}" href="{% url 'operations:maintenance' %}"><i class="fa fa-wrench"></i> Teknik Servis</a>
-    <a class="{% if request.resolver_match.url_name == 'access_control' %}is-active{% endif %}" href="{% url 'operations:access_control' %}"><i class="fa fa-users"></i> Kullanıcılar</a>
     <a class="hotel-erp-refresh" href="javascript:location.reload()"><i class="fa fa-refresh"></i> Yenile</a>
   </nav>
   <section class="hotel-erp-content">{% block operations_content %}{% endblock %}</section>
