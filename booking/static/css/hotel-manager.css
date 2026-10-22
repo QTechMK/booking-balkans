@@ -215,6 +215,12 @@ body { background: #f5f6fa; }
 .security-audit-summary > span, .security-audit-summary > small { color: #7a8494; font-size: .72rem; }
 .security-audit-summary > div { display: flex; gap: .65rem; align-items: baseline; flex-wrap: wrap; font-size: .75rem; }
 .security-audit-summary code { color: #58657a; white-space: pre-wrap; word-break: break-word; }
+.security-assignment-summary { display: grid; gap: .35rem; margin-bottom: .75rem; padding: .65rem .75rem; border: 1px solid #dce2eb; background: #fff; }
+.security-assignment-summary > strong { color: #29344b; font-size: .78rem; }
+.security-assignment-summary > span, .security-assignment-summary > small { color: #7a8494; font-size: .7rem; }
+.security-assignment-summary > div { display: grid; grid-template-columns: 150px 150px 1fr; gap: .5rem; align-items: baseline; padding: .35rem 0; border-top: 1px solid #edf0f4; font-size: .72rem; }
+.security-assignment-summary > div b { color: #29344b; }
+.security-assignment-summary > div span, .security-assignment-summary > div small { color: #657084; }
 .security-field { display: grid; gap: .25rem; }
 .security-field input, .security-field select, .security-field textarea { width: 100%; min-height: 32px; }
 .security-access-form .security-checkbox-field { display: flex; align-items: center; gap: .45rem; min-height: 32px; padding: .25rem .45rem; border: 1px solid #e4e8ef; background: #fafbfc; }

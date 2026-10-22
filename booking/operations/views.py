@@ -657,6 +657,9 @@ def access_control(request):
     mfa_recovery = Authenticator.objects.filter(user=profile_user, type=Authenticator.Type.RECOVERY_CODES).first() if profile_user else None
     mfa_unused_count = len(mfa_recovery.wrap().get_unused_codes()) if mfa_recovery else 0
     profile_user_access = UserPropertyAccess.objects.filter(user=profile_user, property=selected, is_active=True).order_by("id").first() if profile_user and selected else None
+    profile_user_accesses = UserPropertyAccess.objects.filter(
+        user=profile_user, property=selected, is_active=True,
+    ).select_related("role").prefetch_related("role__permissions") if profile_user and selected else UserPropertyAccess.objects.none()
     accesses = selected.user_accesses.select_related("user", "role") if selected else UserPropertyAccess.objects.none()
     if department_filter:
         accesses = accesses.filter(Q(user__department=department_filter) | Q(role__department=department_filter))
@@ -672,6 +675,7 @@ def access_control(request):
         "role_form": role_form, "access_form": access_form, "pin_form": pin_form, "staff_users": staff_users,
         "profile_user": profile_user, "profile_form": profile_form,
         "profile_user_access": profile_user_access,
+        "profile_user_accesses": profile_user_accesses,
         "mfa_enabled": bool(profile_user and is_mfa_enabled(profile_user)),
         "mfa_totp": mfa_totp, "mfa_recovery": mfa_recovery, "mfa_unused_count": mfa_unused_count,
         "can_manage_user_mfa": _can_manage_user_mfa(request, selected),
