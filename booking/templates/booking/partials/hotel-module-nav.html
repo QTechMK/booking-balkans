@@ -1,4 +1,9 @@
-{% if request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' or request.resolver_match.url_name == 'business_walk_in' %}
+{% if planned_nav %}
+<nav class="hotel-module-nav" aria-label="{{ planned_screen.module_label }} modülü">
+  <span class="hotel-module-nav-label">{{ planned_screen.module_label }}</span>
+  {% for item in planned_nav %}<a href="{{ item.url }}">{{ item.label }}</a>{% endfor %}
+</nav>
+{% elif request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' or request.resolver_match.url_name == 'business_walk_in' %}
 <nav class="hotel-module-nav" aria-label="Rezervasyon modülü">
   <span class="hotel-module-nav-label">REZERVASYON</span>
   <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a>

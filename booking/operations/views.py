@@ -88,6 +88,85 @@ def _support_context(request):
     return properties, selected, False
 
 
+# ElektraWeb uyumluluk kataloğunda ekranı tanımlanmış, ancak iş akışı henüz
+# geliştirilmemiş ekranlar. Her kayıt gerçek bir URL alır; ortak ekran kabuğu
+# daha sonraki sprintlerde ilgili forma veya listeye dönüştürülebilir.
+PLANNED_SCREENS = {
+    "quick_setup": {"module": "setup", "module_label": "SETUP", "label": "Quick Setup", "title": "Quick Setup", "description": "Tesis kurulum sihirbazı."},
+    "hotel_settings_menu": {"module": "setup", "module_label": "SETUP", "label": "Hotel Settings Menu", "title": "Hotel Settings Menu", "description": "Otel tanım ekranlarının klasör yapısı."},
+    "agency_panel": {"module": "setup", "module_label": "SETUP", "label": "ElektraHotels.com Agency Panel", "title": "ElektraHotels.com Agency Panel", "description": "ElektraHotels.com acente paneli bağlantısı."},
+    "giata_drive": {"module": "setup", "module_label": "SETUP", "label": "Giata Drive", "title": "Giata Drive", "description": "Giata tesis ve oda verisi senkronizasyonu."},
+    "licence_info": {"module": "setup", "module_label": "SETUP", "label": "Licence Info", "title": "Licence Info", "description": "Lisans ve modül kullanım bilgileri."},
+    "selected_modules": {"module": "setup", "module_label": "SETUP", "label": "Selected Modules", "title": "Selected Modules", "description": "Tesis için etkinleştirilen modüller."},
+    "questions": {"module": "setup", "module_label": "SETUP", "label": "Questions", "title": "Questions", "description": "Kurulum ve operasyon soru tanımları."},
+    "contact_us": {"module": "setup", "module_label": "SETUP", "label": "Contact Us", "title": "Contact Us", "description": "Destek ekibiyle iletişim kanalları."},
+    "manager_support_form": {"module": "setup", "module_label": "SETUP", "label": "Manager Support Form", "title": "Manager Support Form", "description": "Otel yöneticisi destek formu."},
+    "correction_form": {"module": "setup", "module_label": "SETUP", "label": "Correction Form", "title": "Correction Form", "description": "Veri ve tanım düzeltme talebi formu."},
+    "carbon_certificate": {"module": "setup", "module_label": "SETUP", "label": "Carbon Certificate", "title": "Carbon Certificate", "description": "Karbon sertifikası ve sürdürülebilirlik kayıtları."},
+
+    "front_office_status": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Status", "title": "Front Office Status", "description": "Ön büro operasyon durumları ve hızlı filtreler."},
+    "group_reservations": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Group Reservations", "title": "Group Reservations", "description": "Grup rezervasyonu ve grup konaklama yönetimi."},
+    "tour_operator_integrations": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Tour Operator Integrations", "title": "Tour Operator Integrations", "description": "Tur operatörü entegrasyonları."},
+    "room_type_availability": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Room Type Availability", "title": "Room Type Availability", "description": "Oda tipi bazında müsaitlik görünümü."},
+    "available_rooms": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Available Rooms", "title": "Available Rooms", "description": "Tarih ve oda tipi bazında müsait odalar."},
+    "quick_room_assignment": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Quick Room Assignment", "title": "Quick Room Assignment", "description": "Rezervasyona hızlı oda atama ekranı."},
+    "quick_posting": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Quick Posting", "title": "Quick Posting", "description": "Folyoya hızlı işlem gönderme ekranı."},
+    "folio_balances": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Reservation Folio Balances", "title": "Reservation Folio Balances", "description": "Rezervasyonların açık folyo bakiyeleri."},
+    "front_cash": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Front Cash", "title": "Front Cash", "description": "Ön kasa tahsilat ve kasa hareketleri."},
+    "credit_accounts": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Credit Accounts", "title": "Credit Accounts", "description": "Kredili cari hesaplar ve limitleri."},
+    "daily_currency_rates": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Daily Currency Rates & Entry", "title": "Daily Currency Rates & Entry", "description": "Günlük döviz kurları ve kur girişi."},
+    "folio_routing": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Folio Routing List", "title": "Folio Routing List", "description": "Folio yönlendirme kuralları."},
+    "guest_cards": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Guest Cards", "title": "Guest Cards", "description": "Ayrıntılı misafir kartı, belgeler ve konaklama geçmişi."},
+    "guest_medical_daily": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Guest Medical Daily List", "title": "Guest Medical Daily List", "description": "Yetkili kullanıcılar için günlük misafir sağlık kayıtları."},
+    "closed_room_list": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Closed Room List", "title": "Closed Room List", "description": "Satışa ve kullanıma kapalı oda listesi."},
+    "lost_and_found": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Lost and Found", "title": "Lost and Found", "description": "Kayıp eşya kayıt ve teslim süreci."},
+    "hotel_phone_book": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Hotel Phone Book", "title": "Hotel Phone Book", "description": "Otel dahili ve iletişim rehberi."},
+    "police_lists": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Police Lists", "title": "Police Lists", "description": "Yetkili makamlara yönelik konaklama listeleri."},
+    "offline_backup": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Offline Backup", "title": "Offline Backup", "description": "Çevrimdışı yedek ve geri yükleme işlemleri."},
+    "park_entry": {"module": "front_office", "module_label": "FRONT OFFICE", "label": "Park Entry", "title": "Park Entry", "description": "Otopark giriş ve çıkış kayıtları."},
+
+    "archived_end_of_day_reports": {"module": "night_audit", "module_label": "NIGHT AUDIT", "label": "Archived End Of Day Reports", "title": "Archived End Of Day Reports", "description": "Arşivlenmiş gün sonu raporları."},
+    "night_audit_html_reports": {"module": "night_audit", "module_label": "NIGHT AUDIT", "label": "Night Audit HTML Reports", "title": "Night Audit HTML Reports", "description": "Night Audit HTML raporları."},
+    "end_of_year": {"module": "night_audit", "module_label": "NIGHT AUDIT", "label": "End Of Year", "title": "End Of Year", "description": "Yıl sonu kapanış ve devir işlemleri."},
+    "end_of_day_log_2": {"module": "night_audit", "module_label": "NIGHT AUDIT", "label": "End of The Day Log 2", "title": "End of The Day Log 2", "description": "İkinci gün sonu işlem log görünümü."},
+    "reservation_updates": {"module": "night_audit", "module_label": "NIGHT AUDIT", "label": "Reservation Updates", "title": "Reservation Updates", "description": "Gün sonu sırasında oluşan rezervasyon değişiklikleri."},
+
+    "all_invoices": {"module": "invoice", "module_label": "INVOICE", "label": "All Invoices", "title": "All Invoices", "description": "Tüm fatura türlerinin birleşik görünümü."},
+    "mustahsil": {"module": "invoice", "module_label": "INVOICE", "label": "Mustahsil", "title": "Mustahsil", "description": "Müstahsil makbuzu kayıtları."},
+    "all_accounts": {"module": "invoice", "module_label": "INVOICE", "label": "All Accounts", "title": "All Accounts", "description": "Fatura cari hesapları."},
+    "sales_price_agreements": {"module": "invoice", "module_label": "INVOICE", "label": "Sales Price Agreements", "title": "Sales Price Agreements", "description": "Satış fiyat anlaşmaları."},
+    "invoice_bulk_control": {"module": "invoice", "module_label": "INVOICE", "label": "Invoice Control and Bulk Create", "title": "Invoice Control and Bulk Create", "description": "Fatura kontrolü ve toplu fatura oluşturma."},
+    "proforma_invoice_list": {"module": "invoice", "module_label": "INVOICE", "label": "Proforma Invoice List", "title": "Proforma Invoice List", "description": "Proforma fatura listesi."},
+    "proforma_control_create": {"module": "invoice", "module_label": "INVOICE", "label": "Proforma Control and Create List", "title": "Proforma Control and Create List", "description": "Proforma kontrol ve oluşturma işlemleri."},
+    "bavel_invoice_list": {"module": "invoice", "module_label": "INVOICE", "label": "Bavel Invoice List", "title": "Bavel Invoice List", "description": "Bavel fatura listesi ve entegrasyon durumu."},
+    "credit_control_list": {"module": "invoice", "module_label": "INVOICE", "label": "Credit Control List", "title": "Credit Control List", "description": "Kredi ve tahsilat kontrol listesi."},
+    "quick_invoice": {"module": "invoice", "module_label": "INVOICE", "label": "Quick Invoice", "title": "Quick Invoice", "description": "Hızlı fatura işlemleri."},
+    "quick_invoice_new": {"module": "invoice", "module_label": "INVOICE", "label": "Quick Invoice New", "title": "Quick Invoice New", "description": "Yeni hızlı fatura oluşturma."},
+    "safe_receipt": {"module": "invoice", "module_label": "INVOICE", "label": "Safe Receipt", "title": "Safe Receipt", "description": "Kasa makbuzu işlemleri."},
+    "e_invoice_definitions": {"module": "invoice", "module_label": "INVOICE", "label": "E-Invoice Definitions", "title": "E-Invoice Definitions", "description": "E-fatura tanım ve entegrasyon ayarları."},
+}
+
+
+@login_required
+def planned_screen(request, screen_key):
+    screen = PLANNED_SCREENS.get(screen_key)
+    if not screen:
+        return HttpResponse("Ekran bulunamadı.", status=404)
+    properties, selected = _selected_property(request)
+    planned_nav = [
+        {"label": item["label"], "url": reverse(f"operations:{key}")}
+        for key, item in PLANNED_SCREENS.items()
+        if item["module"] == screen["module"]
+    ]
+    return render(request, "booking/operations/planned_screen.html", {
+        "title": screen["title"],
+        "properties": properties,
+        "selected_property": selected,
+        "planned_screen": screen,
+        "planned_nav": planned_nav,
+    })
+
+
 @login_required
 def front_office(request):
     properties, selected = _selected_property(request)

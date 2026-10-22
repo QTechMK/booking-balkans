@@ -21,12 +21,37 @@
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-home"></i><span class="nav-text">Ön Büro</span></a><ul>
     <li><a href="{% url 'operations:front_office' %}">Front Office Listeleri</a></li>
     <li><a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a></li>
+    <li><a href="{% url 'operations:front_office_status' %}">Status</a></li>
+    <li><a href="{% url 'operations:group_reservations' %}">Group Reservations</a></li>
+    <li><a href="{% url 'operations:tour_operator_integrations' %}">Tour Operator Integrations</a></li>
+    <li><a href="{% url 'operations:room_type_availability' %}">Room Type Availability</a></li>
+    <li><a href="{% url 'operations:available_rooms' %}">Available Rooms</a></li>
+    <li><a href="{% url 'operations:quick_room_assignment' %}">Quick Room Assignment</a></li>
+    <li><a href="{% url 'operations:quick_posting' %}">Quick Posting</a></li>
+    <li><a href="{% url 'operations:folio_balances' %}">Reservation Folio Balances</a></li>
+    <li><a href="{% url 'operations:front_cash' %}">Front Cash</a></li>
+    <li><a href="{% url 'operations:credit_accounts' %}">Credit Accounts</a></li>
+    <li><a href="{% url 'operations:daily_currency_rates' %}">Daily Currency Rates &amp; Entry</a></li>
+    <li><a href="{% url 'operations:folio_routing' %}">Folio Routing List</a></li>
+    <li><a href="{% url 'operations:guest_cards' %}">Guest Cards</a></li>
+    <li><a href="{% url 'operations:guest_medical_daily' %}">Guest Medical Daily List</a></li>
+    <li><a href="{% url 'operations:closed_room_list' %}">Closed Room List</a></li>
+    <li><a href="{% url 'operations:lost_and_found' %}">Lost and Found</a></li>
+    <li><a href="{% url 'operations:hotel_phone_book' %}">Hotel Phone Book</a></li>
+    <li><a href="{% url 'operations:police_lists' %}">Police Lists</a></li>
+    <li><a href="{% url 'operations:offline_backup' %}">Offline Backup</a></li>
+    <li><a href="{% url 'operations:park_entry' %}">Park Entry</a></li>
     <li><a href="{% url 'operations:reports' %}">Operasyon Raporları</a></li>
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-calendar"></i><span class="nav-text">Gün Sonu</span></a><ul>
     <li><a href="{% url 'operations:night_audit' %}">Night Audit</a></li>
     <li><a href="{% url 'operations:reports' %}">Gün Sonu Raporları</a></li>
+    <li><a href="{% url 'operations:archived_end_of_day_reports' %}">Archived End Of Day Reports</a></li>
+    <li><a href="{% url 'operations:night_audit_html_reports' %}">Night Audit HTML Reports</a></li>
+    <li><a href="{% url 'operations:end_of_year' %}">End Of Year</a></li>
+    <li><a href="{% url 'operations:end_of_day_log_2' %}">End of The Day Log 2</a></li>
+    <li><a href="{% url 'operations:reservation_updates' %}">Reservation Updates</a></li>
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-user-9"></i><span class="nav-text">CRM</span></a><ul>
@@ -56,9 +81,20 @@
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-settings-2"></i><span class="nav-text">Kuruluş / Otel Tanımları</span></a><ul>
+    <li><a href="{% url 'operations:quick_setup' %}">Quick Setup</a></li>
     <li><a href="{% url 'operations:property_settings' %}">Tesis Ayarları</a></li>
+    <li><a href="{% url 'operations:hotel_settings_menu' %}">Hotel Settings Menu</a></li>
     <li><a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a></li>
     <li><a href="{% url 'operations:room_master' %}">Oda Tanımları</a></li>
+    <li><a href="{% url 'operations:agency_panel' %}">ElektraHotels.com Agency Panel</a></li>
+    <li><a href="{% url 'operations:giata_drive' %}">Giata Drive</a></li>
+    <li><a href="{% url 'operations:licence_info' %}">Licence Info</a></li>
+    <li><a href="{% url 'operations:selected_modules' %}">Selected Modules</a></li>
+    <li><a href="{% url 'operations:questions' %}">Questions</a></li>
+    <li><a href="{% url 'operations:contact_us' %}">Contact Us</a></li>
+    <li><a href="{% url 'operations:manager_support_form' %}">Manager Support Form</a></li>
+    <li><a href="{% url 'operations:correction_form' %}">Correction Form</a></li>
+    <li><a href="{% url 'operations:carbon_certificate' %}">Carbon Certificate</a></li>
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-notepad"></i><span class="nav-text">Kat Hizmetleri</span></a><ul>
@@ -75,6 +111,19 @@
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Fatura</span></a><ul>
     <li><a href="{% url 'operations:invoices' %}">Fatura Listesi</a></li>
+    <li><a href="{% url 'operations:all_invoices' %}">All Invoices</a></li>
+    <li><a href="{% url 'operations:mustahsil' %}">Mustahsil</a></li>
+    <li><a href="{% url 'operations:all_accounts' %}">All Accounts</a></li>
+    <li><a href="{% url 'operations:sales_price_agreements' %}">Sales Price Agreements</a></li>
+    <li><a href="{% url 'operations:invoice_bulk_control' %}">Invoice Control and Bulk Create</a></li>
+    <li><a href="{% url 'operations:proforma_invoice_list' %}">Proforma Invoice List</a></li>
+    <li><a href="{% url 'operations:proforma_control_create' %}">Proforma Control and Create List</a></li>
+    <li><a href="{% url 'operations:bavel_invoice_list' %}">Bavel Invoice List</a></li>
+    <li><a href="{% url 'operations:credit_control_list' %}">Credit Control List</a></li>
+    <li><a href="{% url 'operations:quick_invoice' %}">Quick Invoice</a></li>
+    <li><a href="{% url 'operations:quick_invoice_new' %}">Quick Invoice New</a></li>
+    <li><a href="{% url 'operations:safe_receipt' %}">Safe Receipt</a></li>
+    <li><a href="{% url 'operations:e_invoice_definitions' %}">E-Invoice Definitions</a></li>
   </ul></li>
 
   <li class="has-menu"><a class="has-arrow" href="javascript:void(0)"><i class="flaticon-381-price-tag"></i><span class="nav-text">Muhasebe</span></a><ul>
