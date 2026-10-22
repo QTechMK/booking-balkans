@@ -119,6 +119,13 @@ body { background: #f5f6fa; }
 .online-booking-workspace .hotel-definition-toolbar span { color: #7b8494; font-size: .74rem; }
 .online-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(170px, 1fr)); gap: .6rem 1rem; padding: .55rem .7rem; border: 1px solid #e0e4ec; background: #f8f9fb; }
 .online-feature-grid .form-check { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: .78rem; font-weight: 600; }
+.online-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .65rem; align-content: start; }
+.online-photo-card { overflow: hidden; border: 1px solid #dfe4ec; background: #fff; }
+.online-photo-card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #eef1f6; }
+.online-photo-card div { display: grid; gap: .15rem; padding: .45rem .55rem; }
+.online-photo-card strong { color: #29344b; font-size: .75rem; }
+.online-photo-card small, .online-photo-empty { color: #7a8494; font-size: .7rem; }
+.online-photo-empty { padding: 1rem; border: 1px dashed #cfd6e2; }
 @media (max-width: 900px) { .online-feature-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); } }
 .hotel-definition-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem .85rem; background: #f7f8fb; border-bottom: 1px solid #e1e5ec; }
 .hotel-definition-toolbar strong { color: #29344b; font-size: .9rem; }

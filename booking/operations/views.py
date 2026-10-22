@@ -364,6 +364,21 @@ def online_settings(request):
     if _permission_denied(request, selected, "operations.online_settings.manage"):
         return HttpResponseForbidden("Bu tesis için online booking ayarlarına erişiminiz yok.")
     settings_obj = OnlineBookingSettings.objects.get_or_create(property=selected)[0] if selected else None
+    photo_form = RoomPhotoForm()
+    if selected:
+        photo_form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
+        photo_form.fields["unit"].queryset = selected.units.filter(is_active=True)
+    if request.method == "POST" and settings_obj and request.POST.get("action") == "photo":
+        photo_form = RoomPhotoForm(request.POST, request.FILES)
+        if selected:
+            photo_form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
+            photo_form.fields["unit"].queryset = selected.units.filter(is_active=True)
+        if photo_form.is_valid():
+            photo = photo_form.save(commit=False)
+            photo.property = selected
+            photo.save()
+            messages.success(request, "Online görsel kaydedildi.")
+        return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
     if request.method == "POST" and settings_obj and request.POST.get("action") == "service":
         service_form = PropertyServiceForm(request.POST)
         if service_form.is_valid():
@@ -414,6 +429,8 @@ def online_settings(request):
         "service_form": PropertyServiceForm(),
         "services": selected.online_services.all() if selected else PropertyService.objects.none(),
         "service_requests": ServiceRequest.objects.filter(reservation__property=selected).select_related("reservation", "reservation__guest", "service")[:50] if selected else ServiceRequest.objects.none(),
+        "photo_form": photo_form,
+        "photos": RoomPhoto.objects.filter(property=selected).select_related("unit_type", "unit") if selected else RoomPhoto.objects.none(),
         "service_status_choices": ServiceRequest.Status.choices,
         "payment_provider_choices": OnlineBookingSettings.PaymentProvider.choices,
     })
