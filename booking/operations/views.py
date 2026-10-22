@@ -13,6 +13,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from allauth.mfa.models import Authenticator
+from allauth.mfa.utils import is_mfa_enabled
 
 from booking.reservations.models import Guest, Reservation, ReservationItem, ReservationStatus, StayStatus
 from booking.reservations.views import _business_properties
@@ -579,6 +581,13 @@ def access_control(request):
     profile_form = UserProfileForm(request.POST or None, instance=profile_user, prefix="profile")
     if request.method == "POST" and selected:
         action = request.POST.get("action")
+        if action == "mfa_reset":
+            target_user = staff_users.filter(id=request.POST.get("mfa_user_id")).first()
+            if target_user:
+                Authenticator.objects.filter(user=target_user).delete()
+                UserAccessLog.objects.create(actor=request.user, user=target_user, property=selected, event="mfa_reset_by_admin")
+                messages.success(request, "Kullanıcının 2FA kurulumu ve recovery code'ları sıfırlandı.")
+            return redirect(f"{reverse('operations:access_control')}?property_id={selected.id}&profile_user_id={target_user.id if target_user else ''}")
         if action == "role" and role_form.is_valid():
             role = role_form.save(commit=False)
             role.property = selected
@@ -611,6 +620,9 @@ def access_control(request):
     property_memberships = Membership.objects.filter(
         property=selected, is_active=True,
     ).select_related("user") if selected else Membership.objects.none()
+    mfa_totp = Authenticator.objects.filter(user=profile_user, type=Authenticator.Type.TOTP).first() if profile_user else None
+    mfa_recovery = Authenticator.objects.filter(user=profile_user, type=Authenticator.Type.RECOVERY_CODES).first() if profile_user else None
+    mfa_unused_count = len(mfa_recovery.wrap().get_unused_codes()) if mfa_recovery else 0
     return render(request, "booking/operations/access_control.html", {
         "title": "Kullanıcı ve Yetki",
         "properties": properties, "selected_property": selected,
@@ -622,6 +634,8 @@ def access_control(request):
         "logs": selected.access_logs.select_related("user").all()[:25] if selected else UserAccessLog.objects.none(),
         "role_form": role_form, "access_form": access_form, "staff_users": staff_users,
         "profile_user": profile_user, "profile_form": profile_form,
+        "mfa_enabled": bool(profile_user and is_mfa_enabled(profile_user)),
+        "mfa_totp": mfa_totp, "mfa_recovery": mfa_recovery, "mfa_unused_count": mfa_unused_count,
     })
 
 

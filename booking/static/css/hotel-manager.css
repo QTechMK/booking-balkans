@@ -213,6 +213,14 @@ body { background: #f5f6fa; }
 .security-field textarea { min-height: 64px; }
 .security-submit { align-self: end; justify-self: start; min-height: 33px; }
 .security-empty { border: 1px dashed #ccd4e0; color: #7a8494; padding: 1rem; font-size: .78rem; }
+.security-mfa-card { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(125px, .6fr) minmax(140px, .7fr) minmax(300px, 1.5fr); gap: .55rem; align-items: center; margin-bottom: .8rem; padding: .65rem .75rem; border: 1px solid #dce2eb; background: #f8f9fb; }
+.security-mfa-card > div { display: grid; gap: .12rem; }
+.security-mfa-card strong { color: #29344b; font-size: .78rem; }
+.security-mfa-card span, .security-mfa-card small { color: #7a8494; font-size: .68rem; }
+.security-mfa-card b { color: #29344b; font-size: .74rem; font-weight: 600; }
+.security-mfa-actions { display: flex !important; justify-content: flex-end; flex-wrap: wrap; gap: .35rem; }
+.security-mfa-actions form { margin: 0; }
+@media (max-width: 900px) { .security-mfa-card { grid-template-columns: repeat(2, minmax(140px, 1fr)); } .security-mfa-actions { grid-column: 1 / -1; justify-content: flex-start; } }
 .security-table-wrap { max-height: 285px; overflow: auto; border: 1px solid #e1e5ec; margin-top: .85rem; }
 .security-table-wrap .table { min-width: 620px; }
 .security-table-wrap .table thead th { position: sticky; top: 0; z-index: 1; }
