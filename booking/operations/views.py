@@ -232,12 +232,14 @@ def housekeeping(request):
     if floor:
         tasks_qs = tasks_qs.filter(unit__floor=floor)
     floors = selected.units.exclude(floor="").values_list("floor", flat=True).distinct().order_by("floor") if selected else []
+    history = HousekeepingTaskHistory.objects.filter(property=selected).select_related("unit", "assigned_to", "changed_by")[:80] if selected else HousekeepingTaskHistory.objects.none()
     return render(request, "booking/operations/housekeeping.html", {
         "title": "Housekeeping",
         "properties": properties, "selected_property": selected, "tasks": tasks_qs,
         "units": selected.units.select_related("unit_type") if selected else Unit.objects.none(),
         "users": _users_for_property(selected), "status_choices": HousekeepingStatus.choices,
         "priority_choices": TaskPriority.choices, "floors": floors, "selected_floor": floor, "now": timezone.now(),
+        "history": history,
     })
 
 
@@ -292,12 +294,14 @@ def maintenance(request):
     if floor:
         tickets = tickets.filter(unit__floor=floor)
     floors = selected.units.exclude(floor="").values_list("floor", flat=True).distinct().order_by("floor") if selected else []
+    history = MaintenanceTicketHistory.objects.filter(property=selected).select_related("ticket", "assigned_to", "changed_by")[:80] if selected else MaintenanceTicketHistory.objects.none()
     return render(request, "booking/operations/maintenance.html", {
         "title": "Teknik Servis",
         "properties": properties, "selected_property": selected, "tickets": tickets,
         "units": selected.units.all() if selected else Unit.objects.none(), "users": _users_for_property(selected),
         "status_choices": MaintenanceStatus.choices, "priority_choices": TaskPriority.choices,
         "now": timezone.now(), "floors": floors, "selected_floor": floor,
+        "history": history,
     })
 
 
