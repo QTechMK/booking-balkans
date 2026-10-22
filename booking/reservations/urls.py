@@ -24,6 +24,11 @@ urlpatterns = [
         name="business_reservation_create",
     ),
     path(
+        "business/front-office/walk-in/",
+        views.business_reservation_create,
+        name="business_walk_in",
+    ),
+    path(
         "business/reservations/<int:pk>/",
         views.business_reservation_detail,
         name="business_reservation_detail",
