@@ -5,7 +5,7 @@ from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension
 
 @admin.register(HousekeepingTask)
 class HousekeepingTaskAdmin(admin.ModelAdmin):
-    list_display = ("unit", "status", "priority", "assigned_to", "updated_at")
+    list_display = ("unit", "status", "priority", "assigned_to", "supervisor_approved_by", "updated_at")
     list_filter = ("property", "status", "priority")
     search_fields = ("unit__code", "note")
 

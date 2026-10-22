@@ -208,6 +208,15 @@ def housekeeping(request):
                     unit=task.unit,
                     defaults={"status": status, "note": task.note, "changed_by": request.user},
                 )
+        elif task and request.POST.get("action") == "approve":
+            task.supervisor_approved_at = timezone.now()
+            task.supervisor_approved_by = request.user
+            task.save(update_fields=["supervisor_approved_at", "supervisor_approved_by", "updated_at"])
+            HousekeepingTaskHistory.objects.create(
+                task=task, property=selected, unit=task.unit, status=task.status,
+                shift=task.shift, note="Supervisor onayı", assigned_to=task.assigned_to,
+                changed_by=request.user,
+            )
         return redirect(f"{reverse('operations:housekeeping')}?property_id={selected.id}")
     tasks_qs = HousekeepingTask.objects.filter(property=selected).select_related("unit", "assigned_to") if selected else HousekeepingTask.objects.none()
     status = request.GET.get("status")
@@ -218,7 +227,7 @@ def housekeeping(request):
         "properties": properties, "selected_property": selected, "tasks": tasks_qs,
         "units": selected.units.select_related("unit_type") if selected else Unit.objects.none(),
         "users": _users_for_property(selected), "status_choices": HousekeepingStatus.choices,
-        "priority_choices": TaskPriority.choices,
+        "priority_choices": TaskPriority.choices, "now": timezone.now(),
     })
 
 
@@ -307,6 +316,7 @@ def tasks(request):
         "form": form, "task_groups": TaskGroup.objects.filter(property=selected) if selected else TaskGroup.objects.none(),
         "task_locations": TaskLocation.objects.filter(property=selected) if selected else TaskLocation.objects.none(),
         "status_choices": TaskStatus.choices, "priority_choices": TaskPriority.choices,
+        "now": timezone.now(),
     })
 
 

@@ -92,6 +92,8 @@ class HousekeepingTask(models.Model):
     due_at = models.DateTimeField(null=True, blank=True)
     inspected_at = models.DateTimeField(null=True, blank=True)
     inspected_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="inspected_housekeeping_tasks")
+    supervisor_approved_at = models.DateTimeField(null=True, blank=True)
+    supervisor_approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="approved_housekeeping_tasks")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
