@@ -419,7 +419,7 @@ def online_settings(request):
             return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
             setattr(settings_obj, field, request.POST.get(field) == "on")
-        for field in ["seo_title", "seo_description", "meta_keywords", "domain", "payment_provider", "payment_public_key"]:
+        for field in ["seo_title", "seo_description", "meta_keywords", "domain", "facebook_url", "instagram_url", "whatsapp_url", "google_business_url", "payment_provider", "payment_public_key"]:
             setattr(settings_obj, field, request.POST.get(field, "").strip())
         try:
             settings_obj.deposit_percent = max(0, min(100, float(request.POST.get("deposit_percent") or 0)))

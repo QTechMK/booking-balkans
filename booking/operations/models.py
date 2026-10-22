@@ -350,6 +350,10 @@ class OnlineBookingSettings(models.Model):
     seo_description = models.TextField(blank=True)
     meta_keywords = models.CharField(max_length=255, blank=True)
     domain = models.CharField(max_length=255, blank=True)
+    facebook_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
+    whatsapp_url = models.URLField(blank=True)
+    google_business_url = models.URLField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
