@@ -477,3 +477,154 @@ class UserAccessLog(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["property", "created_at"]), models.Index(fields=["user", "created_at"])]
+
+
+class SupportTicket(models.Model):
+    class Priority(models.TextChoices):
+        LOW = "low", _("Düşük")
+        NORMAL = "normal", _("Normal")
+        HIGH = "high", _("Yüksek")
+        URGENT = "urgent", _("Acil")
+
+    class Status(models.TextChoices):
+        NEW = "new", _("Yeni")
+        OPEN = "open", _("Açık")
+        PENDING_USER = "pending_user", _("Kullanıcı yanıtı bekleniyor")
+        PENDING_STAFF = "pending_staff", _("Destek yanıtı bekleniyor")
+        ON_HOLD = "on_hold", _("Beklemede")
+        RESOLVED = "resolved", _("Çözüldü")
+        CLOSED = "closed", _("Kapatıldı")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_tickets")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="support_tickets")
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_support_tickets")
+    module = models.CharField(max_length=80, default="general")
+    subject = models.CharField(max_length=180)
+    message = models.TextField()
+    attachment = models.FileField(upload_to="support/%Y/%m/", blank=True)
+    priority = models.CharField(max_length=12, choices=Priority.choices, default=Priority.NORMAL)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW, db_index=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["property", "status", "created_at"])]
+
+
+class SupportTicketMessage(models.Model):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name="messages")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    body = models.TextField()
+    is_internal = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+
+class SupportAuditEvent(models.Model):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name="audit_events")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    event = models.CharField(max_length=80)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class SupportFAQCategory(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_faq_categories")
+    name = models.CharField(max_length=150)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "name"], name="unique_support_faq_category")]
+
+
+class SupportFAQItem(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_faq_items")
+    category = models.ForeignKey(SupportFAQCategory, on_delete=models.CASCADE, related_name="items")
+    question = models.CharField(max_length=500)
+    answer = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    view_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category__order", "order", "question"]
+
+
+class SupportHelpLink(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_help_links")
+    name = models.CharField(max_length=150)
+    url = models.URLField(blank=True)
+    phone_number = models.CharField(max_length=40, blank=True)
+    link_type = models.CharField(max_length=30, default="guide")
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+
+
+class SupportVideoCategory(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_video_categories")
+    name = models.CharField(max_length=150)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+
+class SupportVideo(models.Model):
+    category = models.ForeignKey(SupportVideoCategory, on_delete=models.CASCADE, related_name="videos")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    youtube_video_id = models.CharField(max_length=50)
+    duration_display = models.CharField(max_length=20, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    @property
+    def embed_url(self):
+        return f"https://www.youtube-nocookie.com/embed/{self.youtube_video_id.strip()}"
+
+
+class SupportEducationRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", _("İnceleniyor")
+        APPROVED = "approved", _("Onaylandı")
+        IN_PROGRESS = "in_progress", _("Devam ediyor")
+        COMPLETED = "completed", _("Tamamlandı")
+        CANCELLED = "cancelled", _("İptal edildi")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_education_requests")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="support_education_requests")
+    topic = models.CharField(max_length=120)
+    description = models.TextField()
+    priority = models.CharField(max_length=10, choices=SupportTicket.Priority.choices, default=SupportTicket.Priority.NORMAL)
+    contact_preference = models.CharField(max_length=20, default="email")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_education_requests")
+    internal_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class SupportReferral(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="support_referrals")
+    referrer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="support_referrals")
+    business_name = models.CharField(max_length=200)
+    contact_name = models.CharField(max_length=200)
+    contact_email = models.EmailField()
+    contact_phone = models.CharField(max_length=40)
+    message = models.TextField(blank=True)
+    status = models.CharField(max_length=20, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)

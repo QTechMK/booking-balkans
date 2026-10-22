@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -173,3 +173,31 @@ class ServiceRequestAdmin(admin.ModelAdmin):
     list_filter = ("status", "service__kind", "reservation__property")
     search_fields = ("reservation__reference", "reservation__guest__email", "service__name")
     autocomplete_fields = ("reservation", "service")
+
+
+@admin.register(SupportTicket)
+class SupportTicketAdmin(admin.ModelAdmin):
+    list_display = ("subject", "property", "status", "priority", "created_by", "assigned_to", "created_at")
+    list_filter = ("property", "status", "priority", "module")
+    search_fields = ("subject", "message", "created_by__username")
+    autocomplete_fields = ("property", "created_by", "assigned_to")
+
+
+@admin.register(SupportTicketMessage)
+class SupportTicketMessageAdmin(admin.ModelAdmin):
+    list_display = ("ticket", "author", "is_internal", "created_at")
+    list_filter = ("is_internal", "ticket__property")
+    search_fields = ("body", "ticket__subject")
+    autocomplete_fields = ("ticket", "author")
+
+
+@admin.register(SupportAuditEvent)
+class SupportAuditEventAdmin(admin.ModelAdmin):
+    list_display = ("ticket", "actor", "event", "created_at")
+    list_filter = ("event", "ticket__property")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportVideoCategory, SupportVideo, SupportEducationRequest, SupportReferral)
+class SupportCatalogAdmin(admin.ModelAdmin):
+    list_display = ("__str__",)

@@ -18,4 +18,9 @@ urlpatterns = [
     path("business/crm/guests/", views.crm_guests, name="crm_guests"),
     path("business/crm/marketing/", views.crm_marketing, name="crm_marketing"),
     path("business/access/", views.access_control, name="access_control"),
+    path("business/support/", views.support_center, name="support_center"),
+    path("business/support/faq/", views.support_faq, name="support_faq"),
+    path("business/support/education/", views.support_education, name="support_education"),
+    path("business/support/referral/", views.support_referral, name="support_referral"),
+    path("business/support/video/", views.support_video, name="support_video"),
 ]

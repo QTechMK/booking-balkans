@@ -37,12 +37,12 @@ from .models import (
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus, UserAccessLog, UserPropertyAccess,
+    TaskStatus, UserAccessLog, UserPropertyAccess, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportFAQCategoryForm, SupportFAQItemForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -79,6 +79,124 @@ def _has_operation_permission(request, property_, code):
 
 def _permission_denied(request, property_, code):
     return bool(property_ and not _has_operation_permission(request, property_, code))
+
+
+def _support_context(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.support.manage"):
+        return properties, selected, True
+    return properties, selected, False
+
+
+@login_required
+def support_center(request):
+    properties, selected, denied = _support_context(request)
+    if denied:
+        return HttpResponseForbidden("Bu tesis için destek merkezi yetkiniz yok.")
+    ticket_form = SupportTicketForm(request.POST or None, prefix="ticket")
+    reply_form = SupportReplyForm(request.POST or None, prefix="reply")
+    ticket_id = request.POST.get("ticket_id") or request.GET.get("ticket_id")
+    selected_ticket = SupportTicket.objects.filter(property=selected, id=ticket_id).prefetch_related("messages__author", "audit_events__actor").first() if selected and ticket_id else None
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "ticket":
+            ticket_form = SupportTicketForm(request.POST, request.FILES, prefix="ticket")
+            if ticket_form.is_valid():
+                ticket = ticket_form.save(commit=False)
+                ticket.property = selected
+                ticket.created_by = request.user
+                ticket.save()
+                SupportAuditEvent.objects.create(ticket=ticket, actor=request.user, event="created")
+                messages.success(request, "Destek talebi oluşturuldu.")
+                return redirect(f"{reverse('operations:support_center')}?property_id={selected.id}&ticket_id={ticket.id}")
+        elif action == "reply" and selected_ticket:
+            reply_form = SupportReplyForm(request.POST, prefix="reply")
+            if reply_form.is_valid():
+                reply = reply_form.save(commit=False)
+                reply.ticket = selected_ticket
+                reply.author = request.user
+                reply.save()
+                selected_ticket.status = SupportTicket.Status.OPEN if reply.is_internal else SupportTicket.Status.PENDING_STAFF
+                selected_ticket.save(update_fields=["status", "updated_at"])
+                SupportAuditEvent.objects.create(ticket=selected_ticket, actor=request.user, event="replied", metadata={"internal": reply.is_internal})
+                messages.success(request, "Yanıt kaydedildi.")
+                return redirect(f"{reverse('operations:support_center')}?property_id={selected.id}&ticket_id={selected_ticket.id}")
+        elif action == "status" and selected_ticket:
+            status = request.POST.get("status")
+            if status in dict(SupportTicket.Status.choices):
+                selected_ticket.status = status
+                selected_ticket.resolved_at = timezone.now() if status in {SupportTicket.Status.RESOLVED, SupportTicket.Status.CLOSED} else None
+                selected_ticket.save(update_fields=["status", "resolved_at", "updated_at"])
+                SupportAuditEvent.objects.create(ticket=selected_ticket, actor=request.user, event="status_changed", metadata={"status": status})
+                messages.success(request, "Talep durumu güncellendi.")
+                return redirect(request.get_full_path())
+    tickets = SupportTicket.objects.filter(property=selected).select_related("created_by", "assigned_to")[:100] if selected else SupportTicket.objects.none()
+    return render(request, "booking/operations/support_center.html", {"title": "Destek Merkezi", "properties": properties, "selected_property": selected, "tickets": tickets, "selected_ticket": selected_ticket, "ticket_form": ticket_form, "reply_form": reply_form, "status_choices": SupportTicket.Status.choices, "help_links": selected.support_help_links.filter(is_active=True) if selected else SupportHelpLink.objects.none()})
+
+
+@login_required
+def support_faq(request):
+    properties, selected, denied = _support_context(request)
+    if denied:
+        return HttpResponseForbidden("Bu tesis için FAQ yetkiniz yok.")
+    category_form = SupportFAQCategoryForm(request.POST or None, prefix="category")
+    item_form = SupportFAQItemForm(request.POST or None, prefix="item")
+    if selected:
+        item_form.fields["category"].queryset = selected.support_faq_categories.filter(is_active=True)
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "category":
+            category_form = SupportFAQCategoryForm(request.POST, prefix="category")
+            if category_form.is_valid():
+                obj = category_form.save(commit=False); obj.property = selected; obj.save(); messages.success(request, "FAQ kategorisi kaydedildi.")
+        elif action == "item":
+            item_form = SupportFAQItemForm(request.POST, prefix="item")
+            item_form.fields["category"].queryset = selected.support_faq_categories.filter(is_active=True)
+            if item_form.is_valid():
+                obj = item_form.save(commit=False)
+                if obj.category.property_id != selected.id:
+                    item_form.add_error("category", "Kategori seçili tesise ait değil.")
+                else:
+                    obj.property = selected; obj.save(); messages.success(request, "FAQ maddesi kaydedildi.")
+        return redirect(f"{reverse('operations:support_faq')}?property_id={selected.id}")
+    query = request.GET.get("q", "")
+    faqs = selected.support_faq_items.select_related("category").filter(is_active=True) if selected else SupportFAQItem.objects.none()
+    if query:
+        faqs = faqs.filter(Q(question__icontains=query) | Q(answer__icontains=query))
+    return render(request, "booking/operations/support_faq.html", {"title": "FAQ ve Yardım", "properties": properties, "selected_property": selected, "category_form": category_form, "item_form": item_form, "categories": selected.support_faq_categories.filter(is_active=True) if selected else SupportFAQCategory.objects.none(), "faqs": faqs, "query": query})
+
+
+@login_required
+def support_education(request):
+    properties, selected, denied = _support_context(request)
+    if denied:
+        return HttpResponseForbidden("Bu tesis için eğitim talebi yetkiniz yok.")
+    form = SupportEducationRequestForm(request.POST or None)
+    if request.method == "POST" and selected and form.is_valid():
+        obj = form.save(commit=False); obj.property = selected; obj.user = request.user; obj.save(); messages.success(request, "Eğitim talebiniz alındı."); return redirect(f"{reverse('operations:support_education')}?property_id={selected.id}")
+    requests = selected.support_education_requests.filter(user=request.user) if selected else SupportEducationRequest.objects.none()
+    return render(request, "booking/operations/support_education.html", {"title": "Eğitim Talebi", "properties": properties, "selected_property": selected, "form": form, "requests": requests})
+
+
+@login_required
+def support_referral(request):
+    properties, selected, denied = _support_context(request)
+    if denied:
+        return HttpResponseForbidden("Bu tesis için referral yetkiniz yok.")
+    form = SupportReferralForm(request.POST or None)
+    if request.method == "POST" and selected and form.is_valid():
+        obj = form.save(commit=False); obj.property = selected; obj.referrer = request.user; obj.save(); messages.success(request, "Öneri kaydedildi."); return redirect(f"{reverse('operations:support_referral')}?property_id={selected.id}")
+    referrals = selected.support_referrals.filter(referrer=request.user) if selected else SupportReferral.objects.none()
+    return render(request, "booking/operations/support_referral.html", {"title": "Davet Et ve Kazan", "properties": properties, "selected_property": selected, "form": form, "referrals": referrals})
+
+
+@login_required
+def support_video(request):
+    properties, selected, denied = _support_context(request)
+    if denied:
+        return HttpResponseForbidden("Bu tesis için video kütüphanesi yetkiniz yok.")
+    categories = selected.support_video_categories.prefetch_related("videos") if selected else SupportVideoCategory.objects.none()
+    return render(request, "booking/operations/support_video.html", {"title": "Video Kütüphanesi", "properties": properties, "selected_property": selected, "categories": categories})
 
 
 def _can_manage_user_mfa(request, property_):

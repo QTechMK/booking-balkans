@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from booking.tenancy.models import (
     BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
-from .models import AccessPermission, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, TaskGroup, TaskLocation, UserPropertyAccess
+from .models import AccessPermission, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
 
 
 class HotelModelForm(forms.ModelForm):
@@ -300,3 +300,44 @@ class UserProfileForm(HotelModelForm):
         widgets = {
             "gender": forms.TextInput(attrs={"placeholder": "Kadın / Erkek / Belirtmek istemiyor"}),
         }
+
+
+class SupportTicketForm(HotelModelForm):
+    class Meta:
+        model = SupportTicket
+        fields = ["module", "subject", "message", "attachment", "priority"]
+        widgets = {"message": forms.Textarea(attrs={"rows": 5}), "attachment": forms.ClearableFileInput()}
+
+
+class SupportReplyForm(HotelModelForm):
+    class Meta:
+        model = SupportTicketMessage
+        fields = ["body", "is_internal"]
+        widgets = {"body": forms.Textarea(attrs={"rows": 4})}
+
+
+class SupportFAQCategoryForm(HotelModelForm):
+    class Meta:
+        model = SupportFAQCategory
+        fields = ["name", "description", "order", "is_active"]
+
+
+class SupportFAQItemForm(HotelModelForm):
+    class Meta:
+        model = SupportFAQItem
+        fields = ["category", "question", "answer", "order", "is_active", "is_featured"]
+        widgets = {"answer": forms.Textarea(attrs={"rows": 6})}
+
+
+class SupportEducationRequestForm(HotelModelForm):
+    class Meta:
+        model = SupportEducationRequest
+        fields = ["topic", "description", "priority", "contact_preference"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 5})}
+
+
+class SupportReferralForm(HotelModelForm):
+    class Meta:
+        model = SupportReferral
+        fields = ["business_name", "contact_name", "contact_email", "contact_phone", "message"]
+        widgets = {"message": forms.Textarea(attrs={"rows": 4})}

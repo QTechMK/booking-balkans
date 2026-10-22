@@ -38,4 +38,13 @@
   <a href="{% url 'operations:room_master' %}">Oda Tanımları</a>
   <a href="{% url 'operations:online_settings' %}">Online Booking</a>
 </nav>
+{% elif request.resolver_match.url_name == 'support_center' or request.resolver_match.url_name == 'support_faq' or request.resolver_match.url_name == 'support_education' or request.resolver_match.url_name == 'support_referral' or request.resolver_match.url_name == 'support_video' %}
+<nav class="hotel-module-nav" aria-label="Destek modülü">
+  <span class="hotel-module-nav-label">DESTEK</span>
+  <a href="{% url 'operations:support_center' %}">Destek talepleri</a>
+  <a href="{% url 'operations:support_faq' %}">FAQ</a>
+  <a href="{% url 'operations:support_education' %}">Eğitim talebi</a>
+  <a href="{% url 'operations:support_video' %}">Video kütüphanesi</a>
+  <a href="{% url 'operations:support_referral' %}">Davet et</a>
+</nav>
 {% endif %}

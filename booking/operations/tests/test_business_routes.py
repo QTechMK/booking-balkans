@@ -16,6 +16,11 @@ BUSINESS_ROUTES = (
     "/booking/business/crm/guests/",
     "/booking/business/crm/marketing/",
     "/booking/business/access/",
+    "/booking/business/support/",
+    "/booking/business/support/faq/",
+    "/booking/business/support/education/",
+    "/booking/business/support/referral/",
+    "/booking/business/support/video/",
 )
 
 
