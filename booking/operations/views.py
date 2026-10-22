@@ -81,6 +81,16 @@ def _permission_denied(request, property_, code):
     return bool(property_ and not _has_operation_permission(request, property_, code))
 
 
+def _can_manage_user_mfa(request, property_):
+    if not property_ or request.user.is_superuser:
+        return True
+    return UserPropertyAccess.objects.filter(
+        user=request.user, property=property_, is_active=True, role__is_active=True,
+    ).filter(Q(valid_from__isnull=True) | Q(valid_from__lte=timezone.localdate())) \
+     .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate())) \
+     .filter(role__name__iregex=r"^(hotel[ _-]?owner|hotel[ _-]?manager)$").exists()
+
+
 @login_required
 def dashboard(request):
     properties, selected = _selected_property(request)
@@ -586,6 +596,8 @@ def access_control(request):
     if request.method == "POST" and selected:
         action = request.POST.get("action")
         if action == "mfa_reset":
+            if not _can_manage_user_mfa(request, selected):
+                return HttpResponseForbidden("Bu tesis için başka kullanıcıların 2FA ayarlarını yönetme yetkiniz yok.")
             target_user = staff_users.filter(id=request.POST.get("mfa_user_id")).first()
             if target_user:
                 Authenticator.objects.filter(user=target_user).delete()
@@ -640,6 +652,7 @@ def access_control(request):
         "profile_user": profile_user, "profile_form": profile_form,
         "mfa_enabled": bool(profile_user and is_mfa_enabled(profile_user)),
         "mfa_totp": mfa_totp, "mfa_recovery": mfa_recovery, "mfa_unused_count": mfa_unused_count,
+        "can_manage_user_mfa": _can_manage_user_mfa(request, selected),
     })
 
 
