@@ -59,9 +59,9 @@ body { background: #f5f6fa; }
 .hotel-erp-page .form-control, .hotel-erp-page .form-select { border-radius: 3px; font-size: .78rem; min-height: 33px; }
 .hotel-erp-page .alert { border-radius: 3px; padding: .55rem .75rem; margin-bottom: 8px; }
 .hotel-erp-page .row { --bs-gutter-x: .65rem; --bs-gutter-y: .65rem; }
-.hotel-security-page .hotel-erp-content > .row:first-child { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
+.hotel-security-page .hotel-erp-content > .row:first-child { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; margin: 0; }
 .hotel-security-page .hotel-erp-content > .row:first-child > [class*="col-"] { width: auto; padding: 0; }
-.hotel-security-page .hotel-erp-content > .row:first-child .card { min-height: 0; height: 100%; }
+.hotel-security-page .hotel-erp-content > .row:first-child .card { min-height: 0; height: auto; }
 .hotel-security-page .hotel-erp-content > .row:first-child .card-body { display: grid; align-content: start; }
 .hotel-security-page .hotel-erp-content > .row:first-child form:not(.mb-3) { display: grid; grid-template-columns: minmax(92px, .55fr) minmax(0, 1fr); gap: .35rem .55rem; align-items: center; }
 .hotel-security-page .hotel-erp-content > .row:first-child form:not(.mb-3) .mb-2 { display: contents; }
