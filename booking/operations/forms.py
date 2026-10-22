@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from booking.tenancy.models import (
     BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
 )
-from .models import AccessPermission, DepartmentDefinition, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PropertyRole, PropertyService, RevenueCode, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
+from .models import AccessPermission, DepartmentDefinition, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, Invoice, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PaymentGateway, PropertyRole, PropertyService, RevenueCode, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
 
 
 class HotelModelForm(forms.ModelForm):
@@ -360,3 +360,16 @@ class RevenueCodeForm(HotelModelForm):
     class Meta:
         model = RevenueCode
         fields = ["code", "name", "vat_percent", "is_active"]
+
+
+class InvoiceForm(HotelModelForm):
+    class Meta:
+        model = Invoice
+        exclude = ["property", "created_by", "lines"]
+        widgets = {"issue_date": forms.DateInput(attrs={"type": "date"}), "due_date": forms.DateInput(attrs={"type": "date"}), "notes": forms.Textarea(attrs={"rows": 3})}
+
+
+class PaymentGatewayForm(HotelModelForm):
+    class Meta:
+        model = PaymentGateway
+        exclude = ["property"]

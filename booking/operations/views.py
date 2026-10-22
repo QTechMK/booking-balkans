@@ -37,12 +37,12 @@ from .models import (
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus, UserAccessLog, UserPropertyAccess, DepartmentDefinition, FrontOfficeCallRequest, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
+    TaskStatus, UserAccessLog, UserPropertyAccess, DepartmentDefinition, FrontOfficeCallRequest, Invoice, NightAuditRun, PaymentGateway, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, InvoiceForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PaymentGatewayForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
 )
 
 
@@ -126,6 +126,111 @@ def accounting_definitions(request):
             obj = revenue_form.save(commit=False); obj.property = selected; obj.save(); messages.success(request, "Gelir kodu kaydedildi.")
         return redirect(f"{reverse('operations:accounting_definitions')}?property_id={selected.id}")
     return render(request, "booking/operations/accounting_definitions.html", {"title": "Muhasebe Tanımları", "properties": properties, "selected_property": selected, "department_form": department_form, "revenue_form": revenue_form, "departments": selected.department_definitions.all() if selected else DepartmentDefinition.objects.none(), "revenue_codes": selected.revenue_codes.all() if selected else RevenueCode.objects.none()})
+
+
+def _finance_context(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.financial.manage"):
+        return properties, selected, HttpResponseForbidden("Bu tesis için finans yetkiniz yok.")
+    return properties, selected, None
+
+
+@login_required
+def invoices(request):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    form = InvoiceForm(request.POST or None, initial={"issue_date": timezone.localdate(), "currency": "TRY"})
+    if request.method == "POST" and selected and form.is_valid():
+        invoice = form.save(commit=False)
+        invoice.property = selected
+        invoice.created_by = request.user
+        invoice.save()
+        messages.success(request, "Fatura taslağı kaydedildi.")
+        return redirect(f"{reverse('operations:invoice_detail', args=[invoice.id])}?property_id={selected.id}")
+    qs = selected.invoices.select_related("reservation", "created_by") if selected else Invoice.objects.none()
+    query = request.GET.get("q", "").strip()
+    if query:
+        qs = qs.filter(Q(number__icontains=query) | Q(customer_name__icontains=query))
+    return render(request, "booking/operations/invoices.html", {"title": "Fatura Listesi", "properties": properties, "selected_property": selected, "form": form, "invoices": qs[:250], "query": query})
+
+
+@login_required
+def invoice_detail(request, invoice_id):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    invoice = selected.invoices.filter(id=invoice_id).first() if selected else None
+    if not invoice:
+        return HttpResponse("Fatura bulunamadı.", status=404)
+    form = InvoiceForm(request.POST or None, instance=invoice)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Fatura kaydedildi.")
+        return redirect(request.get_full_path())
+    return render(request, "booking/operations/invoice_detail.html", {"title": "Fatura Detayı", "properties": properties, "selected_property": selected, "invoice": invoice, "form": form})
+
+
+@login_required
+def invoice_preview(request, invoice_id):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    invoice = selected.invoices.filter(id=invoice_id).first() if selected else None
+    if not invoice:
+        return HttpResponse("Fatura bulunamadı.", status=404)
+    return render(request, "booking/operations/invoice_preview.html", {"title": "Fatura Önizleme", "properties": properties, "selected_property": selected, "invoice": invoice})
+
+
+@login_required
+def payment_gateways(request):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    form = PaymentGatewayForm(request.POST or None)
+    if request.method == "POST" and selected and form.is_valid():
+        gateway = form.save(commit=False)
+        gateway.property = selected
+        if gateway.default_gate:
+            selected.payment_gateways.update(default_gate=False)
+        gateway.save()
+        messages.success(request, "Ödeme geçidi kaydedildi.")
+        return redirect(f"{reverse('operations:payment_gateways')}?property_id={selected.id}")
+    gateways = selected.payment_gateways.all() if selected else PaymentGateway.objects.none()
+    return render(request, "booking/operations/payment_gateways.html", {"title": "Ödeme Geçitleri", "properties": properties, "selected_property": selected, "form": form, "gateways": gateways})
+
+
+@login_required
+def payment_gateway_detail(request, gateway_id):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    gateway = selected.payment_gateways.filter(id=gateway_id).first() if selected else None
+    if not gateway:
+        return HttpResponse("Ödeme geçidi bulunamadı.", status=404)
+    form = PaymentGatewayForm(request.POST or None, instance=gateway)
+    if request.method == "POST" and form.is_valid():
+        obj = form.save(commit=False)
+        if obj.default_gate:
+            selected.payment_gateways.exclude(id=obj.id).update(default_gate=False)
+        obj.save()
+        messages.success(request, "Ödeme geçidi güncellendi.")
+        return redirect(request.get_full_path())
+    return render(request, "booking/operations/payment_gateway_detail.html", {"title": "Ödeme Geçidi Detayı", "properties": properties, "selected_property": selected, "gateway": gateway, "form": form})
+
+
+@login_required
+def night_audit(request):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    if request.method == "POST" and selected:
+        today = timezone.localdate()
+        run = NightAuditRun.objects.create(property=selected, audit_date=today, status=NightAuditRun.Status.COMPLETED, completed_at=timezone.now(), actor=request.user, summary={"reservations": selected.reservations.count(), "arrivals": selected.reservations.filter(check_in=today).count(), "departures": selected.reservations.filter(check_out=today).count()})
+        messages.success(request, f"Gün sonu tamamlandı: {run.audit_date}.")
+        return redirect(f"{reverse('operations:night_audit')}?property_id={selected.id}")
+    runs = selected.night_audit_runs.select_related("actor")[:100] if selected else NightAuditRun.objects.none()
+    return render(request, "booking/operations/night_audit.html", {"title": "Gün Sonu / Night Audit", "properties": properties, "selected_property": selected, "runs": runs})
 
 
 @login_required

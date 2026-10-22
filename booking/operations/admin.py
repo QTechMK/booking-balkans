@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, DepartmentDefinition, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, OnlineBookingSettings, PropertyRole, PropertyService, RevenueCode, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, DepartmentDefinition, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, Invoice, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, NightAuditRun, OperationalTask, OnlineBookingSettings, PaymentGateway, PropertyRole, PropertyService, RevenueCode, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
 
 
 @admin.register(HousekeepingTask)
@@ -216,4 +216,12 @@ class AccountingDefinitionAdmin(admin.ModelAdmin):
     list_display = ("code", "name", "property", "is_active")
     list_filter = ("property", "is_active")
     search_fields = ("code", "name", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(Invoice, PaymentGateway, NightAuditRun)
+class FinanceAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "property")
+    list_filter = ("property",)
+    search_fields = ("number", "customer_name", "bank_name", "payment_model")
     autocomplete_fields = ("property",)

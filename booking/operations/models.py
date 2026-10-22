@@ -677,3 +677,63 @@ class RevenueCode(models.Model):
     class Meta:
         ordering = ["code"]
         constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_revenue_code")]
+
+
+class Invoice(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Draft")
+        ISSUED = "issued", _("Issued")
+        PAID = "paid", _("Paid")
+        CANCELLED = "cancelled", _("Cancelled")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="invoices")
+    reservation = models.ForeignKey(Reservation, on_delete=models.PROTECT, null=True, blank=True, related_name="invoices")
+    number = models.CharField(max_length=40)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    issue_date = models.DateField()
+    due_date = models.DateField(null=True, blank=True)
+    currency = models.CharField(max_length=3, default="TRY")
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    customer_name = models.CharField(max_length=180)
+    customer_tax_number = models.CharField(max_length=40, blank=True)
+    notes = models.TextField(blank=True)
+    lines = models.JSONField(default=list, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="created_invoices")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-issue_date", "-id"]
+        constraints = [models.UniqueConstraint(fields=["property", "number"], name="unique_invoice_number_per_property")]
+
+
+class PaymentGateway(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="payment_gateways")
+    bank_name = models.CharField(max_length=160)
+    payment_model = models.CharField(max_length=80, blank=True)
+    client_no = models.CharField(max_length=80, blank=True)
+    account_name = models.CharField(max_length=160, blank=True)
+    pos_name = models.CharField(max_length=120, blank=True)
+    currency = models.CharField(max_length=3, default="TRY")
+    active = models.BooleanField(default=True)
+    default_gate = models.BooleanField(default=False)
+    credential_ref = models.CharField(max_length=180, blank=True, help_text="Secret manager reference; never store passwords here.")
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class NightAuditRun(models.Model):
+    class Status(models.TextChoices):
+        STARTED = "started", _("Started")
+        COMPLETED = "completed", _("Completed")
+        FAILED = "failed", _("Failed")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="night_audit_runs")
+    audit_date = models.DateField()
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.STARTED)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="night_audit_runs")
+    summary = models.JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True)
