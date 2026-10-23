@@ -404,9 +404,8 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
   .hotel-erp-language-control { display: none; }
 }
 /* Reliable local icon font and a non-scrolling desktop header. */
-@font-face { font-family: 'Booking Balkans FA'; font-style: normal; font-weight: 900; font-display: block; src: url('../vendor/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2') format('woff2'), url('../vendor/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf') format('truetype'); }
-.hotel-erp-app .fa-solid, .hotel-erp-app .fas { font-family: 'Booking Balkans FA', 'Font Awesome 6 Free' !important; font-weight: 900; font-style: normal; }
-.hotel-erp-app .hotel-erp-sidebar-nav details summary::before, .hotel-erp-app .hotel-erp-quick-menu summary::after { font-family: 'Booking Balkans FA', 'Font Awesome 6 Free' !important; font-weight: 900; }
+.hotel-erp-app .fa-solid, .hotel-erp-app .fas { font-family: 'Font Awesome 6 Free' !important; font-weight: 900; font-style: normal; }
+.hotel-erp-app .hotel-erp-sidebar-nav details summary::before, .hotel-erp-app .hotel-erp-quick-menu summary::after { font-family: 'Font Awesome 6 Free' !important; font-weight: 900; }
 .elektraweb-shell .hotel-erp-topbar { gap: .55rem; }
 .elektraweb-shell .hotel-erp-quick-links { flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .elektraweb-shell .hotel-erp-quick-link, .elektraweb-shell .hotel-erp-quick-menu { flex: 0 0 auto; }
