@@ -406,6 +406,12 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
 /* Reliable local icon font and a non-scrolling desktop header. */
 .hotel-erp-app .fa-solid, .hotel-erp-app .fas { font-family: 'Font Awesome 6 Free' !important; font-weight: 900; font-style: normal; }
 .hotel-erp-app .hotel-erp-sidebar-nav details summary::before, .hotel-erp-app .hotel-erp-quick-menu summary::after { font-family: 'Font Awesome 6 Free' !important; font-weight: 900; }
+.hotel-icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.hotel-inline-icon, .hotel-sidebar-icon { display: inline-block; flex: 0 0 auto; width: 1em; height: 1em; fill: currentColor; vertical-align: -.12em; }
+.hotel-inline-icon { width: .85em; height: .85em; }
+.hotel-sidebar-icon { width: .8rem; height: .8rem; margin-right: .32rem; color: #94a3b8; }
+.hotel-erp-sidebar-nav details summary::before { content: none !important; display: none !important; }
+.hotel-erp-quick-menu summary::after { content: '›'; font-family: inherit !important; font-size: .8rem; font-weight: 700; }
 .elektraweb-shell .hotel-erp-topbar { gap: .55rem; }
 .elektraweb-shell .hotel-erp-quick-links { flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .elektraweb-shell .hotel-erp-quick-link, .elektraweb-shell .hotel-erp-quick-menu { flex: 0 0 auto; }
