@@ -423,6 +423,12 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
   .elektraweb-shell .hotel-erp-quick-link, .elektraweb-shell .hotel-erp-quick-menu summary { padding-left: .32rem; padding-right: .32rem; font-size: .61rem; }
   .elektraweb-shell .hotel-erp-header-property select { min-width: 125px; max-width: 160px; }
 }
+/* Keep the desktop header calm: secondary modules live behind the arrow. */
+@media (max-width: 2200px) {
+  .elektraweb-shell .hotel-erp-quick-links .hotel-erp-optional-shortcut { display: none; }
+  .elektraweb-shell .hotel-erp-quick-links .hotel-erp-more-toggle { display: inline-grid; place-items: center; }
+  .elektraweb-shell .hotel-erp-quick-links.show-optional .hotel-erp-optional-shortcut { display: inline-flex; }
+}
 .hotel-erp-app *, .hotel-erp-app *::before, .hotel-erp-app *::after { box-sizing: border-box; }
 .hotel-erp-app a { color: #2638c4; }
 .hotel-erp-app .row { display: flex; flex-wrap: wrap; margin: -.35rem; }
