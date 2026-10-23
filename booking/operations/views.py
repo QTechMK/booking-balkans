@@ -103,6 +103,22 @@ def _permission_denied(request, property_, code):
     return bool(property_ and not _has_operation_permission(request, property_, code))
 
 
+def _operation_view_denied(request, property_):
+    """Allow an explicitly assigned read-only property role to view operations."""
+    if not property_ or request.user.is_superuser:
+        return False
+    explicit = UserPropertyAccess.objects.filter(
+        user=request.user, property=property_, is_active=True,
+        role__is_active=True,
+    ).filter(Q(valid_from__isnull=True) | Q(valid_from__lte=timezone.localdate())) \
+      .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate()))
+    if explicit.exists():
+        return False
+    return not Membership.objects.filter(
+        user=request.user, organization=property_.organization, is_active=True,
+    ).filter(Q(property__isnull=True) | Q(property=property_)).exists()
+
+
 def _module_license_denied(request, property_, module):
     """Enforce independently sellable modules while preserving legacy tenants."""
     if not property_ or request.user.is_superuser:
@@ -395,7 +411,12 @@ def _scope_rental_operation_form(form, selected):
 def rental_operations(request):
     """Dynamic operational back office for rental and parking workflows."""
     properties, selected = _selected_property(request)
-    if _permission_denied(request, selected, "operations.front_office.manage"):
+    requested_property_id = request.POST.get("property_id") or request.GET.get("property_id")
+    if requested_property_id and not properties.filter(pk=requested_property_id).exists():
+        return HttpResponseForbidden("Bu tesise erişim yetkiniz yok.")
+    if request.method == "POST" and _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için araç kiralama ve otopark operasyon yetkiniz yok.")
+    if request.method != "POST" and _operation_view_denied(request, selected):
         return HttpResponseForbidden("Bu tesis için araç kiralama ve otopark operasyon yetkiniz yok.")
 
     entity = request.POST.get("entity") or request.GET.get("entity") or "locations"

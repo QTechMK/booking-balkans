@@ -78,7 +78,14 @@ def issue_settlement_invoice(*, settlement, actor=None, credit_account=None):
     accounting-account selection before posting a receivable. When supplied,
     the account balance is increased atomically with invoice creation.
     """
-    settlement = RentalSettlement.objects.select_for_update().select_related("booking", "booking__property", "booking__driver_profile").get(pk=settlement.pk)
+    # Lock only the settlement row. PostgreSQL rejects FOR UPDATE on the
+    # nullable driver_profile side of a select_related outer join.
+    settlement = RentalSettlement.objects.select_for_update().get(pk=settlement.pk)
+    settlement.booking = (
+        settlement.booking.__class__.objects
+        .select_related("property", "driver_profile")
+        .get(pk=settlement.booking_id)
+    )
     existing = RentalInvoice.objects.select_related("invoice").filter(booking=settlement.booking, invoice_kind="settlement").first()
     if existing:
         return existing.invoice
