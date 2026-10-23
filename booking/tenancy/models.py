@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import uuid
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
@@ -77,6 +78,12 @@ class Property(models.Model):
         default="Europe/Istanbul",
     )
     currency = models.CharField(_("currency"), max_length=3, default="TRY")
+    fleet_widget_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    fleet_widget_domain = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=_("Allowed website domain for the vehicle and parking iframe widget."),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -93,6 +100,41 @@ class Property(models.Model):
     def __str__(self) -> str:
         return f"{self.organization.name} - {self.name}"
 
+    def save(self, *args, **kwargs):
+        if not self.fleet_widget_key:
+            self.fleet_widget_key = uuid.uuid4()
+        return super().save(*args, **kwargs)
+
+
+class PropertyModuleLicense(models.Model):
+    """Property-scoped product licence for independently sellable modules."""
+
+    class Module(models.TextChoices):
+        HOTEL_ERP = "hotel_erp", _("Hotel ERP")
+        VEHICLE_RENTAL = "vehicle_rental", _("Vehicle rental")
+        PARKING = "parking", _("Parking")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="module_licenses")
+    module = models.CharField(max_length=32, choices=Module.choices)
+    plan_code = models.CharField(max_length=80, blank=True)
+    is_enabled = models.BooleanField(default=True)
+    starts_at = models.DateField(null=True, blank=True)
+    ends_at = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "module"]
+        constraints = [models.UniqueConstraint(fields=["property", "module"], name="unique_property_module_license")]
+
+    def __str__(self):
+        return f"{self.property.name} - {self.get_module_display()}"
+
+    def is_current(self, on_date=None):
+        from django.utils import timezone
+        on_date = on_date or timezone.localdate()
+        return self.is_enabled and (self.starts_at is None or self.starts_at <= on_date) and (self.ends_at is None or self.ends_at >= on_date)
+
 
 class PropertySettings(models.Model):
     """Hotel-level operational and contact settings."""
@@ -102,6 +144,8 @@ class PropertySettings(models.Model):
     sub_hotel = models.CharField(max_length=160, blank=True)
     owner_name = models.CharField(max_length=160, blank=True)
     contact_name = models.CharField(max_length=160, blank=True)
+    authorized_person = models.CharField(max_length=160, blank=True)
+    subdomain = models.SlugField(max_length=120, blank=True)
     reservation_email = models.EmailField(blank=True)
     accounting_email = models.EmailField(blank=True)
     purchasing_email = models.EmailField(blank=True)
@@ -197,6 +241,33 @@ class RateType(PropertyDictionaryBase):
             raise ValidationError({"prepayment_percent": _("Prepayment percent must be between 0 and 100.")})
         if self.price_factor <= 0:
             raise ValidationError({"price_factor": _("Price factor must be greater than zero.")})
+
+
+class CancellationOptionRule(models.Model):
+    """Property-scoped cancellation/option rule used by a rate type."""
+
+    class PenaltyType(models.TextChoices):
+        NONE = "none", _("No penalty")
+        PERCENT = "percent", _("Percentage")
+        NIGHTS = "nights", _("Night count")
+        FULL = "full", _("Full amount")
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="cancellation_option_rules")
+    rate_type = models.ForeignKey(RateType, on_delete=models.SET_NULL, null=True, blank=True, related_name="cancellation_rules")
+    name = models.CharField(max_length=160)
+    cancellation_until_hours = models.PositiveIntegerField(default=0)
+    option_hours = models.PositiveIntegerField(default=0)
+    penalty_type = models.CharField(max_length=12, choices=PenaltyType.choices, default=PenaltyType.NONE)
+    penalty_value = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    applies_from = models.DateField(null=True, blank=True)
+    applies_until = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "name"], name="unique_cancellation_rule_name")]
 
 
 class UnitTypeKind(models.TextChoices):
@@ -324,6 +395,28 @@ class RoomPhoto(models.Model):
             raise ValidationError({"unit": _("Room must belong to the selected room type.")})
 
 
+class HotelPhoto(models.Model):
+    """Photo belonging to the property's general hotel gallery."""
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="hotel_photos")
+    image = models.ImageField(upload_to="hotel-photos/%Y/%m/", blank=True)
+    image_url = models.URLField(max_length=500, blank=True)
+    category = models.CharField(max_length=80, blank=True)
+    alt_text = models.CharField(max_length=160, blank=True)
+    is_primary = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+    show_online = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+        if not self.image and not self.image_url:
+            raise ValidationError({"image": _("A hotel photo must have an uploaded image or an image URL.")})
+
+
 class Unit(models.Model):
     """A physical room, villa, apartment or dorm room."""
 
@@ -383,6 +476,67 @@ class Unit(models.Model):
 
     def __str__(self) -> str:
         return f"{self.property.name} - {self.code}"
+
+
+class Vehicle(models.Model):
+    """Property-owned vehicle or transfer asset used by hotel operations."""
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="vehicles")
+    code = models.SlugField(max_length=80)
+    name = models.CharField(max_length=160)
+    vehicle_type = models.CharField(max_length=80, blank=True)
+    vehicle_class = models.CharField(max_length=80, blank=True)
+    brand = models.CharField(max_length=80, blank=True)
+    model_name = models.CharField(max_length=120, blank=True)
+    model_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    plate_number = models.CharField(max_length=32, blank=True)
+    vin = models.CharField(max_length=64, blank=True)
+    fuel_type = models.CharField(max_length=40, blank=True)
+    transmission = models.CharField(max_length=32, blank=True)
+    door_count = models.PositiveSmallIntegerField(default=4)
+    passenger_capacity = models.PositiveSmallIntegerField(default=0)
+    luggage_capacity = models.PositiveSmallIntegerField(default=0)
+    has_air_conditioning = models.BooleanField(default=True)
+    has_navigation = models.BooleanField(default=False)
+    has_bluetooth = models.BooleanField(default=False)
+    has_usb = models.BooleanField(default=False)
+    has_reverse_camera = models.BooleanField(default=False)
+    mileage_policy = models.CharField(max_length=32, default="limited")
+    fuel_policy = models.CharField(max_length=32, default="full_to_full")
+    minimum_driver_age = models.PositiveSmallIntegerField(default=21)
+    minimum_license_months = models.PositiveSmallIntegerField(default=12)
+    inspection_due_date = models.DateField(null=True, blank=True)
+    insurance_due_date = models.DateField(null=True, blank=True)
+    insurance_policy_number = models.CharField(max_length=120, blank=True)
+    deposit_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    daily_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    rate_currency = models.CharField(max_length=3, default="TRY")
+    status = models.CharField(max_length=24, default="available")
+    branch = models.CharField(max_length=160, blank=True)
+    parking_location = models.CharField(max_length=160, blank=True)
+    online_enabled = models.BooleanField(default=False)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["property", "name"]
+        constraints = [models.UniqueConstraint(fields=["property", "code"], name="unique_vehicle_code_per_property")]
+
+
+class VehiclePhoto(models.Model):
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to="vehicle-photos/%Y/%m/")
+    alt_text = models.CharField(max_length=180, blank=True)
+    is_primary = models.BooleanField(default=False)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    show_online = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
 
 
 class Bed(models.Model):
@@ -518,6 +672,9 @@ class RatePlan(models.Model):
     max_adults = models.PositiveIntegerField(_("maximum adults"), default=2)
     max_children = models.PositiveIntegerField(_("maximum children"), default=0)
     currency = models.CharField(_("currency"), max_length=3, default="TRY")
+    min_nights = models.PositiveIntegerField(default=1)
+    max_nights = models.PositiveIntegerField(null=True, blank=True)
+    season_label = models.CharField(max_length=120, blank=True)
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -549,9 +706,40 @@ class RatePlan(models.Model):
                 raise ValidationError({field: _("This definition must belong to the same property.")})
         if self.deposit_percent < 0 or self.deposit_percent > 100:
             raise ValidationError({"deposit_percent": _("Deposit percent must be between 0 and 100.")})
+        if self.max_nights is not None and self.max_nights < self.min_nights:
+            raise ValidationError({"max_nights": _("Maximum nights cannot be below minimum nights.")})
 
     def __str__(self) -> str:
         return f"{self.property.name} - {self.name}"
+
+
+class RatePlanSeason(models.Model):
+    """Date-bounded rate-plan season and its optional pricing constraints."""
+
+    rate_plan = models.ForeignKey(RatePlan, on_delete=models.CASCADE, related_name="seasons")
+    name = models.CharField(max_length=120)
+    valid_from = models.DateField()
+    valid_until = models.DateField()
+    min_nights = models.PositiveIntegerField(default=1)
+    max_nights = models.PositiveIntegerField(null=True, blank=True)
+    price_factor = models.DecimalField(max_digits=8, decimal_places=4, default=1)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["rate_plan", "valid_from"]
+        constraints = [models.UniqueConstraint(fields=["rate_plan", "name"], name="unique_rate_plan_season_name")]
+
+
+class RatePlanChannel(models.Model):
+    """Explicit channel availability for a rate plan."""
+
+    rate_plan = models.ForeignKey(RatePlan, on_delete=models.CASCADE, related_name="channel_links")
+    channel = models.ForeignKey("reservations.ReservationChannel", on_delete=models.CASCADE, related_name="rate_plan_links")
+    external_code = models.CharField(max_length=120, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["rate_plan", "channel"], name="unique_rate_plan_channel_link")]
 
 
 class ChannelRateRuleType(models.TextChoices):

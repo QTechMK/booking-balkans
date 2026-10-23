@@ -1,9 +1,8 @@
-{% extends 'booking/admin_base.html' %}
+{% extends 'booking/hotel_erp_base.html' %}
 {% block content %}
 <main class="hotel-erp-page">
   <div class="hotel-erp-toolbar">
-    <div class="hotel-erp-heading"><span class="hotel-erp-kicker">HOTEL MANAGER</span><h1>{{ title }}</h1></div>
-    <form method="get" class="hotel-erp-property"><label for="property_id">Tesis</label><select class="form-select form-select-sm" id="property_id" name="property_id" onchange="this.submit()">{% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select></form>
+    <div class="hotel-erp-heading"><span class="hotel-erp-kicker">HOTEL MANAGER</span><h1>{{ title|default:'Hotel Manager' }}</h1></div>
   </div>
   <section class="hotel-erp-content">{% block operations_content %}{% endblock %}</section>
 </main>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rezervasyon yönetimi</title>
+  <style>
+    body { margin: 0; background: #f2f4f8; color: #172b4d; font: 15px Arial, sans-serif; }
+    main { max-width: 760px; margin: 48px auto; padding: 28px; background: #fff; border: 1px solid #dbe2ed; }
+    h1 { margin-top: 0; font-size: 24px; } .summary { background: #f7f9fc; padding: 16px; margin: 20px 0; }
+    label { display: block; margin: 14px 0 6px; font-weight: 600; } input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #b9c6d8; }
+    button { margin: 14px 8px 0 0; padding: 10px 16px; border: 0; background: #243bc8; color: #fff; cursor: pointer; }
+    button.danger { background: #b42318; } .message { padding: 12px; background: #eaf7ee; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rezervasyon yönetimi</h1>
+    {% if message %}<div class="message">{{ message }}</div>{% endif %}
+    <div class="summary">
+      <strong>{{ booking.confirmation_code }}</strong><br>
+      Araç: {{ booking.vehicle.name }}<br>
+      Alış: {{ booking.pickup_at }}<br>
+      İade: {{ booking.dropoff_at }}<br>
+      Durum: {{ booking.get_status_display }}
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <label for="requester_email">Rezervasyon e-postası</label>
+      <input id="requester_email" name="requester_email" type="email" required value="{{ booking.customer_email }}">
+      {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+        <button class="danger" name="action" value="cancel">Rezervasyonu iptal et</button>
+      {% endif %}
+      <button name="action" value="export">Verilerimi talep et</button>
+      <button name="action" value="deletion">Verilerimin silinmesini talep et</button>
+    </form>
+  </main>
+</body>
+</html>

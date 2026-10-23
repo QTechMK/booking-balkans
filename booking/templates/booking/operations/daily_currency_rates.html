@@ -1,0 +1,38 @@
+{% extends 'booking/operations/_shell.html' %}
+{% block operations_content %}
+<div class="hotel-definition-workspace">
+  <div class="hotel-definition-toolbar">
+    <div><strong>Döviz kurları</strong><span>Günlük alış, satış ve muhasebe dönüşüm kurlarını yönetin.</span></div>
+  </div>
+  <div class="definition-editor-grid">
+    <section class="hotel-definition-panel">
+      <div class="definition-heading"><h2>Para birimi tanımla</h2><span>Otelin kullandığı para birimlerini belirleyin.</span></div>
+      <form method="post" class="definition-form-grid">
+        {% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="action" value="currency">
+        {% for field in currency_form %}<div class="definition-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}
+        <button class="btn btn-primary definition-submit">Para birimini kaydet</button>
+      </form>
+    </section>
+    <section class="hotel-definition-panel">
+      <div class="definition-heading"><h2>Günlük kur girişi</h2><span>Manuel veya NBRM/OTA kaynağından gelen kuru kaydedin.</span></div>
+      <form method="post" class="definition-form-grid">
+        {% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="action" value="rate">
+        {% for field in rate_form %}<div class="definition-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}
+        <button class="btn btn-primary definition-submit">Kuru kaydet</button>
+      </form>
+    </section>
+  </div>
+  <section class="hotel-definition-panel">
+    <div class="definition-heading"><h2>Tanımlı para birimleri</h2><span>{{ currencies|length }} para birimi</span></div>
+    <div class="hotel-grid-scroll"><table class="table table-sm align-middle"><thead><tr><th>Kod</th><th>Ad</th><th>Sembol</th><th>Rol</th><th>Ondalık</th><th>Durum</th></tr></thead><tbody>
+      {% for currency in currencies %}<tr><td><strong>{{ currency.code }}</strong></td><td>{{ currency.name }}</td><td>{{ currency.symbol|default:'-' }}</td><td>{{ currency.get_role_display }}</td><td>{{ currency.decimal_places }}</td><td>{{ currency.is_active|yesno:'Aktif,Pasif' }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center py-4 text-muted">Henüz para birimi tanımlanmadı.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  <section class="hotel-definition-panel">
+    <div class="definition-heading"><h2>Kur geçmişi</h2><span>Son 100 kayıt gösteriliyor.</span></div>
+    <div class="hotel-grid-scroll"><table class="table table-sm align-middle"><thead><tr><th>Tarih</th><th>Dönüşüm</th><th>Kur</th><th>Alış</th><th>Satış</th><th>Kaynak</th><th>Tür</th></tr></thead><tbody>
+      {% for item in rates %}<tr><td>{{ item.rate_date|date:'d.m.Y' }}</td><td>{{ item.from_currency }} / {{ item.to_currency }}</td><td>{{ item.rate }}</td><td>{{ item.buy_rate|default:'-' }}</td><td>{{ item.sell_rate|default:'-' }}</td><td>{{ item.source|default:'-' }}</td><td>{{ item.is_manual|yesno:'Manuel,Senkronize' }}</td></tr>{% empty %}<tr><td colspan="7" class="text-center py-4 text-muted">Henüz günlük kur kaydı yok.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</div>
+{% endblock operations_content %}

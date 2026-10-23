@@ -1,18 +1,19 @@
 from django.contrib import admin
 
 from .models import Bed
-from .models import BedType, BoardType, PropertySettings, RateType, RoomAmenity, RoomGroup, RoomLocation, RoomPhoto, RoomView
-from .models import ChannelRateRule
+from .models import BedType, BoardType, HotelPhoto, PropertySettings, RateType, RoomAmenity, RoomGroup, RoomLocation, RoomPhoto, RoomView
+from .models import CancellationOptionRule, ChannelRateRule
 from .models import DailyRate
 from .models import Inventory
 from .models import Membership
 from .models import Organization
 from .models import Property
+from .models import PropertyModuleLicense
 from .models import PriceParityObservation
-from .models import RatePlan
+from .models import RatePlan, RatePlanChannel, RatePlanSeason
 from .models import RateRestriction
 from .models import Season
-from .models import Unit
+from .models import Unit, Vehicle
 from .models import UnitType
 
 
@@ -26,10 +27,18 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Property)
 class PropertyAdmin(admin.ModelAdmin):
-    list_display = ["name", "organization", "business_type", "city", "is_active"]
+    list_display = ["name", "organization", "business_type", "city", "fleet_widget_key", "is_active"]
     list_filter = ["business_type", "country", "is_active"]
     search_fields = ["name", "slug", "organization__name", "city"]
     prepopulated_fields = {"slug": ("name",)}
+    readonly_fields = ["fleet_widget_key"]
+
+
+@admin.register(PropertyModuleLicense)
+class PropertyModuleLicenseAdmin(admin.ModelAdmin):
+    list_display = ["property", "module", "plan_code", "is_enabled", "starts_at", "ends_at"]
+    list_filter = ["module", "is_enabled"]
+    search_fields = ["property__name", "property__organization__name", "plan_code"]
 
 
 @admin.register(PropertySettings)
@@ -56,6 +65,22 @@ class RoomPhotoAdmin(admin.ModelAdmin):
     list_filter = ["is_primary", "property"]
     search_fields = ["image_url", "alt_text", "property__name"]
     autocomplete_fields = ["property", "unit_type", "unit"]
+
+
+@admin.register(HotelPhoto)
+class HotelPhotoAdmin(admin.ModelAdmin):
+    list_display = ["property", "category", "alt_text", "is_primary", "sort_order", "show_online"]
+    list_filter = ["category", "is_primary", "show_online", "property"]
+    search_fields = ["image_url", "alt_text", "category", "property__name"]
+    autocomplete_fields = ["property"]
+
+
+@admin.register(CancellationOptionRule)
+class CancellationOptionRuleAdmin(admin.ModelAdmin):
+    list_display = ["property", "rate_type", "name", "cancellation_until_hours", "penalty_type", "penalty_value", "is_active"]
+    list_filter = ["property", "rate_type", "penalty_type", "is_active"]
+    search_fields = ["name", "property__name"]
+    autocomplete_fields = ["property", "rate_type"]
 
 
 @admin.register(Membership)
@@ -91,6 +116,14 @@ class UnitAdmin(admin.ModelAdmin):
     autocomplete_fields = ["property", "unit_type", "bed_type", "room_view", "room_location"]
 
 
+@admin.register(Vehicle)
+class VehicleAdmin(admin.ModelAdmin):
+    list_display = ["code", "name", "property", "vehicle_type", "plate_number", "passenger_capacity", "daily_rate", "status", "is_active"]
+    list_filter = ["property", "vehicle_type", "fuel_type", "status", "is_active"]
+    search_fields = ["code", "name", "plate_number", "property__name"]
+    autocomplete_fields = ["property"]
+
+
 @admin.register(Bed)
 class BedAdmin(admin.ModelAdmin):
     list_display = ["code", "unit", "status", "is_active"]
@@ -124,12 +157,32 @@ class RatePlanAdmin(admin.ModelAdmin):
         "meal_plan",
         "is_refundable",
         "currency",
+        "min_nights",
+        "max_nights",
+        "season_label",
         "is_active",
     ]
     list_filter = ["meal_plan", "is_refundable", "is_active"]
     search_fields = ["name", "code", "property__name", "unit_type__name"]
     autocomplete_fields = ["property", "unit_type", "board_type", "rate_type"]
     prepopulated_fields = {"code": ("name",)}
+
+
+@admin.register(RatePlanSeason)
+class RatePlanSeasonAdmin(admin.ModelAdmin):
+    list_display = ("rate_plan", "name", "valid_from", "valid_until", "min_nights", "max_nights", "price_factor", "is_active")
+    list_filter = ("is_active", "rate_plan__property")
+    search_fields = ("name", "rate_plan__name")
+    autocomplete_fields = ("rate_plan",)
+    date_hierarchy = "valid_from"
+
+
+@admin.register(RatePlanChannel)
+class RatePlanChannelAdmin(admin.ModelAdmin):
+    list_display = ("rate_plan", "channel", "external_code", "is_active")
+    list_filter = ("is_active", "channel__property")
+    search_fields = ("rate_plan__name", "channel__name", "external_code")
+    autocomplete_fields = ("rate_plan", "channel")
 
 
 @admin.register(Season)

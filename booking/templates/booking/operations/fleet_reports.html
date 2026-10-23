@@ -1,0 +1,15 @@
+{% extends 'booking/operations/_shell.html' %}
+{% block operations_content %}
+<div class="hotel-definition-workspace">
+  <div class="hotel-definition-toolbar"><div><strong>Filo ve otopark raporları</strong><span>Seçili tesisin araç kullanımı, kiralama geliri, bakım ve otopark hareketlerini izleyin.</span></div></div>
+  {% if selected_property %}
+  <div class="hotel-kpi-grid">
+    <article><small>Toplam araç</small><strong>{{ vehicle_count }}</strong><span>{{ available_vehicles }} müsait</span></article>
+    <article><small>Aktif kiralama</small><strong>{{ active_rentals }}</strong><span>{{ rental_revenue }} TRY gelir</span></article>
+    <article><small>Otoparklar</small><strong>{{ parking_count }}</strong><span>{{ active_parking }} aktif rezervasyon</span></article>
+    <article><small>Otopark geliri</small><strong>{{ parking_revenue }} TRY</strong><span>{{ today }}</span></article>
+  </div>
+  <section class="hotel-definition-panel"><div class="definition-heading"><h2>Operasyon özeti</h2><span>Bugünkü telematik kayıtları: {{ telemetry_events }} · Bakım bekleyen: {{ maintenance_due }}</span></div><div class="hotel-grid-scroll"><table class="table table-sm"><thead><tr><th>Metrik</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody><tr><td>Filo kullanım oranı</td><td>{% if vehicle_count %}{% widthratio active_rentals vehicle_count 100 %}%{% else %}0%{% endif %}</td><td>Onaylı veya aktif kiralama durumundaki araçlar</td></tr><tr><td>Otopark aktif rezervasyonları</td><td>{{ active_parking }}</td><td>Onaylı veya giriş yapılmış park kayıtları</td></tr><tr><td>Bakım bekleyen araçlar</td><td>{{ maintenance_due }}</td><td>Planlı veya gecikmiş bakım kayıtları</td></tr><tr><td>Telematik olayları</td><td>{{ telemetry_events }}</td><td>Bugün alınan GPS/telematik kayıtları</td></tr></tbody></table></div></section>
+  {% else %}<p>Rapor görmek için tesis seçin.</p>{% endif %}
+</div>
+{% endblock operations_content %}

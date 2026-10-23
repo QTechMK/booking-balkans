@@ -1,15 +1,7 @@
-{% extends 'booking/admin_base.html' %}
+{% extends 'booking/hotel_erp_base.html' %}
 {% block content %}
 <main class="hotel-erp-page hotel-security-page">
-  <div class="hotel-erp-toolbar">
-    <div class="hotel-erp-heading"><span class="hotel-erp-kicker">SYSTEM ADMINISTRATION</span><h1>{{ title }}</h1></div>
-    <form method="get" class="hotel-erp-property"><label for="property_id">Tesis</label><select class="form-select form-select-sm" id="property_id" name="property_id" onchange="this.submit()">{% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select></form>
-  </div>
-  <nav class="hotel-erp-tabs" aria-label="User and security screens">
-    <a class="is-active" href="{% url 'operations:access_control' %}"><i class="fa fa-users"></i> Kullanıcı ve Yetki</a>
-    <a href="{% url 'operations:dashboard' %}"><i class="fa fa-dashboard"></i> Yönetim Paneli</a>
-    <a class="hotel-erp-refresh" href="javascript:location.reload()"><i class="fa fa-refresh"></i> Yenile</a>
-  </nav>
+  <div class="hotel-erp-toolbar"><div class="hotel-erp-heading"><span class="hotel-erp-kicker">SYSTEM ADMINISTRATION</span><h1>{{ title }}</h1></div></div>
   <section class="hotel-erp-content">{% block security_content %}{% endblock %}</section>
 </main>
 {% endblock content %}

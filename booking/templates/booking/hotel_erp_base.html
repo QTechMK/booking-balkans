@@ -1,0 +1,189 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title|default:'Hotel Manager' }} | Booking Balkans</title>
+  <link rel="stylesheet" href="{% static 'css/hotel-manager.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="hotel-erp-app">
+  <div class="hotel-erp-frame">
+    <aside id="hotel-erp-sidebar" class="hotel-erp-sidebar" aria-label="Hotel ERP modules">
+      <div class="hotel-erp-brand"><span class="hotel-erp-brand-mark">BB</span><span>Hotel Manager</span></div>
+      <nav class="hotel-erp-sidebar-nav">
+        <a class="hotel-erp-sidebar-section" href="{% url 'operations:dashboard' %}">Dashboard</a>
+        <details {% if request.resolver_match.url_name == 'property_settings' or request.resolver_match.url_name == 'hotel_dictionaries' or request.resolver_match.url_name == 'room_master' or request.resolver_match.url_name == 'vehicle_fleet' or request.resolver_match.url_name == 'parking_reservations' or request.resolver_match.url_name == 'vehicle_rental_bookings' or request.resolver_match.url_name == 'online_settings' or request.resolver_match.url_name == 'quick_setup' or request.resolver_match.url_name == 'hotel_settings_menu' %}open{% endif %}>
+          <summary>SETUP / OTEL TANIMLARI</summary>
+          <a href="{% url 'operations:property_settings' %}">Otel Tan&#305;mlar&#305;</a>
+          <a href="{% url 'operations:hotel_dictionaries' %}">Otel S&#246;zl&#252;kleri</a>
+          <a href="{% url 'operations:room_master' %}">Oda Tan&#305;mlar&#305;</a>
+          <a href="{% url 'operations:online_settings' %}">Online Booking</a>
+          <a href="{% url 'operations:quick_setup' %}">Quick Setup</a>
+          <a href="{% url 'operations:hotel_settings_menu' %}">Hotel Settings Menu</a>
+          <a href="{% url 'operations:agency_panel' %}">Agency Panel</a>
+          <a href="{% url 'operations:giata_drive' %}">Giata Drive</a>
+          <a href="{% url 'operations:licence_info' %}">Licence Info</a>
+          <a href="{% url 'operations:selected_modules' %}">Selected Modules</a>
+          <a href="{% url 'operations:questions' %}">Questions</a>
+          <a href="{% url 'operations:contact_us' %}">Contact Us</a>
+          <a href="{% url 'operations:manager_support_form' %}">Manager Support Form</a>
+          <a href="{% url 'operations:correction_form' %}">Correction Form</a>
+          <a href="{% url 'operations:carbon_certificate' %}">Carbon Certificate</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'vehicle_definitions' %}open{% endif %}>
+          <summary>SETUP / ARA&#199; TANIMLARI</summary>
+          <a href="{% url 'operations:vehicle_definitions' %}">Ara&#231; Kartlar&#305;</a>
+          <a href="{% url 'operations:vehicle_definitions' %}#vehicle-photos">Ara&#231; G&#246;rselleri</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'vehicle_rentals_management' or request.resolver_match.url_name == 'rental_operations' %}open{% endif %}>
+          <summary>VEHICLE RENTAL / BUSINESS</summary>
+          <a href="{% url 'operations:vehicle_rentals_management' %}">Kiralama Rezervasyonlar&#305;</a>
+          <a href="{% url 'operations:rental_operations' %}">Kiralama Operasyonlar&#305;</a>
+          <a href="{% url 'operations:online_fleet_booking' %}?property_id={{ selected_property.id }}&amp;entity=rentals">Online Kiralama Motoru</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'parking_definitions' %}open{% endif %}>
+          <summary>SETUP / PARKING TANIMLARI</summary>
+          <a href="{% url 'operations:parking_definitions' %}">Otopark ve Park Yeri Tan&#305;mlar&#305;</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'parking_management' or request.resolver_match.url_name == 'parking_reservations' %}open{% endif %}>
+          <summary>PARKING / BUSINESS</summary>
+          <a href="{% url 'operations:parking_reservations' %}">Park Rezervasyonlar&#305;</a>
+          <a href="{% url 'operations:rental_operations' %}?property_id={{ selected_property.id }}&amp;entity=parking_bookings">Otopark Operasyonlar&#305;</a>
+          <a href="{% url 'operations:online_fleet_booking' %}?property_id={{ selected_property.id }}&amp;entity=parking">Online Otopark Rezervasyonu</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'business_reservation_list' or request.resolver_match.url_name == 'business_reservation_calendar' or request.resolver_match.url_name == 'business_reservation_create' or request.resolver_match.url_name == 'business_reservation_detail' or request.resolver_match.url_name == 'business_walk_in' or request.resolver_match.url_name == 'front_office' or request.resolver_match.url_name == 'room_rack' or request.resolver_match.url_name == 'group_reservations' or request.resolver_match.url_name == 'guest_cards' or request.resolver_match.url_name == 'front_cash' or request.resolver_match.url_name == 'daily_currency_rates' %}open{% endif %}>
+          <summary>FRONT OFFICE / RESEPS&#304;YON</summary>
+          <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyonlar</a>
+          <a href="{% url 'reservations:business_reservation_calendar' %}">Rezervasyon Takvimi</a>
+          <a href="{% url 'reservations:business_reservation_create' %}">Yeni Rezervasyon</a>
+          <a href="{% url 'reservations:business_walk_in' %}">Walk-in Kay&#305;t</a>
+          <a href="{% url 'operations:front_office' %}">Front Office Listeleri</a>
+          <a href="{% url 'operations:room_rack' %}">Room Rack</a>
+          <a href="{% url 'operations:group_reservations' %}">Grup Rezervasyonlar&#305;</a>
+          <a href="{% url 'operations:guest_cards' %}">Misafir Kartlar&#305;</a>
+          <a href="{% url 'operations:front_cash' %}">&#214;n Kasa</a>
+          <a href="{% url 'operations:daily_currency_rates' %}">D&#246;viz Kurlar&#305;</a>
+          <a href="{% url 'operations:folio_balances' %}">Folyo Bakiyeleri</a>
+          <a href="{% url 'operations:front_office_status' %}">Status</a>
+          <a href="{% url 'operations:tour_operator_integrations' %}">Tour Operator Integrations</a>
+          <a href="{% url 'operations:room_type_availability' %}">Room Type Availability</a>
+          <a href="{% url 'operations:available_rooms' %}">Available Rooms</a>
+          <a href="{% url 'operations:quick_room_assignment' %}">Quick Room Assignment</a>
+          <a href="{% url 'operations:quick_posting' %}">Quick Posting</a>
+          <a href="{% url 'operations:credit_accounts' %}">Credit Accounts</a>
+          <a href="{% url 'operations:folio_routing' %}">Folio Routing List</a>
+          <a href="{% url 'operations:guest_medical_daily' %}">Guest Medical Daily List</a>
+          <a href="{% url 'operations:closed_room_list' %}">Closed Room List</a>
+          <a href="{% url 'operations:lost_and_found' %}">Lost and Found</a>
+          <a href="{% url 'operations:hotel_phone_book' %}">Hotel Phone Book</a>
+          <a href="{% url 'operations:police_lists' %}">Police Lists</a>
+          <a href="{% url 'operations:offline_backup' %}">Offline Backup</a>
+          <a href="{% url 'operations:park_entry' %}">Park Entry</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'night_audit' or request.resolver_match.url_name == 'end_of_day_log_2' or request.resolver_match.url_name == 'archived_end_of_day_reports' or request.resolver_match.url_name == 'night_audit_html_reports' or request.resolver_match.url_name == 'end_of_year' or request.resolver_match.url_name == 'reservation_updates' %}open{% endif %}>
+          <summary>NIGHT AUDIT / G&#220;N SONU</summary>
+          <a href="{% url 'operations:night_audit' %}">G&#252;n Sonu</a>
+          <a href="{% url 'operations:end_of_day_log_2' %}">G&#252;n Sonu Loglar&#305;</a>
+          <a href="{% url 'operations:archived_end_of_day_reports' %}">Ar&#351;iv Raporlar&#305;</a>
+          <a href="{% url 'operations:night_audit_html_reports' %}">Night Audit Raporlar&#305;</a>
+          <a href="{% url 'operations:end_of_year' %}">Y&#305;l Sonu</a>
+          <a href="{% url 'operations:reservation_updates' %}">Rezervasyon G&#252;ncellemeleri</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'crm_guests' or request.resolver_match.url_name == 'crm_marketing' %}open{% endif %}>
+          <summary>CRM</summary>
+          <a href="{% url 'operations:crm_guests' %}">Misafir Profilleri</a>
+          <a href="{% url 'operations:crm_marketing' %}">Pazarlama ve Kampanyalar</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'business_channel_list' or request.resolver_match.url_name == 'business_channel_rate_rules' or request.resolver_match.url_name == 'business_price_parity' or request.resolver_match.url_name == 'business_inventory' or request.resolver_match.url_name == 'business_rate_plans' or request.resolver_match.url_name == 'business_rate_calendar' %}open{% endif %}>
+          <summary>CHANNEL MANAGEMENT</summary>
+          <a href="{% url 'reservations:business_channel_list' %}">Kanallar</a>
+          <a href="{% url 'reservations:business_channel_rate_rules' %}">Kanal Fiyat Kurallar&#305;</a>
+          <a href="{% url 'reservations:business_price_parity' %}">Fiyat Paritesi</a>
+          <a href="{% url 'reservations:business_rate_plans' %}">Rate Planlar</a>
+          <a href="{% url 'reservations:business_rate_calendar' %}">Fiyat Takvimi</a>
+          <a href="{% url 'reservations:business_inventory' %}">Envanter</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'housekeeping' or request.resolver_match.url_name == 'maintenance' or request.resolver_match.url_name == 'tasks' %}open{% endif %}>
+          <summary>OPERATIONS</summary>
+          <a href="{% url 'operations:housekeeping' %}">Housekeeping</a>
+          <a href="{% url 'operations:maintenance' %}">Teknik Servis</a>
+          <a href="{% url 'operations:tasks' %}">G&#246;revler</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'invoices' or request.resolver_match.url_name == 'invoice_detail' or request.resolver_match.url_name == 'invoice_preview' or request.resolver_match.url_name == 'accounting_definitions' or request.resolver_match.url_name == 'payment_gateways' or request.resolver_match.url_name == 'payment_gateway_detail' %}open{% endif %}>
+          <summary>INVOICE / ACCOUNTING</summary>
+          <a href="{% url 'operations:invoices' %}">Fatura Listesi</a>
+          <a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tan&#305;mlar&#305;</a>
+          <a href="{% url 'operations:payment_gateways' %}">&#214;deme Ge&#231;itleri</a>
+          <a href="{% url 'operations:night_audit' %}">Night Audit</a>
+          <a href="{% url 'operations:all_invoices' %}">All Invoices</a>
+          <a href="{% url 'operations:mustahsil' %}">Mustahsil</a>
+          <a href="{% url 'operations:all_accounts' %}">All Accounts</a>
+          <a href="{% url 'operations:sales_price_agreements' %}">Sales Price Agreements</a>
+          <a href="{% url 'operations:invoice_bulk_control' %}">Invoice Bulk Control</a>
+          <a href="{% url 'operations:proforma_invoice_list' %}">Proforma Invoice List</a>
+          <a href="{% url 'operations:proforma_control_create' %}">Proforma Control and Create</a>
+          <a href="{% url 'operations:bavel_invoice_list' %}">Bavel Invoice List</a>
+          <a href="{% url 'operations:credit_control_list' %}">Credit Control List</a>
+          <a href="{% url 'operations:quick_invoice' %}">Quick Invoice</a>
+          <a href="{% url 'operations:quick_invoice_new' %}">Quick Invoice New</a>
+          <a href="{% url 'operations:safe_receipt' %}">Safe Receipt</a>
+          <a href="{% url 'operations:e_invoice_definitions' %}">E-Invoice Definitions</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'agencies' %}open{% endif %}>
+          <summary>CONTRACT MANAGEMENT</summary>
+          <a href="{% url 'operations:agencies' %}">Acente Listesi</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'mobile_app' %}open{% endif %}>
+          <summary>MOBILE APP</summary>
+          <a href="{% url 'operations:mobile_app' %}">Mobile App</a>
+        </details>
+        <details {% if request.resolver_match.url_name == 'access_control' or request.resolver_match.url_name == 'support_center' or request.resolver_match.url_name == 'support_faq' or request.resolver_match.url_name == 'support_education' or request.resolver_match.url_name == 'support_referral' or request.resolver_match.url_name == 'support_video' %}open{% endif %}>
+          <summary>SYSTEM / SUPPORT</summary>
+          <a href="{% url 'operations:access_control' %}">Kullan&#305;c&#305; ve Yetki</a>
+          <a href="{% url 'operations:support_center' %}">Destek Talepleri</a>
+          <a href="{% url 'operations:support_faq' %}">FAQ</a>
+          <a href="{% url 'operations:support_education' %}">E&#287;itim Talebi</a>
+          <a href="{% url 'operations:support_video' %}">Video K&#252;t&#252;phanesi</a>
+        </details>
+      </nav>
+    </aside>
+    <div class="hotel-erp-main">
+      <header class="hotel-erp-topbar">
+        <button type="button" class="hotel-erp-menu-toggle" aria-label="Modul menüsünü aç/kapat" aria-controls="hotel-erp-sidebar" aria-expanded="true">&#9776;</button>
+        <div class="hotel-erp-topbar-title">{{ title|default:'Hotel Manager' }}</div>
+        <div class="hotel-erp-topbar-actions">
+          <form method="get" class="hotel-erp-header-property">
+            {% for key, value in request.GET.items %}{% if key != 'property_id' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+            <label for="header_property_id">Tesis</label>
+            <select id="header_property_id" name="property_id" onchange="this.form.submit()">
+              {% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}
+            </select>
+          </form>
+          <span class="hotel-erp-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+          <a class="hotel-erp-header-button hotel-erp-header-button-secondary" href="{% url 'mfa_index' %}">2FA</a>
+          <a class="hotel-erp-header-button hotel-erp-header-button-primary" href="{% url 'operations:room_rack' %}">Room Rack</a>
+        </div>
+      </header>
+      <div class="hotel-erp-page-wrap">
+        {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}" role="alert">{{ message }}</div>{% endfor %}{% endif %}
+        {% if not planned_nav %}{% include 'booking/partials/hotel-module-nav.html' %}{% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggle = document.querySelector('.hotel-erp-menu-toggle');
+      const sidebar = document.getElementById('hotel-erp-sidebar');
+      if (!toggle || !sidebar) return;
+      toggle.addEventListener('click', function () {
+        const collapsed = document.body.classList.toggle('hotel-erp-sidebar-collapsed');
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+      });
+    });
+  </script>
+  {% block extra_javascript %}{% endblock %}
+</body>
+</html>

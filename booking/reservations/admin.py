@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import Guest
+from .models import ChannelDailyOverride
 from .models import FolioEntry
 from .models import GuestPortalAccess
 from .models import PaymentTransaction
@@ -10,9 +11,17 @@ from .models import ReservationHold
 from .models import ReservationItem
 
 
+@admin.register(ChannelDailyOverride)
+class ChannelDailyOverrideAdmin(admin.ModelAdmin):
+    list_display = ["channel", "unit_type", "rate_plan", "date", "amount", "available_units", "stop_sell", "source"]
+    list_filter = ["channel__property", "stop_sell", "source", "date"]
+    search_fields = ["channel__name", "unit_type__name", "rate_plan__name"]
+    autocomplete_fields = ["channel", "unit_type", "rate_plan"]
+
+
 @admin.register(FolioEntry)
 class FolioEntryAdmin(admin.ModelAdmin):
-    list_display = ["reservation", "entry_type", "description", "amount", "currency", "posted_at", "posted_by"]
+    list_display = ["reservation", "entry_type", "department", "revenue_code", "description", "quantity", "amount", "currency", "posted_at", "posted_by"]
     list_filter = ["entry_type", "currency", "reservation__property"]
     search_fields = ["reservation__reference", "description"]
     autocomplete_fields = ["reservation", "posted_by", "voided_by"]

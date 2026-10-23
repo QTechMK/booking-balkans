@@ -1,11 +1,11 @@
-﻿{% extends 'booking/admin_base.html' %}
+﻿{% extends 'booking/operations/_shell.html' %}
 {% load static %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/business-channels.css' %}">
 {% endblock extra_css %}
 
-{% block content %}
+{% block operations_content %}
 
 <main class="booking-flow-main py-5">
   <div class="container">
@@ -57,4 +57,4 @@
   </div>
 </main>
 
-{% endblock content %}
+{% endblock operations_content %}

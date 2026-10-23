@@ -2,10 +2,11 @@ from django import forms
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 
+from booking.reservations.models import Guest, Reservation
 from booking.tenancy.models import (
-    BedType, BoardType, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
+    BedType, BoardType, HotelPhoto, Property, PropertySettings, RateType, RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType, Vehicle, VehiclePhoto,
 )
-from .models import AccessPermission, Agency, DepartmentDefinition, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, Invoice, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, PaymentGateway, PropertyRole, PropertyService, RevenueCode, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess
+from .models import AccessPermission, Agency, CashierShift, CurrencyDefinition, DailyCurrencyRate, DepartmentDefinition, FrontCashTransaction, FrontOfficeCallRequest, GuestProfileExtension, GuestSegment, Invoice, LoyaltyTier, MarketingCampaign, MessageTemplate, OperationalTask, ParkingAccessEvent, ParkingDevice, ParkingLot, ParkingPenalty, ParkingReservation, ParkingSpace, ParkingSubscription, ParkingValetRecord, PaymentGateway, PropertyRole, PropertyService, RentalAuditEvent, RentalCancellationPolicy, RentalChannelConnection, RentalChannelMapping, RentalContract, RentalDamageCase, RentalDriverProfile, RentalExtraProduct, RentalFine, RentalFlightStatus, RentalHandover, RentalHandoverPhoto, RentalInsurancePackage, RentalInvoice, RentalLocation, RentalNotification, RentalPayment, RentalPricingRule, RentalTaxRule, RentalChannelSyncEvent, RevenueCode, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportReferral, SupportTicket, SupportTicketMessage, TaskGroup, TaskLocation, UserPropertyAccess, VehicleMaintenanceRecord, VehicleRentalBooking, VehicleRentalRate, VehicleTelemetryEvent
 
 
 class HotelModelForm(forms.ModelForm):
@@ -115,6 +116,19 @@ class RoomPhotoForm(HotelModelForm):
         cleaned = super().clean()
         if not cleaned.get("unit_type") and not cleaned.get("unit"):
             raise forms.ValidationError("Fotoğraf bir oda tipine veya fiziksel odaya bağlanmalıdır.")
+        if not cleaned.get("image") and not cleaned.get("image_url"):
+            raise forms.ValidationError("Dosya yükleyin veya bir görsel URL'si girin.")
+        return cleaned
+
+
+class HotelPhotoForm(HotelModelForm):
+    class Meta:
+        model = HotelPhoto
+        fields = ["image", "image_url", "category", "alt_text", "is_primary", "sort_order", "show_online"]
+        widgets = {"image": forms.ClearableFileInput(attrs={"accept": "image/*"})}
+
+    def clean(self):
+        cleaned = super().clean()
         if not cleaned.get("image") and not cleaned.get("image_url"):
             raise forms.ValidationError("Dosya yükleyin veya bir görsel URL'si girin.")
         return cleaned
@@ -353,7 +367,7 @@ class FrontOfficeCallRequestForm(HotelModelForm):
 class DepartmentDefinitionForm(HotelModelForm):
     class Meta:
         model = DepartmentDefinition
-        fields = ["code", "name", "department_type", "default_revenue_code", "is_active"]
+        fields = ["code", "name", "department_type", "default_revenue_code", "vat_percent", "pos_printer", "accounting_account", "is_active"]
 
 
 class RevenueCodeForm(HotelModelForm):
@@ -380,3 +394,388 @@ class AgencyForm(HotelModelForm):
         model = Agency
         exclude = ["property"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+
+
+class CurrencyDefinitionForm(HotelModelForm):
+    class Meta:
+        model = CurrencyDefinition
+        exclude = ["property"]
+
+
+class DailyCurrencyRateForm(HotelModelForm):
+    class Meta:
+        model = DailyCurrencyRate
+        exclude = ["property"]
+        widgets = {"rate_date": forms.DateInput(attrs={"type": "date"}), "valid_from": forms.DateTimeInput(attrs={"type": "datetime-local"}), "valid_until": forms.DateTimeInput(attrs={"type": "datetime-local"}), "synced_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+
+
+class VehicleForm(HotelModelForm):
+    class Meta:
+        model = Vehicle
+        exclude = ["property"]
+        widgets = {"notes": forms.Textarea(attrs={"rows": 3}), "description": forms.Textarea(attrs={"rows": 3}), "model_year": forms.NumberInput(attrs={"min": 1900}), "door_count": forms.NumberInput(attrs={"min": 2}), "passenger_capacity": forms.NumberInput(attrs={"min": 1}), "minimum_driver_age": forms.NumberInput(attrs={"min": 18}), "minimum_license_months": forms.NumberInput(attrs={"min": 0})}
+
+
+class VehiclePhotoForm(HotelModelForm):
+    class Meta:
+        model = VehiclePhoto
+        fields = ["vehicle", "image", "alt_text", "is_primary", "sort_order", "show_online"]
+        widgets = {"image": forms.ClearableFileInput(attrs={"accept": "image/*"})}
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vehicle"].queryset = Vehicle.objects.filter(property=property_) if property_ else Vehicle.objects.none()
+
+
+class ParkingLotForm(HotelModelForm):
+    class Meta:
+        model = ParkingLot
+        exclude = ["property"]
+        widgets = {
+            "opening_time": forms.TimeInput(attrs={"type": "time"}),
+            "closing_time": forms.TimeInput(attrs={"type": "time"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+
+class ParkingSpaceForm(HotelModelForm):
+    class Meta:
+        model = ParkingSpace
+        fields = "__all__"
+        widgets = {"notes": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["parking_lot"].queryset = ParkingLot.objects.filter(property=property_) if property_ else ParkingLot.objects.none()
+
+
+class VehicleRentalRateForm(HotelModelForm):
+    class Meta:
+        model = VehicleRentalRate
+        exclude = []
+        widgets = {
+            "valid_from": forms.DateInput(attrs={"type": "date"}),
+            "valid_until": forms.DateInput(attrs={"type": "date"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vehicle"].queryset = Vehicle.objects.filter(property=property_) if property_ else Vehicle.objects.none()
+
+
+class RentalPricingRuleForm(HotelModelForm):
+    class Meta:
+        model = RentalPricingRule
+        exclude = ["property"]
+        widgets = {
+            "valid_from": forms.DateInput(attrs={"type": "date"}),
+            "valid_until": forms.DateInput(attrs={"type": "date"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+
+class ParkingReservationForm(HotelModelForm):
+    class Meta:
+        model = ParkingReservation
+        exclude = ["property", "confirmation_code", "created_by"]
+        widgets = {
+            "start_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "end_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["parking_lot"].queryset = ParkingLot.objects.filter(property=property_) if property_ else ParkingLot.objects.none()
+        self.fields["parking_space"].queryset = ParkingSpace.objects.filter(parking_lot__property=property_) if property_ else ParkingSpace.objects.none()
+        self.fields["guest"].queryset = Guest.objects.filter(property=property_) if property_ else Guest.objects.none()
+        self.fields["reservation"].queryset = Reservation.objects.filter(property=property_) if property_ else Reservation.objects.none()
+
+
+class VehicleRentalBookingForm(HotelModelForm):
+    insurance_package = forms.ChoiceField(required=False, choices=(), label="Sigorta paketi")
+    extra_products = forms.MultipleChoiceField(required=False, choices=(), label="Ek ürünler", widget=forms.CheckboxSelectMultiple)
+
+    class Meta:
+        model = VehicleRentalBooking
+        exclude = ["property", "confirmation_code", "created_by"]
+        widgets = {
+            "pickup_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "dropoff_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "remaining_payment_due": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+            "cancellation_policy": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vehicle"].queryset = Vehicle.objects.filter(property=property_) if property_ else Vehicle.objects.none()
+        self.fields["rental_rate"].queryset = VehicleRentalRate.objects.filter(vehicle__property=property_) if property_ else VehicleRentalRate.objects.none()
+        self.fields["guest"].queryset = Guest.objects.filter(property=property_) if property_ else Guest.objects.none()
+        self.fields["reservation"].queryset = Reservation.objects.filter(property=property_) if property_ else Reservation.objects.none()
+        self.fields["pickup_location_ref"].queryset = RentalLocation.objects.filter(property=property_, is_active=True) if property_ else RentalLocation.objects.none()
+        self.fields["dropoff_location_ref"].queryset = RentalLocation.objects.filter(property=property_, is_active=True) if property_ else RentalLocation.objects.none()
+        insurance_packages = RentalInsurancePackage.objects.filter(property=property_, is_active=True) if property_ else RentalInsurancePackage.objects.none()
+        extras = RentalExtraProduct.objects.filter(property=property_, is_active=True) if property_ else RentalExtraProduct.objects.none()
+        self.fields["insurance_package"].choices = [('', 'Sigorta seçilmedi')] + [(str(item.id), f"{item.name} · {item.price} {item.currency}") for item in insurance_packages]
+        self.fields["extra_products"].choices = [(str(item.id), f"{item.name} · {item.price} {item.currency}") for item in extras]
+
+
+class PublicParkingReservationForm(HotelModelForm):
+    """Whitelist-only form for the public parking booking flow.
+
+    Amount, status, payment and audit fields are deliberately not accepted
+    from a browser. The server calculates the quote after validation.
+    """
+
+    class Meta:
+        model = ParkingReservation
+        fields = [
+            "parking_lot", "parking_space", "customer_name", "customer_email",
+            "customer_phone", "vehicle_plate", "start_at", "end_at", "notes",
+        ]
+        widgets = {
+            "start_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "end_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["parking_lot"].queryset = ParkingLot.objects.filter(
+            property=property_, is_active=True, booking_enabled=True,
+        ) if property_ else ParkingLot.objects.none()
+        self.fields["parking_space"].queryset = ParkingSpace.objects.filter(
+            parking_lot__property=property_, is_active=True,
+        ) if property_ else ParkingSpace.objects.none()
+
+
+class PublicRentalBookingForm(HotelModelForm):
+    """Whitelist-only rental intake form; all prices remain server-owned."""
+
+    privacy_consent = forms.BooleanField(required=True, label="Gizlilik ve veri saklama politikasını kabul ediyorum")
+    marketing_consent = forms.BooleanField(required=False, label="Kampanya ve bilgilendirme mesajlarına izin veriyorum")
+
+    insurance_package = forms.ChoiceField(required=False, choices=(), label="Sigorta paketi")
+    extra_products = forms.MultipleChoiceField(required=False, choices=(), label="Ek ürünler", widget=forms.CheckboxSelectMultiple)
+
+    class Meta:
+        model = VehicleRentalBooking
+        fields = [
+            "vehicle", "rental_rate", "customer_name", "customer_email", "customer_phone",
+            "pickup_location", "dropoff_location", "pickup_location_ref", "dropoff_location_ref",
+            "pickup_at", "dropoff_at", "driver_age", "driver_license_country",
+            "license_duration_months", "additional_driver_count", "promo_code",
+            "corporate_code", "loyalty_code", "vehicle_class", "locale", "flight_number",
+            "insurance_package", "extra_products", "notes",
+        ]
+        widgets = {
+            "pickup_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "dropoff_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vehicle"].queryset = Vehicle.objects.filter(
+            property=property_, is_active=True, online_enabled=True,
+        ) if property_ else Vehicle.objects.none()
+        self.fields["rental_rate"].queryset = VehicleRentalRate.objects.filter(
+            vehicle__property=property_, vehicle__is_active=True,
+            vehicle__online_enabled=True, is_active=True,
+        ) if property_ else VehicleRentalRate.objects.none()
+        self.fields["pickup_location_ref"].queryset = RentalLocation.objects.filter(
+            property=property_, is_active=True,
+        ) if property_ else RentalLocation.objects.none()
+        self.fields["dropoff_location_ref"].queryset = RentalLocation.objects.filter(
+            property=property_, is_active=True,
+        ) if property_ else RentalLocation.objects.none()
+        packages = RentalInsurancePackage.objects.filter(
+            property=property_, is_active=True,
+        ) if property_ else RentalInsurancePackage.objects.none()
+        extras = RentalExtraProduct.objects.filter(
+            property=property_, is_active=True,
+        ) if property_ else RentalExtraProduct.objects.none()
+        self.fields["insurance_package"].choices = [
+            ("", "Sigorta seçilmedi"),
+            *[(str(item.id), f"{item.name} · {item.price} {item.currency}") for item in packages],
+        ]
+        self.fields["extra_products"].choices = [
+            (str(item.id), f"{item.name} · {item.price} {item.currency}") for item in extras
+        ]
+
+
+class RentalDriverProfileForm(HotelModelForm):
+    class Meta:
+        model = RentalDriverProfile
+        exclude = ["property"]
+        widgets = {
+            "license_issued_at": forms.DateInput(attrs={"type": "date"}),
+            "license_expires_at": forms.DateInput(attrs={"type": "date"}),
+            "license_document": forms.ClearableFileInput(),
+            "blacklist_reason": forms.Textarea(attrs={"rows": 2}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+
+class RentalCancellationPolicyForm(HotelModelForm):
+    class Meta:
+        model = RentalCancellationPolicy
+        exclude = ["property"]
+        widgets = {"terms": forms.Textarea(attrs={"rows": 3})}
+
+
+class RentalTaxRuleForm(HotelModelForm):
+    class Meta:
+        model = RentalTaxRule
+        exclude = ["property"]
+
+
+class RentalLocationForm(HotelModelForm):
+    class Meta:
+        model = RentalLocation
+        exclude = ["property"]
+
+
+class RentalChannelConnectionForm(HotelModelForm):
+    class Meta:
+        model = RentalChannelConnection
+        exclude = ["property", "last_sync_at", "last_sync_status"]
+        widgets = {"notes": forms.Textarea(attrs={"rows": 2})}
+
+
+class RentalChannelMappingForm(HotelModelForm):
+    class Meta:
+        model = RentalChannelMapping
+        fields = "__all__"
+
+
+class VehicleTelemetryEventForm(HotelModelForm):
+    class Meta:
+        model = VehicleTelemetryEvent
+        exclude = ["property"]
+        widgets = {"occurred_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+
+
+class RentalFlightStatusForm(HotelModelForm):
+    class Meta:
+        model = RentalFlightStatus
+        fields = "__all__"
+        widgets = {"scheduled_arrival_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "estimated_arrival_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "last_checked_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+
+
+class ParkingDeviceForm(HotelModelForm):
+    class Meta:
+        model = ParkingDevice
+        exclude = ["property", "last_seen_at"]
+
+
+class RentalExtraProductForm(HotelModelForm):
+    class Meta:
+        model = RentalExtraProduct
+        exclude = ["property"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class RentalInsurancePackageForm(HotelModelForm):
+    class Meta:
+        model = RentalInsurancePackage
+        exclude = ["property"]
+        widgets = {"coverage": forms.Textarea(attrs={"rows": 2})}
+
+
+class RentalHandoverForm(HotelModelForm):
+    class Meta:
+        model = RentalHandover
+        exclude = ["recorded_by"]
+        widgets = {"recorded_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "damage_notes": forms.Textarea(attrs={"rows": 3}), "signature_file": forms.ClearableFileInput()}
+
+
+class RentalHandoverPhotoForm(HotelModelForm):
+    class Meta:
+        model = RentalHandoverPhoto
+        fields = "__all__"
+        widgets = {"image": forms.ClearableFileInput(attrs={"accept": "image/*"})}
+
+
+class RentalDamageCaseForm(HotelModelForm):
+    class Meta:
+        model = RentalDamageCase
+        exclude = ["reference", "opened_at", "resolved_at"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class VehicleMaintenanceRecordForm(HotelModelForm):
+    class Meta:
+        model = VehicleMaintenanceRecord
+        exclude = ["property"]
+        widgets = {"scheduled_at": forms.DateInput(attrs={"type": "date"}), "completed_at": forms.DateInput(attrs={"type": "date"}), "notes": forms.Textarea(attrs={"rows": 2})}
+
+
+class RentalFineForm(HotelModelForm):
+    class Meta:
+        model = RentalFine
+        fields = "__all__"
+        widgets = {"incurred_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "notes": forms.Textarea(attrs={"rows": 2})}
+
+
+class ParkingSubscriptionForm(HotelModelForm):
+    class Meta:
+        model = ParkingSubscription
+        fields = "__all__"
+        widgets = {"valid_from": forms.DateTimeInput(attrs={"type": "datetime-local"}), "valid_until": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+
+
+class ParkingAccessEventForm(HotelModelForm):
+    class Meta:
+        model = ParkingAccessEvent
+        fields = "__all__"
+        widgets = {"occurred_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+
+
+class ParkingValetRecordForm(HotelModelForm):
+    class Meta:
+        model = ParkingValetRecord
+        fields = "__all__"
+        widgets = {"received_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "returned_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "notes": forms.Textarea(attrs={"rows": 2})}
+
+
+class ParkingPenaltyForm(HotelModelForm):
+    class Meta:
+        model = ParkingPenalty
+        fields = "__all__"
+        widgets = {"issued_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "notes": forms.Textarea(attrs={"rows": 2})}
+
+
+class RentalContractForm(HotelModelForm):
+    class Meta:
+        model = RentalContract
+        fields = "__all__"
+        widgets = {"terms": forms.Textarea(attrs={"rows": 5}), "signed_at": forms.DateTimeInput(attrs={"type": "datetime-local"}), "signature_file": forms.ClearableFileInput(), "document_file": forms.ClearableFileInput()}
+
+
+class RentalPaymentForm(HotelModelForm):
+    class Meta:
+        model = RentalPayment
+        fields = "__all__"
+
+
+class RentalInvoiceForm(HotelModelForm):
+    class Meta:
+        model = RentalInvoice
+        fields = "__all__"
+
+
+class CashierShiftForm(HotelModelForm):
+    class Meta:
+        model = CashierShift
+        exclude = ["property", "cashier", "opened_at", "closed_at", "closed_by", "variance", "status"]
+        widgets = {"closing_note": forms.Textarea(attrs={"rows": 3})}
+
+
+class FrontCashTransactionForm(HotelModelForm):
+    class Meta:
+        model = FrontCashTransaction
+        exclude = ["property", "posted_by", "posted_at", "is_voided"]
+        widgets = {"description": forms.TextInput(attrs={"placeholder": "İşlem açıklaması"})}

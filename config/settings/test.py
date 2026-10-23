@@ -6,6 +6,24 @@ from .base import *  # noqa: F403
 from .base import TEMPLATES
 from .base import env
 
+# Django 5.1's Context.__copy__ uses ``copy(super())``, which raises on
+# Python 3.14 while Django's test client stores rendered templates. Keep this
+# compatibility shim test-only; production rendering is unchanged.
+import sys
+
+if sys.version_info >= (3, 14):
+    from django.template.context import Context
+
+    def _python314_context_copy(self):
+        duplicate = object.__new__(self.__class__)
+        duplicate.dicts = self.dicts[:]
+        duplicate.render_context = self.render_context
+        if hasattr(self, "template"):
+            duplicate.template = self.template
+        return duplicate
+
+    Context.__copy__ = _python314_context_copy
+
 # Keep SQLite as the default local test database, but allow the concurrency
 # suite to run against a real PostgreSQL database when explicitly requested.
 # Example:
