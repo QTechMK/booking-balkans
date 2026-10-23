@@ -412,6 +412,30 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
 .hotel-sidebar-icon { width: .8rem; height: .8rem; margin-right: .32rem; color: #94a3b8; }
 .hotel-erp-sidebar-nav details summary::before { content: none !important; display: none !important; }
 .hotel-erp-quick-menu summary::after { content: '›'; font-family: inherit !important; font-size: .8rem; font-weight: 700; }
+.elektra-home { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .75fr); gap: .8rem; }
+.elektra-home-main { min-width: 0; }
+.elektra-module-section { margin-bottom: .75rem; border: 1px solid #d6dce6; background: #fff; }
+.elektra-module-section h2 { margin: 0; padding: .25rem .55rem; border-bottom: 1px solid #d6dce6; color: #313946; font-size: .88rem; font-weight: 700; }
+.elektra-card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 3px; }
+.elektra-card-grid-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.elektra-module-card { display: flex; min-height: 70px; flex-direction: column; align-items: center; justify-content: center; gap: .18rem; padding: .4rem .35rem; border: 1px solid #e0e4ea; color: #4d596b !important; background: linear-gradient(#fff, #fafbfd); text-align: center; text-decoration: none; }
+.elektra-module-card:hover { border-color: #9ba9c4; background: #f0f4ff; box-shadow: 0 1px 3px rgba(32,48,109,.12); }
+.elektra-module-card .fa-solid, .elektra-module-card .fas, .elektra-module-card .hotel-inline-icon { width: 1.35rem; height: 1.35rem; color: #2e9aa4; font-size: 1.05rem; }
+.elektra-module-card span { max-width: 100%; color: #4b5563; font-size: .68rem; line-height: 1.15; }
+.elektra-module-card small { color: #8791a0; font-size: .59rem; }
+.elektra-planned-card { cursor: default; opacity: .65; }
+.elektra-planned-card:hover { border-color: #e0e4ea; background: linear-gradient(#fff, #fafbfd); box-shadow: none; }
+.elektra-news-panel { min-height: 460px; border: 1px solid #d6dce6; background: #fff; }
+.elektra-news-heading { display: flex; align-items: center; justify-content: space-between; padding: .55rem .7rem; border-bottom: 2px solid #7789a8; }
+.elektra-news-heading h2 { margin: 0; color: #4a5566; font-size: .9rem; }
+.elektra-news-heading span { color: #667085; font-size: .68rem; }
+.elektra-news-panel article { padding: .75rem; color: #697386; font-size: .72rem; line-height: 1.5; }
+.elektra-news-panel article strong { color: #4a5566; }
+.elektra-news-panel article p { margin: .55rem 0; }
+.elektra-news-logos { display: flex; align-items: center; justify-content: space-around; margin-top: 4rem; color: #7cae30; font-size: 1.35rem; font-weight: 800; }
+.elektra-news-logos span:last-child { color: #737373; font-size: 1.1rem; }
+@media (max-width: 1100px) { .elektra-home { grid-template-columns: 1fr; } .elektra-news-panel { min-height: 220px; } }
+@media (max-width: 700px) { .elektra-card-grid, .elektra-card-grid-four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .elektraweb-shell .hotel-erp-topbar { gap: .55rem; }
 .elektraweb-shell .hotel-erp-quick-links { flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .elektraweb-shell .hotel-erp-quick-link, .elektraweb-shell .hotel-erp-quick-menu { flex: 0 0 auto; }
