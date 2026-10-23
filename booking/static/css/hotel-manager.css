@@ -403,6 +403,27 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
   .hotel-erp-header-button-secondary i { font-size: .7rem; }
   .hotel-erp-language-control { display: none; }
 }
+/* Reliable local icon font and a non-scrolling desktop header. */
+@font-face { font-family: 'Booking Balkans FA'; font-style: normal; font-weight: 900; font-display: block; src: url('../vendor/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2') format('woff2'), url('../vendor/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf') format('truetype'); }
+.hotel-erp-app .fa-solid, .hotel-erp-app .fas { font-family: 'Booking Balkans FA', 'Font Awesome 6 Free' !important; font-weight: 900; font-style: normal; }
+.hotel-erp-app .hotel-erp-sidebar-nav details summary::before, .hotel-erp-app .hotel-erp-quick-menu summary::after { font-family: 'Booking Balkans FA', 'Font Awesome 6 Free' !important; font-weight: 900; }
+.elektraweb-shell .hotel-erp-topbar { gap: .55rem; }
+.elektraweb-shell .hotel-erp-quick-links { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.elektraweb-shell .hotel-erp-quick-link, .elektraweb-shell .hotel-erp-quick-menu { flex: 0 0 auto; }
+.elektraweb-shell .hotel-erp-topbar-actions { flex: 0 0 auto; min-width: 0; gap: .35rem; }
+.elektraweb-shell .hotel-erp-header-property select { min-width: 155px; max-width: 220px; }
+@media (max-width: 1700px) {
+  .elektraweb-shell .hotel-erp-quick-links .hotel-erp-optional-shortcut { display: none; }
+  .elektraweb-shell .hotel-erp-quick-links .hotel-erp-more-toggle { display: inline-grid; place-items: center; }
+}
+@media (min-width: 1701px) {
+  .elektraweb-shell .hotel-erp-quick-links .hotel-erp-more-toggle { display: none; }
+}
+@media (max-width: 1280px) {
+  .elektraweb-shell .hotel-erp-topbar-title { max-width: 115px; font-size: .92rem; }
+  .elektraweb-shell .hotel-erp-quick-link, .elektraweb-shell .hotel-erp-quick-menu summary { padding-left: .32rem; padding-right: .32rem; font-size: .61rem; }
+  .elektraweb-shell .hotel-erp-header-property select { min-width: 125px; max-width: 160px; }
+}
 .hotel-erp-app *, .hotel-erp-app *::before, .hotel-erp-app *::after { box-sizing: border-box; }
 .hotel-erp-app a { color: #2638c4; }
 .hotel-erp-app .row { display: flex; flex-wrap: wrap; margin: -.35rem; }
