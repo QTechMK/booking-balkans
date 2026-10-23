@@ -530,6 +530,15 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
 .parking-map-space-blocked { border-left-color: #68758a; background: #eef1f5; }
 .parking-map-space small, .parking-map-space span { color: #667085; font-size: .72rem; }
 .hotel-erp-app .fleet-workspace .fleet-section-panel .hotel-definition-panel { display: block; }
+.module-workspace { border: 1px solid #dce2eb; background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
+.module-workspace-toolbar { display: flex; justify-content: space-between; align-items: center; padding: .85rem 1rem; background: #f7f8fb; border-bottom: 1px solid #e1e5ec; }
+.module-workspace-toolbar h2 { margin: .1rem 0 .2rem; color: #172b4d; font-size: 1.05rem; }
+.module-workspace-toolbar p { margin: 0; color: #7a8494; font-size: .74rem; }
+.module-panel { padding: .9rem; border-bottom: 1px solid #e1e5ec; }
+.module-panel:last-child { border-bottom: 0; }
+.module-setup-grid { margin: .85rem; }
+.module-workspace-business > .module-panel { margin: .85rem; border: 1px solid #dce2eb; }
+@media (max-width: 800px) { .module-workspace-toolbar { align-items: flex-start; } .module-workspace-business > .module-panel, .module-setup-grid { margin: .55rem; } }
 .hotel-erp-app .fleet-workspace.parking-setup-only > .hotel-definition-panel:last-child { display: none; }
 .hotel-erp-app .fleet-workspace:has(> #vehicle-photos:target) .fleet-section-tabs a[href="#vehicle-photos"],
 .hotel-erp-app .fleet-workspace:has(> #vehicle-list:target) .fleet-section-tabs a[href="#vehicle-list"],

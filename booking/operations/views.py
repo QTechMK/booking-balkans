@@ -694,7 +694,7 @@ def fleet_reports(request):
 
 
 @login_required
-def vehicle_fleet(request, entity="vehicles", setup_only=False):
+def vehicle_fleet(request, entity="vehicles", setup_only=False, screen="combined"):
     properties, selected = _selected_property(request)
     if _permission_denied(request, selected, "operations.front_office.manage"):
         return HttpResponseForbidden("Bu tesis için araç filosu yetkiniz yok.")
@@ -785,9 +785,18 @@ def vehicle_fleet(request, entity="vehicles", setup_only=False):
                 if obj.prepayment_amount:
                     create_pending_rental_payment(booking=obj, amount=obj.prepayment_amount)
             messages.success(request, "Kayıt başarıyla kaydedildi.")
-            target = "vehicle_fleet" if active_entity in {"vehicles", "vehicle_photos"} else (
-                "parking_reservations" if active_entity in {"parking", "spaces", "parking_reservations"} else "vehicle_rental_bookings"
-            )
+            if screen == "vehicle_setup":
+                target = "vehicle_definitions"
+            elif screen == "parking_setup":
+                target = "parking_definitions"
+            elif screen == "parking_business":
+                target = "parking_management"
+            elif screen == "rental_business":
+                target = "vehicle_rentals_management"
+            else:
+                target = "vehicle_fleet" if active_entity in {"vehicles", "vehicle_photos"} else (
+                    "parking_reservations" if active_entity in {"parking", "spaces", "parking_reservations"} else "vehicle_rental_bookings"
+                )
             return redirect(f"{reverse(f'operations:{target}')}?property_id={selected.id}")
 
     vehicles = selected.vehicles.all() if selected else Vehicle.objects.none()
@@ -805,9 +814,22 @@ def vehicle_fleet(request, entity="vehicles", setup_only=False):
     ) + "?entity=parking" if selected else ""
     fleet_widget_rental_embed = f'<iframe src="{fleet_widget_rental_url}" width="100%" height="720" loading="lazy" title="Araç kiralama"></iframe>' if selected else ""
     fleet_widget_parking_embed = f'<iframe src="{fleet_widget_parking_url}" width="100%" height="720" loading="lazy" title="Otopark rezervasyonu"></iframe>' if selected else ""
-    return render(request, "booking/operations/vehicle_fleet.html", {
+    template_name = {
+        "vehicle_setup": "booking/operations/vehicle_setup.html",
+        "parking_setup": "booking/operations/parking_setup.html",
+        "rental_business": "booking/operations/rental_business.html",
+        "parking_business": "booking/operations/parking_business.html",
+    }.get(screen, "booking/operations/vehicle_fleet.html")
+    screen_titles = {
+        "vehicle_setup": "Araç Tanımları",
+        "parking_setup": "Parking Tanımları",
+        "rental_business": "Araç Kiralama / Business",
+        "parking_business": "Parking / Business",
+    }
+    return render(request, template_name, {
         "title": "Araç Filosu ve Otopark", "properties": properties, "selected_property": selected,
-        "entity": active_entity, "setup_only": setup_only, "form": forms_by_entity.get(active_entity, form),
+        "entity": active_entity, "setup_only": setup_only, "screen": screen,
+        "screen_title": screen_titles.get(screen, "Araç Filosu ve Otopark"), "form": forms_by_entity.get(active_entity, form),
         "vehicle_form": form, "parking_lot_form": parking_lot_form, "parking_space_form": parking_space_form,
         "vehicle_photo_form": vehicle_photo_form, "vehicle_photos": vehicle_photos,
         "rental_rate_form": rental_rate_form, "parking_reservation_form": parking_reservation_form,
@@ -819,6 +841,22 @@ def vehicle_fleet(request, entity="vehicles", setup_only=False):
         "fleet_widget_rental_embed": fleet_widget_rental_embed,
         "fleet_widget_parking_embed": fleet_widget_parking_embed,
     })
+
+
+def vehicle_setup(request):
+    return vehicle_fleet(request, entity="vehicles", setup_only=True, screen="vehicle_setup")
+
+
+def parking_setup(request):
+    return vehicle_fleet(request, entity="parking_reservations", setup_only=True, screen="parking_setup")
+
+
+def vehicle_rental_business(request):
+    return vehicle_fleet(request, entity="rentals", screen="rental_business")
+
+
+def parking_business(request):
+    return vehicle_fleet(request, entity="parking_reservations", screen="parking_business")
 
 
 PUBLIC_PRIVACY_POLICY_VERSION = "2026-10"
