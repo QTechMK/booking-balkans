@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{% static 'css/hotel-manager.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
-<body class="hotel-erp-app">
+<body class="hotel-erp-app elektraweb-shell">
   <div class="hotel-erp-frame">
     <aside id="hotel-erp-sidebar" class="hotel-erp-sidebar" aria-label="Hotel ERP modules">
       <div class="hotel-erp-brand"><span class="hotel-erp-brand-mark">BB</span><span>Hotel Manager</span></div>
@@ -153,6 +153,13 @@
       <header class="hotel-erp-topbar">
         <button type="button" class="hotel-erp-menu-toggle" aria-label="Modul menüsünü aç/kapat" aria-controls="hotel-erp-sidebar" aria-expanded="true">&#9776;</button>
         <div class="hotel-erp-topbar-title">{{ title|default:'Hotel Manager' }}</div>
+        <nav class="hotel-erp-quick-links" aria-label="Hızlı erişim">
+          <a href="{% url 'operations:dashboard' %}">Dashboard</a>
+          <a href="{% url 'operations:room_rack' %}">Room Rack</a>
+          <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyon</a>
+          <a href="{% url 'operations:vehicle_rentals_management' %}">Araç Kiralama</a>
+          <a href="{% url 'operations:parking_management' %}">Otopark</a>
+        </nav>
         <div class="hotel-erp-topbar-actions">
           <form method="get" class="hotel-erp-header-property">
             {% for key, value in request.GET.items %}{% if key != 'property_id' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
@@ -171,6 +178,11 @@
         {% if not planned_nav %}{% include 'booking/partials/hotel-module-nav.html' %}{% endif %}
         {% block content %}{% endblock %}
       </div>
+      <footer class="hotel-erp-statusbar">
+        <span>Tesis: <strong>{{ selected_property.name|default:'Seçilmedi' }}</strong></span>
+        <span class="hotel-erp-status-online"><i></i> Sistem çevrimiçi</span>
+        <span class="hotel-erp-status-clock">{% now "d.m.Y H:i" %}</span>
+      </footer>
     </div>
   </div>
   <script>
