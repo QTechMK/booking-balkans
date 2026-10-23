@@ -359,6 +359,50 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
 .dashboard-overview .card-header h2 { color: #1e293b; font-size: .9rem; font-weight: 800; }
 @media (max-width: 1050px) { .hotel-erp-quick-links { max-width: 33vw; } }
 @media (max-width: 650px) { .hotel-erp-quick-links { order: 3; width: 100%; max-width: none; margin: 0; padding: .2rem 0 0; border-left: 0; } .hotel-erp-statusbar { flex-wrap: wrap; } }
+.hotel-erp-quick-link, .hotel-erp-quick-menu summary { display: inline-flex; align-items: center; gap: .28rem; min-height: 31px; padding: .38rem .48rem; border: 0; border-radius: 3px; color: #cbd5e1; background: transparent; font-size: .66rem; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.hotel-erp-quick-link i, .hotel-erp-quick-menu summary i { color: #67e8f9; font-size: .65rem; }
+.hotel-erp-quick-link:hover, .hotel-erp-quick-menu summary:hover, .hotel-erp-quick-menu[open] summary { color: #fff; background: rgba(51,65,85,.8); }
+.hotel-erp-quick-menu { position: relative; }
+.hotel-erp-quick-menu summary { list-style: none; }
+.hotel-erp-quick-menu summary::-webkit-details-marker { display: none; }
+.hotel-erp-quick-menu summary::after { content: '\f078'; margin-left: .12rem; color: #94a3b8; font-family: 'Font Awesome 6 Free'; font-size: .52rem; font-weight: 900; }
+.hotel-erp-quick-menu-panel { position: absolute; z-index: 30; top: calc(100% + .3rem); left: 0; min-width: 170px; padding: .3rem; border: 1px solid #475569; border-radius: 3px; background: #172033; box-shadow: 0 8px 18px rgba(15,23,42,.3); }
+.hotel-erp-quick-menu-panel a { display: block; padding: .42rem .55rem; color: #dbeafe; font-size: .68rem; text-decoration: none; white-space: nowrap; }
+.hotel-erp-quick-menu-panel a:hover { color: #fff; background: #263858; }
+.hotel-erp-planned-shortcut, .hotel-erp-planned-control { opacity: .55; cursor: not-allowed; }
+.hotel-erp-more-toggle { display: none; width: 28px; height: 28px; padding: 0; border: 1px solid #475569; border-radius: 3px; color: #cbd5e1; background: transparent; cursor: pointer; }
+.hotel-erp-global-controls { display: inline-flex; align-items: center; gap: .25rem; }
+.hotel-erp-control-button, .hotel-erp-language-control { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid #475569; border-radius: 3px; color: #cbd5e1; background: rgba(15,23,42,.35); font-size: .68rem; }
+.hotel-erp-control-button { cursor: pointer; }
+.hotel-erp-control-button:hover { color: #fff; background: #263858; }
+.hotel-erp-control-button:disabled { opacity: .5; cursor: not-allowed; }
+.hotel-erp-language-control { width: 48px; gap: .15rem; }
+.hotel-erp-language-control select { width: 25px; padding: 0; border: 0; outline: 0; color: #e2e8f0; background: transparent; font-size: .6rem; font-weight: 700; cursor: pointer; }
+.hotel-erp-language-control select option { color: #172033; background: #fff; }
+.hotel-erp-control-badge { position: absolute; top: -5px; right: -5px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; color: #fff; background: #dc4b5b; font-size: .52rem; line-height: 14px; text-align: center; }
+.hotel-erp-notification-control { overflow: visible; }
+.hotel-erp-topbar-actions > .hotel-erp-control-button { flex: 0 0 auto; }
+.hotel-erp-topbar-actions > .hotel-erp-planned-control { display: inline-flex; }
+@media (max-width: 1180px) {
+  .hotel-erp-quick-links .hotel-erp-optional-shortcut { display: none; }
+  .hotel-erp-more-toggle { display: inline-grid; place-items: center; }
+  .hotel-erp-quick-links.show-optional .hotel-erp-optional-shortcut { display: inline-flex; }
+}
+@media (max-width: 900px) {
+  .hotel-erp-topbar { align-items: center; }
+  .hotel-erp-topbar-title { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+  .hotel-erp-header-property label, .hotel-erp-server-status, .hotel-erp-user-name { display: none; }
+  .hotel-erp-topbar-actions { gap: .3rem; }
+}
+@media (max-width: 650px) {
+  .hotel-erp-quick-links { flex-wrap: nowrap; overflow-x: auto; }
+  .hotel-erp-quick-links .hotel-erp-optional-shortcut { display: none; }
+  .hotel-erp-quick-links.show-optional .hotel-erp-optional-shortcut { display: inline-flex; }
+  .hotel-erp-topbar-actions { width: auto; margin-left: auto; }
+  .hotel-erp-header-button-secondary { min-width: 42px !important; padding: 0 .42rem; font-size: 0; }
+  .hotel-erp-header-button-secondary i { font-size: .7rem; }
+  .hotel-erp-language-control { display: none; }
+}
 .hotel-erp-app *, .hotel-erp-app *::before, .hotel-erp-app *::after { box-sizing: border-box; }
 .hotel-erp-app a { color: #2638c4; }
 .hotel-erp-app .row { display: flex; flex-wrap: wrap; margin: -.35rem; }

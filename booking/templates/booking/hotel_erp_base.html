@@ -154,12 +154,49 @@
       <header class="hotel-erp-topbar">
         <button type="button" class="hotel-erp-menu-toggle" aria-label="Modul menüsünü aç/kapat" aria-controls="hotel-erp-sidebar" aria-expanded="true">&#9776;</button>
         <div class="hotel-erp-topbar-title">{{ title|default:'Hotel Manager' }}</div>
-        <nav class="hotel-erp-quick-links" aria-label="Hızlı erişim">
-          <a href="{% url 'operations:dashboard' %}"><i class="fa-solid fa-gauge-high"></i>Dashboard</a>
-          <a href="{% url 'operations:room_rack' %}"><i class="fa-solid fa-table-cells-large"></i>Room Rack</a>
-          <a href="{% url 'reservations:business_reservation_list' %}"><i class="fa-solid fa-calendar-check"></i>Rezervasyon</a>
-          <a href="{% url 'operations:vehicle_rentals_management' %}"><i class="fa-solid fa-car"></i>Araç Kiralama</a>
-          <a href="{% url 'operations:parking_management' %}"><i class="fa-solid fa-square-parking"></i>Otopark</a>
+        <nav class="hotel-erp-quick-links" aria-label="ElektraWeb modül kısayolları">
+          <a class="hotel-erp-quick-link" href="{% url 'operations:dashboard' %}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+          <details class="hotel-erp-quick-menu">
+            <summary><i class="fa-solid fa-life-ring"></i><span>Support</span></summary>
+            <div class="hotel-erp-quick-menu-panel">
+              <a href="{% url 'operations:support_center' %}">Support Center</a>
+              <a href="{% url 'operations:support_faq' %}">FAQ</a>
+              <a href="{% url 'operations:support_education' %}">Education</a>
+            </div>
+          </details>
+          <details class="hotel-erp-quick-menu">
+            <summary><i class="fa-solid fa-chart-column"></i><span>Reports</span></summary>
+            <div class="hotel-erp-quick-menu-panel">
+              <a href="{% url 'operations:reports' %}">Reports</a>
+              <a href="{% url 'operations:fleet_reports' %}">Fleet Reports</a>
+              <a href="{% url 'operations:night_audit' %}">Night Audit</a>
+            </div>
+          </details>
+          <details class="hotel-erp-quick-menu">
+            <summary><i class="fa-solid fa-globe"></i><span>Online</span></summary>
+            <div class="hotel-erp-quick-menu-panel">
+              <a href="{% url 'operations:online_settings' %}">Online Settings</a>
+              <a href="{% url 'operations:online_fleet_booking' %}?property_id={{ selected_property.id }}&amp;entity=rentals">Rent a Car</a>
+              <a href="{% url 'operations:online_fleet_booking' %}?property_id={{ selected_property.id }}&amp;entity=parking">Parking</a>
+            </div>
+          </details>
+          <a class="hotel-erp-quick-link hotel-erp-optional-shortcut" href="{% url 'reservations:business_reservation_calendar' %}"><i class="fa-solid fa-calendar-days"></i><span>Diary</span></a>
+          <a class="hotel-erp-quick-link" href="{% url 'reservations:business_reservation_list' %}"><i class="fa-solid fa-calendar-check"></i><span>Reservation</span></a>
+          <a class="hotel-erp-quick-link hotel-erp-optional-shortcut" href="{% url 'operations:front_office' %}"><i class="fa-solid fa-user-group"></i><span>In-House</span></a>
+          <a class="hotel-erp-quick-link" href="{% url 'operations:room_rack' %}"><i class="fa-solid fa-table-cells-large"></i><span>Rack</span></a>
+          <a class="hotel-erp-quick-link hotel-erp-optional-shortcut" href="{% url 'operations:front_cash' %}"><i class="fa-solid fa-cash-register"></i><span>Front Cash</span></a>
+          <span class="hotel-erp-quick-link hotel-erp-planned-shortcut hotel-erp-optional-shortcut" title="POS route henüz yapılandırılmadı"><i class="fa-solid fa-cash-register"></i><span>POS</span></span>
+          <span class="hotel-erp-quick-link hotel-erp-planned-shortcut hotel-erp-optional-shortcut" title="Spa Reservation route henüz yapılandırılmadı"><i class="fa-solid fa-spa"></i><span>Spa</span></span>
+          <details class="hotel-erp-quick-menu hotel-erp-optional-shortcut">
+            <summary><i class="fa-solid fa-calculator"></i><span>Accounting</span></summary>
+            <div class="hotel-erp-quick-menu-panel">
+              <a href="{% url 'operations:accounting_definitions' %}">Definitions</a>
+              <a href="{% url 'operations:invoices' %}">Invoices</a>
+              <a href="{% url 'operations:payment_gateways' %}">Payment Gateways</a>
+            </div>
+          </details>
+          <span class="hotel-erp-quick-link hotel-erp-planned-shortcut hotel-erp-optional-shortcut" title="Stock route henüz yapılandırılmadı"><i class="fa-solid fa-boxes-stacked"></i><span>Stock</span></span>
+          <button type="button" class="hotel-erp-more-toggle" aria-label="Daha fazla modül göster"><i class="fa-solid fa-chevron-right"></i></button>
         </nav>
         <div class="hotel-erp-topbar-actions">
           <form method="get" class="hotel-erp-header-property">
@@ -169,10 +206,17 @@
               {% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}
             </select>
           </form>
+          <button type="button" class="hotel-erp-control-button" title="Filtreler" aria-label="Filtreler"><i class="fa-solid fa-filter"></i></button>
+          <label class="hotel-erp-language-control" title="Arayüz dili">
+            <i class="fa-solid fa-language"></i>
+            <select aria-label="Arayüz dili"><option>TR</option><option>EN</option><option>MK</option></select>
+          </label>
+          <button type="button" class="hotel-erp-control-button hotel-erp-notification-control" title="Bildirimler" aria-label="Bildirimler"><i class="fa-solid fa-bell"></i><span class="hotel-erp-control-badge">0</span></button>
+          <button type="button" class="hotel-erp-control-button" title="Ekranı kilitleme davranışı yapılandırılacak" aria-label="Ekranı kilitle" disabled><i class="fa-solid fa-lock"></i></button>
           <span class="hotel-erp-server-status"><i></i> ONLINE</span>
           <span class="hotel-erp-user-name"><i class="fa-solid fa-user"></i> {{ request.user.username|default:'Kullanıcı' }}</span>
           <a class="hotel-erp-header-button hotel-erp-header-button-secondary" href="{% url 'mfa_index' %}"><i class="fa-solid fa-shield-halved"></i> 2FA</a>
-          <a class="hotel-erp-header-button hotel-erp-header-button-primary" href="{% url 'operations:room_rack' %}"><i class="fa-solid fa-table-cells-large"></i> Room Rack</a>
+          <span class="hotel-erp-control-button hotel-erp-planned-control" title="Çıkış bağlantısı yapılandırılacak" aria-label="Çıkış"><i class="fa-solid fa-right-from-bracket"></i></span>
         </div>
       </header>
       <div class="hotel-erp-page-wrap">
@@ -196,6 +240,17 @@
         const collapsed = document.body.classList.toggle('hotel-erp-sidebar-collapsed');
         toggle.setAttribute('aria-expanded', String(!collapsed));
       });
+      const moreToggle = document.querySelector('.hotel-erp-more-toggle');
+      const quickLinks = document.querySelector('.hotel-erp-quick-links');
+      if (moreToggle && quickLinks) {
+        moreToggle.addEventListener('click', function () {
+          const expanded = quickLinks.classList.toggle('show-optional');
+          moreToggle.setAttribute('aria-expanded', String(expanded));
+          moreToggle.innerHTML = expanded
+            ? '<i class="fa-solid fa-chevron-left"></i>'
+            : '<i class="fa-solid fa-chevron-right"></i>';
+        });
+      }
     });
   </script>
   {% block extra_javascript %}{% endblock %}
