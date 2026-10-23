@@ -286,7 +286,9 @@ body { background: #f5f6fa; }
 body.hotel-erp-app { margin: 0; background: #f2f4f8; color: #2a3550; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
 .hotel-erp-frame { display: flex; min-height: 100vh; }
 .hotel-erp-sidebar { width: 238px; flex: 0 0 238px; min-height: 100vh; box-sizing: border-box; background: #fff; border-right: 1px solid #dce2eb; position: sticky; top: 0; height: 100vh; overflow: auto; }
-.hotel-erp-brand { display: flex; align-items: center; gap: .55rem; padding: 1rem .9rem; border-bottom: 1px solid #e1e5ec; color: #20306d; font-weight: 800; font-size: 1rem; }
+.hotel-erp-brand { display: flex; align-items: center; gap: .55rem; padding: .85rem .9rem; border-bottom: 1px solid #e1e5ec; color: #20306d; font-weight: 800; font-size: 1rem; }
+.hotel-erp-brand > span:last-child { display: grid; gap: .08rem; }
+.hotel-erp-brand small { color: #94a3b8; font-size: .58rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
 .hotel-erp-brand-mark { width: 28px; height: 28px; display: grid; place-items: center; background: #2837c7; color: #fff; font-size: .65rem; font-weight: 800; border-radius: 4px; }
 .hotel-erp-sidebar-nav { padding: .7rem .55rem 1rem; display: flex; flex-direction: column; gap: 2px; }
 .hotel-erp-sidebar-nav a { display: block; padding: .48rem .6rem; color: #596579; font-size: .78rem; font-weight: 600; text-decoration: none; border-radius: 3px; }
@@ -325,14 +327,36 @@ body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
 .elektraweb-shell .hotel-erp-topbar-title { color: #f8fafc; font-size: 1.02rem; letter-spacing: .01em; white-space: nowrap; }
 .hotel-erp-quick-links { display: flex; align-items: center; gap: .12rem; margin-left: .8rem; padding-left: .65rem; border-left: 1px solid rgba(148,163,184,.35); overflow-x: auto; white-space: nowrap; }
 .hotel-erp-quick-links a { color: #cbd5e1; padding: .42rem .55rem; border-radius: 3px; font-size: .68rem; font-weight: 600; text-decoration: none; }
+.hotel-erp-quick-links a i { margin-right: .28rem; color: #67e8f9; font-size: .66rem; }
 .hotel-erp-quick-links a:hover { color: #fff; background: rgba(51,65,85,.8); }
 .elektraweb-shell .hotel-erp-header-property label, .elektraweb-shell .hotel-erp-user-name { color: #cbd5e1; }
 .elektraweb-shell .hotel-erp-header-property select { color: #f8fafc; background: #1e293b; border-color: #475569; }
 .elektraweb-shell .hotel-erp-header-button { border-color: #64748b; }
+.hotel-erp-server-status { display: inline-flex; align-items: center; gap: .28rem; padding: .28rem .42rem; color: #a7f3d0; background: rgba(15,23,42,.45); border: 1px solid #334155; border-radius: 3px; font-size: .6rem; font-weight: 700; letter-spacing: .04em; }
+.hotel-erp-server-status i { width: 6px; height: 6px; display: inline-block; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+.elektraweb-shell .hotel-erp-user-name { display: inline-flex; align-items: center; gap: .28rem; }
+.elektraweb-shell .hotel-erp-user-name i { color: #67e8f9; font-size: .65rem; }
+.elektraweb-shell .hotel-erp-header-button { gap: .28rem; min-width: 82px; white-space: nowrap; }
+.hotel-erp-sidebar-nav details summary::before { content: '\f1ad'; display: inline-block; width: 1rem; margin-right: .2rem; color: #94a3b8; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
 .hotel-erp-statusbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 27px; padding: .25rem .8rem; color: #94a3b8; background: #1e293b; border-top: 1px solid #334155; font-size: .65rem; }
 .hotel-erp-statusbar strong { color: #e2e8f0; }
 .hotel-erp-status-online { display: inline-flex; align-items: center; gap: .3rem; color: #a7f3d0; }
 .hotel-erp-status-online i { width: 6px; height: 6px; display: inline-block; border-radius: 50%; background: #10b981; }
+.dashboard-overview .card { border-color: #dbe3ee; border-radius: 4px; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
+.dashboard-overview .card-body { padding: .8rem .9rem; }
+.dashboard-overview .card-body > .d-flex { min-height: 82px; }
+.dashboard-overview .card .text-muted { color: #64748b !important; font-size: .74rem; font-weight: 600; }
+.dashboard-overview .card h2 { color: #0f172a; font-size: 1.45rem; font-weight: 800; margin-top: .35rem !important; }
+.dashboard-overview .card small { color: #64748b; font-size: .68rem; }
+.dashboard-overview .avatar { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 5px; font-size: .9rem; }
+.dashboard-overview .bg-primary-light { background: #dbeafe; } .dashboard-overview .text-primary { color: #1d4ed8 !important; }
+.dashboard-overview .bg-success-light { background: #d1fae5; } .dashboard-overview .text-success { color: #047857 !important; }
+.dashboard-overview .bg-warning-light { background: #fef3c7; } .dashboard-overview .text-warning { color: #b45309 !important; }
+.dashboard-overview .bg-danger-light { background: #fee2e2; } .dashboard-overview .text-danger { color: #b91c1c !important; }
+.dashboard-overview .alert { border: 1px solid #dbe3ee; border-radius: 3px; padding: .55rem .75rem; font-size: .73rem; }
+.dashboard-overview .table-responsive { max-height: 310px; }
+.dashboard-overview .card-header { min-height: 46px; padding: .55rem .75rem; }
+.dashboard-overview .card-header h2 { color: #1e293b; font-size: .9rem; font-weight: 800; }
 @media (max-width: 1050px) { .hotel-erp-quick-links { max-width: 33vw; } }
 @media (max-width: 650px) { .hotel-erp-quick-links { order: 3; width: 100%; max-width: none; margin: 0; padding: .2rem 0 0; border-left: 0; } .hotel-erp-statusbar { flex-wrap: wrap; } }
 .hotel-erp-app *, .hotel-erp-app *::before, .hotel-erp-app *::after { box-sizing: border-box; }

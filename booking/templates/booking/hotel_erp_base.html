@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title|default:'Hotel Manager' }} | Booking Balkans</title>
   <link rel="stylesheet" href="{% static 'css/hotel-manager.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/@fortawesome/fontawesome-free/css/all.min.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="hotel-erp-app elektraweb-shell">
   <div class="hotel-erp-frame">
     <aside id="hotel-erp-sidebar" class="hotel-erp-sidebar" aria-label="Hotel ERP modules">
-      <div class="hotel-erp-brand"><span class="hotel-erp-brand-mark">BB</span><span>Hotel Manager</span></div>
+      <div class="hotel-erp-brand"><span class="hotel-erp-brand-mark">BB</span><span><strong>Hotel Manager</strong><small>Booking Balkans ERP</small></span></div>
       <nav class="hotel-erp-sidebar-nav">
         <a class="hotel-erp-sidebar-section" href="{% url 'operations:dashboard' %}">Dashboard</a>
         <details {% if request.resolver_match.url_name == 'property_settings' or request.resolver_match.url_name == 'hotel_dictionaries' or request.resolver_match.url_name == 'room_master' or request.resolver_match.url_name == 'vehicle_fleet' or request.resolver_match.url_name == 'parking_reservations' or request.resolver_match.url_name == 'vehicle_rental_bookings' or request.resolver_match.url_name == 'online_settings' or request.resolver_match.url_name == 'quick_setup' or request.resolver_match.url_name == 'hotel_settings_menu' %}open{% endif %}>
@@ -154,11 +155,11 @@
         <button type="button" class="hotel-erp-menu-toggle" aria-label="Modul menüsünü aç/kapat" aria-controls="hotel-erp-sidebar" aria-expanded="true">&#9776;</button>
         <div class="hotel-erp-topbar-title">{{ title|default:'Hotel Manager' }}</div>
         <nav class="hotel-erp-quick-links" aria-label="Hızlı erişim">
-          <a href="{% url 'operations:dashboard' %}">Dashboard</a>
-          <a href="{% url 'operations:room_rack' %}">Room Rack</a>
-          <a href="{% url 'reservations:business_reservation_list' %}">Rezervasyon</a>
-          <a href="{% url 'operations:vehicle_rentals_management' %}">Araç Kiralama</a>
-          <a href="{% url 'operations:parking_management' %}">Otopark</a>
+          <a href="{% url 'operations:dashboard' %}"><i class="fa-solid fa-gauge-high"></i>Dashboard</a>
+          <a href="{% url 'operations:room_rack' %}"><i class="fa-solid fa-table-cells-large"></i>Room Rack</a>
+          <a href="{% url 'reservations:business_reservation_list' %}"><i class="fa-solid fa-calendar-check"></i>Rezervasyon</a>
+          <a href="{% url 'operations:vehicle_rentals_management' %}"><i class="fa-solid fa-car"></i>Araç Kiralama</a>
+          <a href="{% url 'operations:parking_management' %}"><i class="fa-solid fa-square-parking"></i>Otopark</a>
         </nav>
         <div class="hotel-erp-topbar-actions">
           <form method="get" class="hotel-erp-header-property">
@@ -168,9 +169,10 @@
               {% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}
             </select>
           </form>
-          <span class="hotel-erp-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
-          <a class="hotel-erp-header-button hotel-erp-header-button-secondary" href="{% url 'mfa_index' %}">2FA</a>
-          <a class="hotel-erp-header-button hotel-erp-header-button-primary" href="{% url 'operations:room_rack' %}">Room Rack</a>
+          <span class="hotel-erp-server-status"><i></i> ONLINE</span>
+          <span class="hotel-erp-user-name"><i class="fa-solid fa-user"></i> {{ request.user.username|default:'Kullanıcı' }}</span>
+          <a class="hotel-erp-header-button hotel-erp-header-button-secondary" href="{% url 'mfa_index' %}"><i class="fa-solid fa-shield-halved"></i> 2FA</a>
+          <a class="hotel-erp-header-button hotel-erp-header-button-primary" href="{% url 'operations:room_rack' %}"><i class="fa-solid fa-table-cells-large"></i> Room Rack</a>
         </div>
       </header>
       <div class="hotel-erp-page-wrap">
