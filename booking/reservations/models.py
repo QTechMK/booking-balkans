@@ -137,6 +137,27 @@ class ChannelRoomTypeMapping(models.Model):
         constraints = [models.UniqueConstraint(fields=["channel", "external_room_code", "external_rate_code"], name="unique_channel_room_rate_mapping")]
 
 
+class ChannelDailyOverride(models.Model):
+    """Channel-specific daily price and availability override."""
+
+    channel = models.ForeignKey(ReservationChannel, on_delete=models.CASCADE, related_name="daily_overrides")
+    unit_type = models.ForeignKey(UnitType, on_delete=models.CASCADE, related_name="channel_daily_overrides")
+    rate_plan = models.ForeignKey(RatePlan, on_delete=models.CASCADE, null=True, blank=True, related_name="channel_daily_overrides")
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=3, default="TRY")
+    available_units = models.PositiveIntegerField(null=True, blank=True)
+    stop_sell = models.BooleanField(default=False)
+    source = models.CharField(max_length=40, default="manual")
+    note = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["date", "channel", "unit_type"]
+        constraints = [models.UniqueConstraint(fields=["channel", "unit_type", "rate_plan", "date"], name="unique_channel_daily_override")]
+        indexes = [models.Index(fields=["channel", "date"]), models.Index(fields=["unit_type", "date"])]
+
+
 class ChannelSyncEvent(models.Model):
     class Direction(models.TextChoices):
         INBOUND = "inbound", _("Inbound")
@@ -155,6 +176,13 @@ class ChannelSyncEvent(models.Model):
     request_reference = models.CharField(max_length=180, blank=True)
     payload = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
+    error_code = models.CharField(max_length=80, blank=True)
+    http_status = models.PositiveSmallIntegerField(null=True, blank=True)
+    response_summary = models.TextField(blank=True)
+    payload_ref = models.CharField(max_length=255, blank=True)
+    retryable = models.BooleanField(default=False)
+    retry_count = models.PositiveIntegerField(default=0)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -360,7 +388,12 @@ class FolioEntry(models.Model):
         Reservation, on_delete=models.PROTECT, related_name="folio_entries"
     )
     entry_type = models.CharField(max_length=16, choices=FolioEntryType.choices)
+    department = models.ForeignKey("operations.DepartmentDefinition", on_delete=models.SET_NULL, null=True, blank=True, related_name="folio_entries")
+    revenue_code = models.ForeignKey("operations.RevenueCode", on_delete=models.SET_NULL, null=True, blank=True, related_name="folio_entries")
     description = models.CharField(max_length=255)
+    quantity = models.DecimalField(max_digits=12, decimal_places=3, default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3)
     vat_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)

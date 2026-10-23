@@ -139,9 +139,16 @@ body { background: #f5f6fa; }
 .hotel-definition-workspace > .hotel-definition-panel:first-of-type { display: block; }
 .hotel-definition-workspace > .hotel-definition-panel:has(~ .hotel-definition-panel:target) { display: none; }
 .hotel-definition-panel:last-child { border-bottom: 0; }
+.hotel-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: .85rem 0; }
+.hotel-kpi-grid article { border: 1px solid #dce3ed; background: #fff; padding: .85rem 1rem; min-height: 92px; }
+.hotel-kpi-grid small, .hotel-kpi-grid span { display: block; color: #71809a; font-size: .78rem; }
+.hotel-kpi-grid strong { display: block; color: #172b4d; font-size: 1.35rem; margin: .35rem 0; }
+@media (max-width: 900px) { .hotel-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .online-booking-workspace .hotel-definition-panel { min-width: 0; }
-.online-booking-workspace .definition-editor-grid { grid-template-columns: minmax(320px, .9fr) minmax(0, 1.6fr); align-items: start; }
+.online-booking-workspace .definition-editor-grid { grid-template-columns: minmax(430px, .9fr) minmax(0, 1.6fr); align-items: start; }
 .online-booking-workspace .definition-editor-grid > * { min-width: 0; }
+.online-booking-workspace .definition-editor-grid > .definition-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.online-booking-workspace .definition-editor-grid > .definition-form-grid .definition-field-wide { grid-column: 1 / -1; }
 .online-booking-workspace .definition-form-grid { align-content: start; }
 .online-booking-workspace .hotel-grid-scroll { min-width: 0; overflow-x: auto; }
 @media (max-width: 1000px) { .online-booking-workspace .definition-editor-grid { grid-template-columns: 1fr; } }
@@ -274,3 +281,257 @@ body { background: #f5f6fa; }
   .hotel-erp-page .table-responsive { max-height: calc(100vh - 385px); }
 }
 .support-workspace{width:100%}.support-tabs{display:flex;gap:0;flex-wrap:wrap;border-bottom:1px solid #d9e0eb;margin-bottom:16px}.support-tabs a{padding:10px 14px;color:#52627a;text-decoration:none;font-size:13px;font-weight:600}.support-tabs a.is-active{color:#2638c4;border-bottom:3px solid #2638c4}.support-grid{display:grid;grid-template-columns:minmax(280px,32%) minmax(0,1fr);gap:16px}.support-ticket-list,.support-ticket-detail{min-width:0}.support-ticket-list .list-group-item{font-size:13px}.support-ticket-list .list-group-item small{color:#7d8ba1}.support-message{padding:12px;border:1px solid #e1e6ef;border-radius:6px;margin-bottom:10px;font-size:13px}.support-message-original{background:#f6f8fb}.support-message small{display:block;color:#8290a3}.support-message p{margin:6px 0 0;white-space:pre-wrap}.support-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.support-links a{border:1px solid #ccd5e5;border-radius:4px;padding:7px 10px;color:#2638c4;text-decoration:none;font-size:12px}.support-faq-item{padding:14px 0;border-bottom:1px solid #e1e6ef}.support-faq-item h3{font-size:15px;margin:5px 0}.support-faq-item p{font-size:13px;color:#59677b;margin:0}.support-video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.support-video-card{display:flex;flex-direction:column;gap:6px;color:#24324a;text-decoration:none;font-size:13px}.support-video-card iframe{border:0}.support-video-card small{color:#7d8ba1}@media(max-width:900px){.support-grid{grid-template-columns:1fr}}
+
+/* Shared Hotel ERP shell: compact ElektraWeb-style navigation and workspace. */
+body.hotel-erp-app { margin: 0; background: #f2f4f8; color: #2a3550; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+.hotel-erp-frame { display: flex; min-height: 100vh; }
+.hotel-erp-sidebar { width: 238px; flex: 0 0 238px; min-height: 100vh; box-sizing: border-box; background: #fff; border-right: 1px solid #dce2eb; position: sticky; top: 0; height: 100vh; overflow: auto; }
+.hotel-erp-brand { display: flex; align-items: center; gap: .55rem; padding: 1rem .9rem; border-bottom: 1px solid #e1e5ec; color: #20306d; font-weight: 800; font-size: 1rem; }
+.hotel-erp-brand-mark { width: 28px; height: 28px; display: grid; place-items: center; background: #2837c7; color: #fff; font-size: .65rem; font-weight: 800; border-radius: 4px; }
+.hotel-erp-sidebar-nav { padding: .7rem .55rem 1rem; display: flex; flex-direction: column; gap: 2px; }
+.hotel-erp-sidebar-nav a { display: block; padding: .48rem .6rem; color: #596579; font-size: .78rem; font-weight: 600; text-decoration: none; border-radius: 3px; }
+.hotel-erp-sidebar-nav a:hover, .hotel-erp-sidebar-nav a.active { color: #2130b8; background: #f0f2ff; }
+.hotel-erp-sidebar-nav a.hotel-erp-sidebar-section { color: #172858; font-size: .82rem; font-weight: 800; }
+.hotel-erp-sidebar-label { padding: .8rem .6rem .2rem; color: #8a93a3; font-size: .62rem; font-weight: 800; letter-spacing: .1em; }
+.hotel-erp-main { min-width: 0; flex: 1; }
+.hotel-erp-topbar { min-height: 64px; display: flex; justify-content: space-between; align-items: center; padding: 0 1.25rem; background: #fff; border-bottom: 1px solid #dce2eb; }
+.hotel-erp-topbar-title { color: #13234b; font-size: 1.35rem; font-weight: 800; }
+.hotel-erp-topbar-meta { color: #7a8494; font-size: .75rem; }
+.hotel-erp-page-wrap { max-width: 1800px; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
+.hotel-erp-page-wrap .hotel-module-nav { margin: 0 0 .75rem; }
+.hotel-erp-page-wrap .hotel-erp-page { margin: 0; }
+.hotel-erp-page-wrap > .alert { margin: 0 0 .75rem; }
+.hotel-erp-menu-toggle { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid #dce2eb; border-radius: 4px; background: #fff; color: #2638c4; font-size: 1.1rem; cursor: pointer; }
+.hotel-erp-topbar-actions { display: flex; align-items: center; gap: .55rem; margin-left: auto; }
+.hotel-erp-header-property { display: flex; align-items: center; gap: .4rem; }
+.hotel-erp-header-property label { color: #7a8494; font-size: .72rem; font-weight: 600; }
+.hotel-erp-header-property select { min-width: 190px; min-height: 34px; padding: .35rem .55rem; border: 1px solid #e1e5ec; background: #f7f8fb; color: #596579; font-size: .75rem; }
+.hotel-erp-user-name { max-width: 150px; overflow: hidden; color: #7a8494; font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
+.hotel-erp-header-button { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 0 .75rem; border-radius: 4px; font-size: .75rem; font-weight: 700; text-decoration: none; }
+.hotel-erp-header-button-secondary { border: 1px solid #e05b68; color: #21304f; background: #fff; }
+.hotel-erp-header-button-primary { border: 1px solid #2837c7; color: #fff; background: #2837c7; }
+body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar { width: 0; flex-basis: 0; border-right: 0; overflow: hidden; }
+body.hotel-erp-sidebar-collapsed .hotel-erp-sidebar > * { visibility: hidden; }
+@media (max-width: 900px) { .hotel-erp-sidebar { width: 190px; flex-basis: 190px; } .hotel-erp-page-wrap { padding: .75rem; } }
+@media (max-width: 650px) { .hotel-erp-frame { display: block; } .hotel-erp-sidebar { position: static; width: 100%; height: auto; min-height: 0; } .hotel-erp-sidebar-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .hotel-erp-main { width: 100%; } .hotel-erp-topbar { min-height: 52px; padding: .5rem .75rem; flex-wrap: wrap; gap: .45rem; } .hotel-erp-topbar-title { font-size: 1.05rem; } .hotel-erp-topbar-actions { width: 100%; flex-wrap: wrap; } .hotel-erp-header-property { flex: 1 1 100%; } .hotel-erp-header-property select { flex: 1; min-width: 0; } .hotel-erp-user-name { display: none; } }
+.hotel-erp-sidebar-nav details { margin: 2px 0; }
+.hotel-erp-sidebar-nav details summary { list-style: none; cursor: pointer; padding: .55rem .6rem .3rem; color: #8a93a3; font-size: .62rem; font-weight: 800; letter-spacing: .08em; }
+.hotel-erp-sidebar-nav details summary::-webkit-details-marker { display: none; }
+.hotel-erp-sidebar-nav details summary::after { content: '+'; float: right; color: #9aa4b4; font-size: .8rem; line-height: 1; }
+.hotel-erp-sidebar-nav details[open] summary::after { content: '−'; }
+.hotel-erp-sidebar-nav details > a { margin-left: .2rem; }
+.hotel-erp-app *, .hotel-erp-app *::before, .hotel-erp-app *::after { box-sizing: border-box; }
+.hotel-erp-app a { color: #2638c4; }
+.hotel-erp-app .row { display: flex; flex-wrap: wrap; margin: -.35rem; }
+.hotel-erp-app .row > * { width: 100%; padding: .35rem; }
+.hotel-erp-app .col-auto { width: auto; flex: 0 0 auto; }
+.hotel-erp-app .col-md-3, .hotel-erp-app .col-xl-3 { width: 25%; }
+.hotel-erp-app .col-md-4, .hotel-erp-app .col-xl-4 { width: 33.333%; }
+.hotel-erp-app .col-md-6, .hotel-erp-app .col-xl-6 { width: 50%; }
+.hotel-erp-app .col-md-8, .hotel-erp-app .col-xl-8 { width: 66.667%; }
+.hotel-erp-app .col-xl-5 { width: 41.667%; }
+.hotel-erp-app .col-xl-7 { width: 58.333%; }
+.hotel-erp-app .col-xl-9 { width: 75%; }
+.hotel-erp-app .card { background: #fff; border: 1px solid #dfe4ec; border-radius: 4px; box-shadow: 0 1px 2px rgba(31,45,61,.04); }
+.hotel-erp-app .card-header { padding: .65rem .8rem; background: #f7f8fb; border-bottom: 1px solid #e1e5ec; color: #29344b; }
+.hotel-erp-app .card-body { padding: .8rem; }
+.hotel-erp-app .table-responsive { width: 100%; overflow-x: auto; }
+.hotel-erp-app .table { width: 100%; border-collapse: collapse; color: #46536a; font-size: .78rem; }
+.hotel-erp-app .table th, .hotel-erp-app .table td { padding: .5rem .6rem; text-align: left; border-bottom: 1px solid #e8ecf2; vertical-align: middle; }
+.hotel-erp-app .table thead th { background: #eef1f6; color: #586274; font-weight: 700; white-space: nowrap; }
+.hotel-erp-app .form-label, .hotel-erp-app label { display: block; margin-bottom: .25rem; color: #46536a; font-size: .75rem; font-weight: 650; }
+.hotel-erp-app .form-control, .hotel-erp-app .form-select, .hotel-erp-app input:not([type="checkbox"]):not([type="hidden"]), .hotel-erp-app select, .hotel-erp-app textarea { width: 100%; min-height: 34px; padding: .4rem .55rem; border: 1px solid #ccd5e2; border-radius: 3px; background: #fff; color: #29344b; font: inherit; }
+.hotel-erp-app textarea { min-height: 78px; resize: vertical; }
+.hotel-erp-app input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: #2837c7; }
+.hotel-erp-app .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: .4rem .75rem; border: 1px solid transparent; border-radius: 3px; cursor: pointer; font: inherit; font-size: .76rem; font-weight: 700; text-decoration: none; }
+.hotel-erp-app .btn-primary { background: #2837c7; border-color: #2837c7; color: #fff; }
+.hotel-erp-app .btn-outline-primary { background: #fff; border-color: #2837c7; color: #2837c7; }
+.hotel-erp-app .btn-outline-secondary { background: #fff; border-color: #cbd4e2; color: #596579; }
+.hotel-erp-app .btn-outline-danger { background: #fff; border-color: #d75a68; color: #b33b49; }
+.hotel-erp-app .badge { display: inline-flex; align-items: center; padding: .2rem .4rem; border-radius: 3px; font-size: .68rem; font-weight: 700; }
+.hotel-erp-app .bg-success { background: #e5f5ec; color: #207346; }
+.hotel-erp-app .bg-warning, .hotel-erp-app .bg-warning-subtle { background: #fff4d6; color: #765d16; }
+.hotel-erp-app .bg-primary { background: #e9ebff; color: #2837c7; }
+.hotel-erp-app .bg-danger { background: #fde8eb; color: #a52f3f; }
+.hotel-erp-app .alert { padding: .65rem .8rem; border: 1px solid #dce2eb; background: #fff; color: #596579; border-radius: 3px; }
+.hotel-erp-app .text-muted, .hotel-erp-app .text-body-secondary { color: #7a8494 !important; }
+.hotel-erp-app .container, .hotel-erp-app .container-fluid { width: 100%; max-width: none; }
+.hotel-erp-app .d-flex { display: flex; }
+.hotel-erp-app .flex-wrap { flex-wrap: wrap; }
+.hotel-erp-app .align-items-center { align-items: center; }
+.hotel-erp-app .align-items-end { align-items: flex-end; }
+.hotel-erp-app .justify-content-between { justify-content: space-between; }
+.hotel-erp-app .gap-1 { gap: .25rem; }
+.hotel-erp-app .gap-2 { gap: .5rem; }
+.hotel-erp-app .gap-3 { gap: .75rem; }
+.hotel-erp-app .mb-0 { margin-bottom: 0; }
+.hotel-erp-app .mb-2 { margin-bottom: .5rem; }
+.hotel-erp-app .mb-3 { margin-bottom: .75rem; }
+.hotel-erp-app .mt-3 { margin-top: .75rem; }
+.hotel-erp-app .mt-4 { margin-top: 1rem; }
+.hotel-erp-app .p-4 { padding: 1rem; }
+.hotel-erp-app .py-2 { padding-top: .5rem; padding-bottom: .5rem; }
+.hotel-erp-app .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.hotel-erp-app .text-center { text-align: center; }
+.hotel-erp-app .fw-semibold { font-weight: 650; }
+.hotel-erp-app .small { font-size: .72rem; }
+@media (max-width: 1000px) { .hotel-erp-app .col-xl-3, .hotel-erp-app .col-xl-4, .hotel-erp-app .col-xl-5, .hotel-erp-app .col-xl-6, .hotel-erp-app .col-xl-7, .hotel-erp-app .col-xl-8, .hotel-erp-app .col-xl-9 { width: 50%; } }
+@media (max-width: 700px) { .hotel-erp-app .col-md-3, .hotel-erp-app .col-md-4, .hotel-erp-app .col-md-6, .hotel-erp-app .col-md-8, .hotel-erp-app .col-xl-3, .hotel-erp-app .col-xl-4, .hotel-erp-app .col-xl-5, .hotel-erp-app .col-xl-6, .hotel-erp-app .col-xl-7, .hotel-erp-app .col-xl-8, .hotel-erp-app .col-xl-9 { width: 100%; } }
+
+/* Final ERP normalization: one compact ElektraWeb-like table and control system. */
+.hotel-erp-app .hotel-definition-workspace > .hotel-definition-panel,
+.hotel-erp-app .hotel-definition-workspace > .definition-editor-grid .hotel-definition-panel,
+.hotel-erp-app .hotel-definition-workspace:not(:has(.hotel-definition-tabs)) > .hotel-definition-panel { display: block; }
+.hotel-erp-app .hotel-definition-workspace > .hotel-definition-tabs ~ .hotel-definition-panel { display: none; }
+.hotel-erp-app .hotel-definition-workspace > .hotel-definition-tabs ~ .hotel-definition-panel:target { display: block; }
+.hotel-erp-app .hotel-definition-workspace > .hotel-definition-tabs ~ .hotel-definition-panel:first-of-type { display: block; }
+.hotel-erp-app .hotel-definition-workspace > .hotel-definition-tabs ~ .hotel-definition-panel:has(~ .hotel-definition-panel:target) { display: none; }
+.hotel-erp-app .hotel-grid-scroll, .hotel-erp-app .table-responsive { border: 1px solid #d6dce6; background: #fff; overflow: auto; }
+.hotel-erp-app .table { border-collapse: separate; border-spacing: 0; font-size: .76rem; }
+.hotel-erp-app .table thead th { height: 34px; padding: .38rem .55rem; border-right: 1px solid #d6dce6; border-bottom: 1px solid #c4ccda; background: #e9edf3; color: #4e5b70; font-weight: 700; letter-spacing: .01em; }
+.hotel-erp-app .table thead th:last-child { border-right: 0; }
+.hotel-erp-app .table tbody td { height: 35px; padding: .34rem .55rem; border-right: 1px solid #edf0f4; border-bottom: 1px solid #e3e7ed; color: #596579; }
+.hotel-erp-app .table tbody td:last-child { border-right: 0; }
+.hotel-erp-app .table tbody tr:nth-child(even) { background: #fbfcfd; }
+.hotel-erp-app .table tbody tr:hover { background: #f1f4ff; }
+.hotel-erp-app .btn { min-height: 32px; padding: .34rem .7rem; border-radius: 3px; font-size: .74rem; line-height: 1.15; white-space: nowrap; }
+.hotel-erp-app .btn-sm { min-height: 27px; padding: .23rem .5rem; font-size: .68rem; }
+.hotel-erp-app .btn-lg { min-height: 36px; padding: .45rem .85rem; font-size: .78rem; }
+.hotel-erp-app .definition-submit { width: auto; min-width: 104px; }
+.hotel-erp-app .hotel-definition-tabs a { min-height: 34px; padding: .52rem .75rem; font-size: .74rem; }
+.hotel-erp-app .definition-field input, .hotel-erp-app .definition-field select, .hotel-erp-app .definition-field textarea { min-height: 32px; padding: .35rem .5rem; }
+.license-info-panel { padding: 1rem; background: #fff; border: 1px solid #dce2eb; }
+.license-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
+.license-info-grid > div { display: grid; gap: .2rem; padding: .8rem; border: 1px solid #dce2eb; background: #f7f8fb; }
+.license-info-grid span, .license-info-block p { color: #7a8494; font-size: .72rem; }
+.license-info-grid strong { color: #29344b; font-size: .88rem; }
+.license-info-grid .license-status { color: #207346; }
+.license-info-block { margin-top: .9rem; padding-top: .8rem; border-top: 1px solid #e1e5ec; }
+.license-info-block h2 { margin: 0 0 .55rem; color: #29344b; font-size: .88rem; }
+.license-info-block p { margin: 0; }
+.license-module-list { display: flex; flex-wrap: wrap; gap: .35rem; }
+.license-module-list span { padding: .28rem .5rem; border: 1px solid #d6dce6; background: #fff; color: #596579; font-size: .72rem; }
+@media (max-width: 700px) { .license-info-grid { grid-template-columns: 1fr; } }
+
+/* Elektra-style operational calendars */
+.hotel-erp-app .calendar-toolbar { align-items: flex-start; }
+.hotel-erp-app .calendar-toolbar .hotel-erp-heading p { margin: .25rem 0 0; color: #7b8495; font-size: .76rem; }
+.hotel-erp-app .calendar-toolbar-actions { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+.hotel-erp-app .calendar-filter-bar { margin: .65rem 0; }
+.hotel-erp-app .calendar-filter-grid { display: grid; grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr) minmax(150px, 1fr) auto; align-items: end; gap: .55rem; }
+.hotel-erp-app .calendar-filter-grid label { display: block; margin-bottom: .25rem; color: #53617a; font-size: .7rem; font-weight: 700; }
+.hotel-erp-app .calendar-summary { display: flex; justify-content: space-between; align-items: center; padding: .35rem .1rem .55rem; color: #53617a; font-size: .74rem; }
+.hotel-erp-app .calendar-legend { display: flex; align-items: center; gap: .3rem; }
+.hotel-erp-app .calendar-legend i { width: .65rem; height: .65rem; display: inline-block; border: 1px solid #cbd3e0; margin-left: .4rem; }
+.hotel-erp-app .legend-stay, .hotel-erp-app .legend-rate { background: #dce5ff; border-color: #9db2f1 !important; }
+.hotel-erp-app .legend-arrival { background: #3144c8; border-color: #3144c8 !important; }
+.hotel-erp-app .legend-departure { background: #f0f2f6; }
+.hotel-erp-app .legend-stock { background: #e7f3ed; border-color: #a8d1bb !important; }
+.hotel-erp-app .legend-closed { background: #f9e1e1; border-color: #e2b0b0 !important; }
+.hotel-erp-app .reservation-tape-card, .hotel-erp-app .rate-calendar-card { overflow: hidden; }
+.hotel-erp-app .reservation-tape-scroll, .hotel-erp-app .rate-calendar-scroll { max-height: calc(100vh - 310px); overflow: auto; }
+.hotel-erp-app .reservation-tape, .hotel-erp-app .rate-calendar-grid { min-width: max-content; margin: 0; font-size: .72rem; }
+.hotel-erp-app .reservation-tape th, .hotel-erp-app .rate-calendar-grid th { border-color: #d9dfeb; }
+.hotel-erp-app .calendar-day-heading { min-width: 64px; padding: .45rem .25rem !important; text-align: center; background: #eef1f6; color: #52617a; }
+.hotel-erp-app .calendar-day-heading strong, .hotel-erp-app .calendar-day-heading small { display: block; }
+.hotel-erp-app .calendar-day-heading small { font-size: .65rem; font-weight: 500; }
+.hotel-erp-app .calendar-day-heading.weekend { background: #e7ebf3; }
+.hotel-erp-app .reservation-tape .reservation-label, .hotel-erp-app .rate-calendar-grid .rate-row-label { position: sticky; left: 0; z-index: 3; min-width: 220px; background: #fff; }
+.hotel-erp-app .reservation-tape thead .reservation-label, .hotel-erp-app .rate-calendar-grid thead .rate-row-label { z-index: 5; background: #eef1f6; }
+.hotel-erp-app .reservation-tape .reservation-label span, .hotel-erp-app .reservation-tape .reservation-label small { display: block; }
+.hotel-erp-app .reservation-tape .reservation-label span { margin-top: .18rem; color: #29344b; }
+.hotel-erp-app .room-type-calendar .reservation-label { min-width: 190px; padding: .5rem .65rem !important; }
+.hotel-erp-app .room-type-calendar .reservation-label strong, .hotel-erp-app .room-type-calendar .reservation-label small { display: block; }
+.hotel-erp-app .room-type-calendar .reservation-label small { margin-top: .2rem; color: #7b8495; font-size: .65rem; font-weight: 500; }
+.hotel-erp-app .reservation-tape .reservation-cell { min-width: 64px; height: 48px; padding: .25rem !important; text-align: center; background: #fff; }
+.hotel-erp-app .reservation-tape .reservation-cell.occupied { background: #dce5ff; border-color: #a9bbf5; }
+.hotel-erp-app .room-type-calendar .reservation-cell.has-arrival { box-shadow: inset 3px 0 #3144c8; }
+.hotel-erp-app .room-type-calendar .reservation-cell.has-departure { box-shadow: inset -3px 0 #68758c; }
+.hotel-erp-app .stay-marker { display: inline-block; padding: .12rem .25rem; color: #fff; font-size: .58rem; font-weight: 700; }
+.hotel-erp-app .stay-marker.arrival { background: #3144c8; }
+.hotel-erp-app .stay-marker.departure { background: #68758c; }
+.hotel-erp-app .rate-calendar-grid .rate-row-label { min-width: 155px; padding: .55rem .65rem !important; color: #29344b; }
+.hotel-erp-app .rate-row-label small { display: block; color: #7b8495; font-weight: 500; }
+.hotel-erp-app .rate-cell { min-width: 78px; height: 62px; padding: .35rem !important; text-align: center; background: #fff; }
+.hotel-erp-app .rate-cell strong, .hotel-erp-app .rate-cell small { display: block; }
+.hotel-erp-app .rate-cell strong { color: #29344b; font-size: .78rem; }
+.hotel-erp-app .rate-cell small { color: #7b8495; font-size: .6rem; line-height: 1.25; }
+.hotel-erp-app .rate-cell.stock-cell { background: #f5fbf7; }
+.hotel-erp-app .rate-cell.is-closed { background: #f9e1e1; }
+.hotel-erp-app .empty-cell { color: #b2bac7; }
+.hotel-erp-app .calendar-entry-card { margin-top: .7rem; }
+.hotel-erp-app .calendar-bulk-panel { margin-top: .7rem; padding: .75rem 1rem; }
+.hotel-erp-app .calendar-bulk-panel summary { cursor: pointer; color: #29344b; font-size: .8rem; font-weight: 700; }
+.hotel-erp-app .calendar-bulk-panel[open] summary { margin-bottom: .7rem; }
+@media (max-width: 800px) { .hotel-erp-app .calendar-filter-grid { grid-template-columns: 1fr 1fr; } .hotel-erp-app .calendar-filter-grid button { align-self: end; } .hotel-erp-app .calendar-summary { align-items: flex-start; flex-direction: column; gap: .35rem; } }
+.hotel-erp-app .vehicle-photo-form { margin-bottom: .8rem; }
+.hotel-erp-app .vehicle-photo-strip { display: flex; gap: .65rem; flex-wrap: wrap; padding: 0 1rem 1rem; }
+.hotel-erp-app .vehicle-photo-strip figure { width: 130px; margin: 0; border: 1px solid #dce2eb; background: #f7f8fb; }
+.hotel-erp-app .vehicle-photo-strip img { display: block; width: 100%; height: 82px; object-fit: cover; }
+.hotel-erp-app .vehicle-photo-strip figcaption { padding: .3rem .4rem; color: #53617a; font-size: .66rem; }
+.hotel-erp-app .parking-space-row td { background: #fafbfc; color: #68758c; font-size: .7rem; }
+.hotel-erp-app .online-fleet-page { max-width: 1180px; margin: 0 auto; padding: 1.5rem; }
+.public-booking-header { min-height: 58px; display: flex; align-items: center; gap: 1.25rem; padding: 0 1.25rem; background: #fff; border-bottom: 1px solid #dce2eb; }
+.public-booking-brand { display: flex; align-items: center; gap: .55rem; color: #20306d; font-size: .95rem; }
+.public-booking-property { flex: 1; color: #596579; font-size: .8rem; text-align: center; }
+.public-booking-actions { display: flex; gap: .75rem; color: #68758c; font-size: .72rem; font-weight: 700; }
+.public-booking-app .online-fleet-page { padding-top: 1.2rem; }
+.public-booking-app .hotel-definition-panel { display: block; }
+.hotel-erp-app .online-fleet-page .hotel-definition-panel,
+.hotel-erp-app .online-fleet-widget .hotel-definition-panel { display: block; }
+.hotel-erp-app .online-vehicle-cards { margin: .8rem 0; }
+.hotel-erp-app .online-vehicle-cards h2 { margin: 0 0 .55rem; color: #29344b; font-size: 1rem; }
+.hotel-erp-app .vehicle-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .65rem; }
+.hotel-erp-app .vehicle-card { display: grid; grid-template-columns: 84px 1fr; gap: .65rem; padding: .55rem; border: 1px solid #dce2eb; background: #fff; }
+.hotel-erp-app .vehicle-card img, .hotel-erp-app .vehicle-card-placeholder { width: 84px; height: 70px; object-fit: cover; background: #eef1f6; display: grid; place-items: center; color: #7b8495; font-size: .62rem; text-align: center; }
+.hotel-erp-app .vehicle-card h3 { margin: 0; color: #29344b; font-size: .82rem; }
+.hotel-erp-app .vehicle-card p { margin: .2rem 0; color: #7b8495; font-size: .66rem; }
+.hotel-erp-app .vehicle-card strong { color: #3144c8; font-size: .7rem; }
+.hotel-erp-app .fleet-widget-panel { margin: .75rem; padding: .75rem .85rem; border: 1px solid #dce2eb; background: #f8f9fc; }
+.hotel-erp-app .fleet-widget-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; margin-bottom: .45rem; }
+.hotel-erp-app .fleet-widget-grid label { display: block; margin-bottom: .2rem; color: #596579; font-size: .7rem; font-weight: 600; }
+.hotel-erp-app .fleet-widget-grid input { width: 100%; min-height: 32px; padding: .35rem .5rem; border: 1px solid #d6dce6; border-radius: 3px; background: #fff; color: #53617a; font-size: .7rem; }
+.hotel-erp-app .inline-action-form { display: flex; flex-wrap: wrap; gap: .25rem; min-width: 185px; }
+.hotel-erp-app .inline-action-form .btn { padding: .25rem .45rem; font-size: .65rem; }
+@media (max-width: 760px) { .hotel-erp-app .fleet-widget-grid { grid-template-columns: 1fr; } }
+.hotel-erp-app .fleet-workspace .fleet-section-panel { display: none; padding: .85rem; border-bottom: 1px solid #e1e5ec; }
+.hotel-erp-app .fleet-workspace .fleet-section-panel#vehicle-card { display: block; }
+.hotel-erp-app .fleet-workspace .fleet-section-panel#vehicle-card:target,
+.hotel-erp-app .fleet-workspace .fleet-section-panel#vehicle-photos:target,
+.hotel-erp-app .fleet-workspace .fleet-section-panel#vehicle-list:target { display: block; }
+.hotel-erp-app .fleet-workspace:has(> #vehicle-photos:target) > #vehicle-card,
+.hotel-erp-app .fleet-workspace:has(> #vehicle-list:target) > #vehicle-card,
+.hotel-erp-app .fleet-workspace:has(> #vehicle-card:target) > #vehicle-photos,
+.hotel-erp-app .fleet-workspace:has(> #vehicle-card:target) > #vehicle-list,
+.hotel-erp-app .fleet-workspace:has(> #vehicle-photos:target) > #vehicle-list,
+.hotel-erp-app .fleet-workspace:has(> #vehicle-list:target) > #vehicle-photos { display: none; }
+.hotel-erp-app .fleet-workspace .fleet-section-panel > .definition-editor-grid { padding: 0; }
+.hotel-erp-app .fleet-workspace #vehicle-card > .definition-editor-grid { grid-template-columns: minmax(0, 1.7fr) minmax(240px, .7fr); gap: .85rem; align-items: start; }
+.hotel-erp-app .fleet-workspace #vehicle-card > .definition-editor-grid > section { min-width: 0; }
+.hotel-erp-app .fleet-workspace #vehicle-card > .definition-editor-grid > section:first-child .definition-form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hotel-erp-app .fleet-workspace .hotel-summary-grid { display: grid; grid-template-columns: 1fr; gap: .6rem; }
+.hotel-erp-app .fleet-workspace .hotel-summary-grid > div { display: flex; align-items: baseline; justify-content: space-between; gap: .65rem; min-width: 0; padding-bottom: .45rem; border-bottom: 1px solid #e5e8ef; }
+.hotel-erp-app .fleet-workspace .hotel-summary-grid strong { color: #2130b8; font-size: 1.05rem; line-height: 1; }
+.hotel-erp-app .fleet-workspace .hotel-summary-grid span { color: #68758c; font-size: .7rem; text-align: right; }
+.hotel-erp-app .rental-operation-tabs { flex-wrap: wrap; gap: 0; padding: .2rem .45rem; }
+.hotel-erp-app .rental-operation-tabs a { font-size: .7rem; padding: .5rem .65rem; }
+.hotel-erp-app .rental-operation-panel { margin-top: .7rem; }
+.hotel-erp-app .rental-operation-form { grid-template-columns: repeat(4, minmax(150px, 1fr)); }
+.hotel-erp-app .rental-operation-form .definition-field-wide { grid-column: 1 / -1; }
+.hotel-erp-app .rental-readonly-panel { margin-top: .8rem; }
+@media (max-width: 1100px) { .hotel-erp-app .rental-operation-form { grid-template-columns: repeat(3, minmax(140px, 1fr)); } }
+@media (max-width: 760px) { .hotel-erp-app .rental-operation-form { grid-template-columns: repeat(2, minmax(130px, 1fr)); } }
+@media (max-width: 520px) { .hotel-erp-app .rental-operation-form { grid-template-columns: 1fr; } .hotel-erp-app .rental-operation-form .definition-field-wide { grid-column: auto; } }
+.parking-map-lot { border: 1px solid #dce2eb; padding: 1rem; margin: 1rem 0; background: #fff; }
+.parking-map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .65rem; }
+.parking-map-space { display: flex; min-height: 76px; flex-direction: column; justify-content: space-between; padding: .65rem; border: 1px solid #b8c5d6; border-left: 4px solid #2ca36a; background: #f1fbf5; }
+.parking-map-space-occupied { border-left-color: #dc4b4b; background: #fff2f2; }
+.parking-map-space-maintenance { border-left-color: #df9d22; background: #fff8e8; }
+.parking-map-space-blocked { border-left-color: #68758a; background: #eef1f5; }
+.parking-map-space small, .parking-map-space span { color: #667085; font-size: .72rem; }
+.hotel-erp-app .fleet-workspace .fleet-section-panel .hotel-definition-panel { display: block; }
+.hotel-erp-app .fleet-workspace.parking-setup-only > .hotel-definition-panel:last-child { display: none; }
+.hotel-erp-app .fleet-workspace:has(> #vehicle-photos:target) .fleet-section-tabs a[href="#vehicle-photos"],
+.hotel-erp-app .fleet-workspace:has(> #vehicle-list:target) .fleet-section-tabs a[href="#vehicle-list"],
+.hotel-erp-app .fleet-workspace:not(:has(> #vehicle-photos:target)):not(:has(> #vehicle-list:target)) .fleet-section-tabs a[href="#vehicle-card"] { color: #2130b8; background: #f3f5ff; border-bottom-color: #2130b8; }
+@media (max-width: 1100px) { .hotel-erp-app .fleet-workspace #vehicle-card > .definition-editor-grid { grid-template-columns: 1fr; } }

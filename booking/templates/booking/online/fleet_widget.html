@@ -1,0 +1,56 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if entity == 'rentals' %}Araç kiralama{% else %}Otopark rezervasyonu{% endif %} | {{ selected_property.name }}</title>
+  <link rel="stylesheet" href="{% static 'css/hotel-manager.css' %}">
+</head>
+<body class="hotel-erp-app">
+  <main class="hotel-erp-page online-fleet-widget">
+    <header class="hotel-erp-heading">
+      <span class="hotel-erp-kicker">{{ selected_property.name }}</span>
+      <h1>{% if entity == 'rentals' %}Araç kiralama{% else %}Otopark rezervasyonu{% endif %}</h1>
+      <p>Bilgilerinizi gönderin; tesis talebinizi kontrol edip onaylayacaktır.</p>
+    </header>
+
+    {% if submitted %}
+      <section class="hotel-definition-panel">
+        <div class="definition-heading"><h2>Talebiniz alındı</h2><span>İşlem tesis onayına gönderildi.</span></div>
+        <div class="p-3"><p>Rezervasyon kodunuz: <strong>{{ booking.confirmation_code }}</strong></p>{% if payment_url %}<p><a class="btn btn-primary" href="{{ payment_url }}">Ödemeye devam et</a></p>{% endif %}{% if manage_url %}<p><a class="btn btn-outline-primary" href="{{ manage_url }}">Rezervasyonumu yönet</a></p>{% endif %}</div>
+      </section>
+    {% else %}
+      <nav class="hotel-definition-tabs" aria-label="Online hizmet seçimi">
+        <a class="{% if entity == 'parking' %}is-active{% endif %}" href="?entity=parking">Otopark rezervasyonu</a>
+        <a class="{% if entity == 'rentals' %}is-active{% endif %}" href="?entity=rentals">Araç kiralama</a>
+      </nav>
+      {% if entity == 'rentals' %}
+        <section class="hotel-definition-panel">
+          <div class="definition-heading"><h2>Online araçlar</h2><span>Yalnızca online satışa açık araçlar gösterilir.</span></div>
+          <div class="vehicle-card-grid">
+            {% for vehicle in vehicles %}
+              <article class="vehicle-card">
+                {% with photo=vehicle.photos.all|first %}
+                  {% if photo %}<img src="{{ photo.image.url }}" alt="{{ photo.alt_text|default:vehicle.name }}">{% else %}<div class="vehicle-card-placeholder">Görsel yok</div>{% endif %}
+                {% endwith %}
+                <div><h3>{{ vehicle.name }}</h3><p>{{ vehicle.brand }} {{ vehicle.model_name }} · {{ vehicle.passenger_capacity }} kişi</p></div>
+              </article>
+            {% empty %}<p class="text-muted">Şu anda online araca açık araç bulunmuyor.</p>{% endfor %}
+          </div>
+        </section>
+      {% else %}
+        <section class="hotel-definition-panel"><div class="definition-heading"><h2>Online otoparklar</h2><span>Rezervasyona açık otoparklar.</span></div><div class="widget-option-list">{% for lot in parking_lots %}<span>{{ lot.name }} · {{ lot.capacity }} kapasite</span>{% empty %}<span>Şu anda online rezervasyona açık otopark bulunmuyor.</span>{% endfor %}</div></section>
+      {% endif %}
+      <section class="hotel-definition-panel">
+        <div class="definition-heading"><h2>{% if entity == 'rentals' %}Araç kiralama talebi{% else %}Otopark rezervasyon talebi{% endif %}</h2><span>Talep tesis tarafından onaylanır.</span></div>
+        <form method="post" class="definition-form-grid">
+          <input type="hidden" name="entity" value="{{ entity }}">
+          {% for field in form %}<div class="definition-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}
+          <button class="btn btn-primary definition-submit" type="submit">Rezervasyon talebi gönder</button>
+        </form>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>

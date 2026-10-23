@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Guest
+from .models import FolioEntry, Guest
 from .models import ReservationChannel
 from booking.tenancy.models import Property
 from booking.tenancy.models import DailyRate
@@ -13,6 +13,8 @@ from booking.tenancy.models import RoomAmenity
 from booking.tenancy.models import RoomGroup
 from booking.tenancy.models import UnitType
 from booking.tenancy.models import ChannelRateRule
+from booking.tenancy.models import RatePlanChannel
+from booking.tenancy.models import RatePlanSeason
 from booking.tenancy.models import PriceParityObservation
 
 
@@ -189,8 +191,29 @@ class BusinessUnitForm(forms.ModelForm):
 class BusinessRatePlanForm(forms.ModelForm):
     class Meta:
         model = RatePlan
-        fields = ["unit_type", "board_type", "rate_type", "name", "code", "meal_plan", "cancellation_policy", "is_refundable", "deposit_percent", "max_adults", "max_children", "currency", "is_active"]
+        fields = ["unit_type", "board_type", "rate_type", "name", "code", "meal_plan", "cancellation_policy", "is_refundable", "deposit_percent", "min_nights", "max_nights", "max_adults", "max_children", "currency", "season_label", "is_active"]
         widgets = {field: forms.Select(attrs={"class": "form-select"}) for field in ["unit_type", "meal_plan"]}
+
+
+class RatePlanSeasonForm(forms.ModelForm):
+    class Meta:
+        model = RatePlanSeason
+        exclude = ["rate_plan"]
+        widgets = {
+            "valid_from": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "valid_until": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "price_factor": forms.NumberInput(attrs={"step": "0.0001", "min": "0"}),
+        }
+
+
+class RatePlanChannelForm(forms.ModelForm):
+    class Meta:
+        model = RatePlanChannel
+        exclude = ["rate_plan"]
+
+    def __init__(self, *args, property_=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["channel"].queryset = property_.reservation_channels.filter(is_active=True) if property_ else ReservationChannel.objects.none()
 
 
 class BusinessDailyRateForm(forms.ModelForm):
@@ -258,22 +281,58 @@ class BusinessBulkInventoryForm(forms.Form):
 class BusinessChannelRateRuleForm(forms.ModelForm):
     class Meta:
         model = ChannelRateRule
-        fields = ["channel", "rate_plan", "name", "rule_type", "adjustment", "priority", "is_active"]
+        fields = ["channel", "rate_plan", "name", "rule_type", "adjustment", "day_scope", "external_rate_code", "priority", "is_active"]
         widgets = {
             "channel": forms.Select(attrs={"class": "form-select"}),
             "rate_plan": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "rule_type": forms.Select(attrs={"class": "form-select"}),
             "adjustment": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "day_scope": forms.Select(attrs={"class": "form-select"}),
+            "external_rate_code": forms.TextInput(attrs={"class": "form-control"}),
             "priority": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
-    def __init__(self, *args, property_, **kwargs):
+    def __init__(self, *args, property_=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.property = property_
-        self.fields["channel"].queryset = property_.reservation_channels.filter(is_active=True)
-        self.fields["rate_plan"].queryset = property_.rate_plans.filter(is_active=True)
+        if property_:
+            self.fields["channel"].queryset = property_.reservation_channels.filter(is_active=True)
+            self.fields["rate_plan"].queryset = property_.rate_plans.filter(is_active=True)
+        else:
+            self.fields["channel"].queryset = ReservationChannel.objects.none()
+            self.fields["rate_plan"].queryset = RatePlan.objects.none()
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.property:
+            if cleaned.get("channel") and cleaned["channel"].property_id != self.property.id:
+                self.add_error("channel", "Channel must belong to the selected property.")
+            if cleaned.get("rate_plan") and cleaned["rate_plan"].property_id != self.property.id:
+                self.add_error("rate_plan", "Rate plan must belong to the selected property.")
+        return cleaned
+
+
+class FolioEntryForm(forms.ModelForm):
+    class Meta:
+        model = FolioEntry
+        exclude = ["reservation", "posted_by", "voided_at", "voided_by", "created_at"]
+        widgets = {"posted_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+        widgets = {
+            "entry_type": forms.Select(attrs={"class": "form-select"}),
+            "description": forms.TextInput(attrs={"class": "form-control"}),
+            "quantity": forms.NumberInput(attrs={"class": "form-control", "step": "0.001", "min": 0}),
+            "unit_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": 0}),
+            "discount_amount": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": 0}),
+            "amount": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": 0}),
+            "currency": forms.TextInput(attrs={"class": "form-control", "maxlength": 3}),
+            "vat_amount": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": 0}),
+            "posted_at": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def clean(self):
         cleaned = super().clean()

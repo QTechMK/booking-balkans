@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AccessPermission, Agency, DepartmentDefinition, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, Invoice, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, NightAuditRun, OperationalTask, OnlineBookingSettings, PaymentGateway, PropertyRole, PropertyService, RevenueCode, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess
+from .models import AccessPermission, Agency, AgencyCommissionRecord, AgencyRateAgreement, CashierShift, CurrencyDefinition, DailyCurrencyRate, DepartmentDefinition, FrontOfficeCallRequest, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, HousekeepingTask, HousekeepingTaskHistory, Invoice, LoyaltyPolicy, LoyaltyTier, LoyaltyTransaction, MaintenanceTicket, MaintenanceTicketHistory, MarketingCampaign, MarketingDelivery, MessageTemplate, NightAuditLog, NightAuditRun, OperationalTask, OnlineBookingSettings, ParkingAccessEvent, ParkingDevice, ParkingLot, ParkingPenalty, ParkingReservation, ParkingSpace, ParkingSubscription, ParkingValetRecord, PaymentGateway, PropertyRole, PropertyService, RentalAuditEvent, RentalCancellationPolicy, RentalChannelConnection, RentalChannelMapping, RentalContract, RentalDamageCase, RentalDriverProfile, RentalExtraProduct, RentalFine, RentalFlightStatus, RentalHandover, RentalHandoverPhoto, RentalInsurancePackage, RentalInvoice, RentalLocation, RentalNotification, RentalPayment, RentalPricingRule, RentalTaxRule, RentalChannelSyncEvent, RevenueCode, ServiceRequest, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideo, SupportVideoCategory, TaskGroup, TaskLocation, UnitHousekeepingState, UserAccessLog, UserPropertyAccess, VehicleMaintenanceRecord, VehicleRentalBooking, VehicleRentalRate, VehicleTelemetryEvent, VipDefinition
 
 
 @admin.register(HousekeepingTask)
@@ -40,6 +40,55 @@ class OperationalTaskAdmin(admin.ModelAdmin):
     list_filter = ("property", "status", "priority", "source")
     search_fields = ("title", "description", "unit__code")
     autocomplete_fields = ("property", "group", "location", "unit", "assigned_to")
+
+
+@admin.register(ParkingLot)
+class ParkingLotAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "property", "capacity", "booking_enabled", "is_active")
+    list_filter = ("property", "booking_enabled", "is_active")
+    search_fields = ("name", "code", "location", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(ParkingSpace)
+class ParkingSpaceAdmin(admin.ModelAdmin):
+    list_display = ("code", "parking_lot", "space_type", "status", "is_active")
+    list_filter = ("parking_lot__property", "space_type", "status", "is_active")
+    search_fields = ("code", "parking_lot__name", "parking_lot__property__name")
+    autocomplete_fields = ("parking_lot",)
+
+
+for _fleet_model in [
+    RentalLocation, RentalExtraProduct, RentalInsurancePackage, RentalHandover,
+    RentalHandoverPhoto, RentalDamageCase, VehicleMaintenanceRecord, RentalFine,
+    RentalAuditEvent, RentalCancellationPolicy, RentalDriverProfile, RentalTaxRule, ParkingSubscription, ParkingAccessEvent, ParkingValetRecord,
+    ParkingPenalty, ParkingDevice, RentalContract, RentalPayment, RentalInvoice, RentalChannelSyncEvent, RentalNotification, RentalChannelConnection, RentalChannelMapping, RentalFlightStatus, RentalPricingRule, VehicleTelemetryEvent,
+]:
+    admin.site.register(_fleet_model)
+
+
+@admin.register(VehicleRentalRate)
+class VehicleRentalRateAdmin(admin.ModelAdmin):
+    list_display = ("name", "vehicle", "daily_rate", "weekly_rate", "deposit_amount", "is_active")
+    list_filter = ("vehicle__property", "is_active", "currency")
+    search_fields = ("name", "vehicle__name", "vehicle__code")
+    autocomplete_fields = ("vehicle",)
+
+
+@admin.register(ParkingReservation)
+class ParkingReservationAdmin(admin.ModelAdmin):
+    list_display = ("confirmation_code", "customer_name", "parking_lot", "start_at", "end_at", "status", "payment_status")
+    list_filter = ("property", "status", "source", "payment_status")
+    search_fields = ("confirmation_code", "customer_name", "customer_email", "vehicle_plate")
+    autocomplete_fields = ("property", "parking_lot", "parking_space", "guest", "reservation", "created_by")
+
+
+@admin.register(VehicleRentalBooking)
+class VehicleRentalBookingAdmin(admin.ModelAdmin):
+    list_display = ("confirmation_code", "customer_name", "vehicle", "pickup_at", "dropoff_at", "status", "total_amount")
+    list_filter = ("property", "status", "source", "currency")
+    search_fields = ("confirmation_code", "customer_name", "customer_email", "vehicle__name", "vehicle__plate_number")
+    autocomplete_fields = ("property", "vehicle", "rental_rate", "guest", "reservation", "created_by")
 
 
 @admin.register(AccessPermission)
@@ -101,6 +150,22 @@ class LoyaltyTierAdmin(admin.ModelAdmin):
     list_display = ("name", "property", "minimum_points", "discount_percent", "is_active")
     list_filter = ("property", "is_active")
     search_fields = ("name", "code", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(LoyaltyPolicy)
+class LoyaltyPolicyAdmin(admin.ModelAdmin):
+    list_display = ("property", "tier", "points_per_currency", "points_redemption_value", "is_active", "valid_from", "valid_until")
+    list_filter = ("property", "is_active")
+    search_fields = ("property__name", "tier__name")
+    autocomplete_fields = ("property", "tier")
+
+
+@admin.register(VipDefinition)
+class VipDefinitionAdmin(admin.ModelAdmin):
+    list_display = ("property", "code", "name", "discount_percent", "is_active")
+    list_filter = ("property", "is_active")
+    search_fields = ("code", "name", "property__name")
     autocomplete_fields = ("property",)
 
 
@@ -219,11 +284,35 @@ class AccountingDefinitionAdmin(admin.ModelAdmin):
     autocomplete_fields = ("property",)
 
 
-@admin.register(Invoice, PaymentGateway, NightAuditRun)
+@admin.register(Invoice, PaymentGateway, NightAuditRun, NightAuditLog)
 class FinanceAdmin(admin.ModelAdmin):
     list_display = ("__str__", "property")
     list_filter = ("property",)
     search_fields = ("number", "customer_name", "bank_name", "payment_model")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(CashierShift)
+class CashierShiftAdmin(admin.ModelAdmin):
+    list_display = ("property", "cashier", "opened_at", "closed_at", "opening_balance", "expected_closing_balance", "closing_balance", "variance", "status")
+    list_filter = ("property", "status", "currency")
+    search_fields = ("cashier__username", "cashier__email", "property__name")
+    autocomplete_fields = ("property", "cashier")
+
+
+@admin.register(CurrencyDefinition)
+class CurrencyDefinitionAdmin(admin.ModelAdmin):
+    list_display = ("property", "code", "name", "role", "decimal_places", "is_base", "is_active")
+    list_filter = ("property", "role", "is_base", "is_active")
+    search_fields = ("code", "name", "property__name")
+    autocomplete_fields = ("property",)
+
+
+@admin.register(DailyCurrencyRate)
+class DailyCurrencyRateAdmin(admin.ModelAdmin):
+    list_display = ("property", "rate_date", "from_currency", "to_currency", "buy_rate", "rate", "sell_rate", "source", "is_manual")
+    list_filter = ("property", "source", "is_manual", "rate_date")
+    search_fields = ("from_currency", "to_currency", "source", "property__name")
     autocomplete_fields = ("property",)
 
 
@@ -233,3 +322,20 @@ class AgencyAdmin(admin.ModelAdmin):
     list_filter = ("property", "payment_method", "is_active")
     search_fields = ("name", "code", "email")
     autocomplete_fields = ("property",)
+
+
+@admin.register(AgencyRateAgreement)
+class AgencyRateAgreementAdmin(admin.ModelAdmin):
+    list_display = ("agency", "name", "rate_plan", "valid_from", "valid_until", "commission_percent", "is_active")
+    list_filter = ("property", "is_active")
+    search_fields = ("agency__name", "name", "rate_plan__name")
+    autocomplete_fields = ("agency", "property", "unit_type", "rate_plan")
+
+
+@admin.register(AgencyCommissionRecord)
+class AgencyCommissionRecordAdmin(admin.ModelAdmin):
+    list_display = ("agency", "reservation", "gross_amount", "commission_amount", "currency", "recorded_at")
+    list_filter = ("agency__property", "currency")
+    search_fields = ("agency__name", "reservation__reference")
+    autocomplete_fields = ("agency", "reservation", "agreement")
+    readonly_fields = ("recorded_at",)

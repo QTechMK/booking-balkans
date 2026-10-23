@@ -1,4 +1,8 @@
+import hashlib
+import hmac
+import json
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -6,21 +10,27 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
+from django.db import transaction
 from django.db.models import Q, Sum
 from django.db.models import BooleanField
-from django.http import HttpResponse, HttpResponseForbidden
-from django.shortcuts import redirect, render
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import QueryDict
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.clickjacking import xframe_options_exempt
 from allauth.mfa.models import Authenticator
 from allauth.mfa.utils import is_mfa_enabled
 
+from booking import __version__
 from booking.reservations.models import Guest, Reservation, ReservationItem, ReservationStatus, StayStatus
 from booking.reservations.views import _business_properties
 from booking.tenancy.models import (
-    BedType, BoardType, Membership, Property, PropertySettings, RateType,
-    RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType,
+    BedType, BoardType, HotelPhoto, Membership, Property, PropertySettings, RateType,
+    RoomGroup, RoomLocation, RoomPhoto, RoomView, Unit, UnitType, Vehicle, VehiclePhoto, PropertyModuleLicense,
 )
 
 from .models import (
@@ -32,17 +42,29 @@ from .models import (
     MaintenanceTicket,
     MaintenanceTicketHistory,
     OnlineBookingSettings,
-    AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, PropertyService, ServiceRequest,
+    AccessPermission, GuestLoyaltyAccount, GuestProfileExtension, GuestSegment, LoyaltyTier, LoyaltyTransaction, MarketingCampaign, MarketingDelivery, MessageTemplate, OperationalTask, ParkingAccessEvent, ParkingLot, ParkingPenalty, ParkingReservation, ParkingSpace, ParkingSubscription, ParkingValetRecord, PropertyService, RentalAuditEvent, RentalCancellationPolicy, RentalContract, RentalDamageCase, RentalDriverProfile, RentalExtraProduct, RentalFine, RentalHandover, RentalHandoverPhoto, RentalInsurancePackage, RentalInvoice, RentalLocation, RentalPayment, RentalTaxRule, ServiceRequest, VehicleMaintenanceRecord, VehicleRentalBooking, VehicleRentalRate,
     PropertyRole,
     TaskPriority,
     TaskGroup,
     TaskLocation,
-    TaskStatus, UserAccessLog, UserPropertyAccess, Agency, DepartmentDefinition, FrontOfficeCallRequest, Invoice, NightAuditRun, PaymentGateway, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory,
+    TaskStatus, UserAccessLog, UserPropertyAccess, Agency, CashierShift, CurrencyDefinition, DailyCurrencyRate, DepartmentDefinition, FrontCashTransaction, FrontOfficeCallRequest, Invoice, NightAuditRun, PaymentGateway, RevenueCode, SupportAuditEvent, SupportEducationRequest, SupportFAQCategory, SupportFAQItem, SupportHelpLink, SupportReferral, SupportTicket, SupportTicketMessage, SupportVideoCategory, ParkingDevice, RentalChannelConnection, RentalChannelMapping, RentalChannelSyncEvent, RentalDataRequest, RentalFlightStatus, RentalNotification, RentalPrivacyEvent, RentalPricingRule, VehicleTelemetryEvent, WebhookEvent,
     UnitHousekeepingState,
 )
 from .forms import (
     BedTypeForm, BoardTypeForm, DEPARTMENT_CHOICES, PropertyProfileForm, PropertySettingsForm, RateTypeForm,
-    AgencyForm, DepartmentDefinitionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, InvoiceForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, PaymentGatewayForm, PropertyRoleForm, PropertyServiceForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm,
+    AgencyForm, CashierShiftForm, CurrencyDefinitionForm, DailyCurrencyRateForm, DepartmentDefinitionForm, FrontCashTransactionForm, FrontOfficeCallRequestForm, GuestProfileForm, GuestSegmentForm, HotelPhotoForm, InvoiceForm, LoyaltyTierForm, MarketingCampaignForm, MessageTemplateForm, OperationalTaskForm, ParkingAccessEventForm, ParkingDeviceForm, ParkingLotForm, ParkingPenaltyForm, ParkingReservationForm, ParkingSpaceForm, ParkingSubscriptionForm, ParkingValetRecordForm, PaymentGatewayForm, PropertyRoleForm, PropertyServiceForm, PublicParkingReservationForm, PublicRentalBookingForm, RentalCancellationPolicyForm, RentalChannelConnectionForm, RentalChannelMappingForm, RentalContractForm, RentalDamageCaseForm, RentalDriverProfileForm, RentalExtraProductForm, RentalFineForm, RentalFlightStatusForm, RentalHandoverForm, RentalHandoverPhotoForm, RentalInsurancePackageForm, RentalInvoiceForm, RentalLocationForm, RentalPaymentForm, RentalPricingRuleForm, RentalTaxRuleForm, RevenueCodeForm, RoomGroupForm, RoomLocationForm, RoomPhotoForm, RoomViewForm, SupportEducationRequestForm, SupportReferralForm, SupportReplyForm, SupportTicketForm, TaskGroupForm, TaskLocationForm, UnitForm, UnitTypeForm, UserPinChangeForm, UserPropertyAccessForm, UserProfileForm, VehicleForm, VehiclePhotoForm, VehicleMaintenanceRecordForm, VehicleRentalBookingForm, VehicleRentalRateForm, VehicleTelemetryEventForm,
+)
+from .services.rental_pricing import available_parking_spaces, available_rental_vehicles, calculate_parking_quote, calculate_rental_quote
+from .services.rental_notifications import queue_rental_notifications
+from .services.rental_payments import create_pending_rental_payment
+from .services.rental_checkout import start_rental_checkout
+from .services.rental_payment_actions import capture_rental_payment, record_manual_bank_refund, refund_rental_payment
+from .services.fleet_reservations import save_parking_reservation, save_rental_booking
+from .services.rental_settlement import issue_settlement_invoice, upsert_rental_settlement
+from .services.rental_channels import queue_first_party_reservation_event, queue_property_first_party_event
+from booking.reservations.services.payments import PaymentConfigurationError, PaymentProviderError
+from booking.reservations.services.bank_payments import (
+    render_checkout, verify_cpay_response, verify_nestpay_response,
 )
 
 
@@ -79,6 +101,17 @@ def _has_operation_permission(request, property_, code):
 
 def _permission_denied(request, property_, code):
     return bool(property_ and not _has_operation_permission(request, property_, code))
+
+
+def _module_license_denied(request, property_, module):
+    """Enforce independently sellable modules while preserving legacy tenants."""
+    if not property_ or request.user.is_superuser:
+        return False
+    licenses = PropertyModuleLicense.objects.filter(property=property_)
+    if not licenses.exists():
+        return False
+    license_row = licenses.filter(module=module).first()
+    return not license_row or not license_row.is_current()
 
 
 def _support_context(request):
@@ -154,17 +187,60 @@ def planned_screen(request, screen_key):
     if not screen:
         return HttpResponse("Ekran bulunamadı.", status=404)
     properties, selected = _selected_property(request)
-    planned_nav = [
+    planned_nav = [] if screen_key == "licence_info" else [
         {"label": item["label"], "url": reverse(f"operations:{key}")}
         for key, item in PLANNED_SCREENS.items()
         if item["module"] == screen["module"]
     ]
+    rows = []
+    if selected:
+        if screen_key in {"front_office_status", "group_reservations", "tour_operator_integrations", "folio_balances", "reservation_updates"}:
+            for item in selected.reservations.select_related("guest", "channel").order_by("-created_at")[:100]:
+                rows.append({"label": item.reference, "meta": f"{item.guest} · {item.check_in} – {item.check_out}", "status": item.get_status_display()})
+        elif screen_key in {"room_type_availability", "available_rooms"}:
+            for item in selected.unit_types.prefetch_related("units")[:100]:
+                rows.append({"label": item.name, "meta": f"{item.code} · kapasite {item.capacity_per_unit}", "status": f"{item.units.filter(is_active=True).count()} aktif ünite"})
+        elif screen_key == "closed_room_list":
+            for item in selected.units.select_related("unit_type").filter(is_active=True).exclude(status="available")[:100]:
+                rows.append({"label": item.code, "meta": item.unit_type.name, "status": item.get_status_display()})
+        elif screen_key == "credit_accounts":
+            for item in selected.credit_accounts.all()[:100]:
+                rows.append({"label": item.name, "meta": f"{item.code} · limit {item.credit_limit} {item.currency}", "status": f"Bakiye {item.balance} {item.currency}"})
+        elif screen_key == "guest_cards":
+            for item in Guest.objects.filter(property=selected).order_by("last_name", "first_name")[:100]:
+                rows.append({"label": f"{item.first_name} {item.last_name}", "meta": item.email or item.phone or "İletişim bilgisi yok", "status": "Misafir profili"})
+        elif screen_key == "lost_and_found":
+            for item in selected.lost_and_found_items.all()[:100]:
+                rows.append({"label": item.description, "meta": f"{item.found_location or '-'} · {item.found_at}", "status": item.get_status_display()})
+        elif screen_key == "hotel_phone_book":
+            for item in selected.phone_book_entries.filter(is_active=True)[:100]:
+                rows.append({"label": item.name, "meta": f"{item.department or '-'} · {item.email or '-'}", "status": item.phone})
+        elif screen_key == "park_entry":
+            for item in selected.park_entries.order_by("-entry_at")[:100]:
+                rows.append({"label": item.plate_number, "meta": f"{item.parking_space or '-'} · {item.entry_at}", "status": "Çıkış yapıldı" if item.exit_at else "İçeride"})
+        elif screen_key in {"archived_end_of_day_reports", "night_audit_html_reports", "end_of_year", "end_of_day_log_2"}:
+            for item in selected.night_audit_runs.select_related("actor")[:100]:
+                rows.append({"label": str(item.audit_date), "meta": f"{item.actor or '-'} · {item.completed_at or '-'}", "status": item.get_status_display()})
+        elif screen_key in {"all_invoices", "mustahsil", "all_accounts", "sales_price_agreements", "invoice_bulk_control", "proforma_invoice_list", "proforma_control_create", "bavel_invoice_list", "credit_control_list", "quick_invoice", "quick_invoice_new", "safe_receipt", "e_invoice_definitions"}:
+            for item in selected.invoices.order_by("-issue_date", "-id")[:100]:
+                rows.append({"label": item.number, "meta": f"{item.customer_name} · {item.issue_date}", "status": f"{item.total} {item.currency} · {item.get_status_display()}", "url": reverse("operations:invoice_detail", args=[item.id]) + f"?property_id={selected.id}"})
+    actions = []
+    if screen_key in {"guest_cards"}:
+        actions.append({"label": "CRM misafir profilleri", "url": reverse("operations:crm_guests") + f"?property_id={selected.id}"})
+    if screen_key in {"all_invoices", "quick_invoice", "quick_invoice_new"}:
+        actions.append({"label": "Yeni fatura", "url": reverse("operations:invoices") + f"?property_id={selected.id}"})
+    if screen_key in {"archived_end_of_day_reports", "night_audit_html_reports", "end_of_day_log_2"}:
+        actions.append({"label": "Night Audit çalıştır", "url": reverse("operations:night_audit") + f"?property_id={selected.id}"})
     return render(request, "booking/operations/planned_screen.html", {
         "title": screen["title"],
         "properties": properties,
         "selected_property": selected,
         "planned_screen": screen,
         "planned_nav": planned_nav,
+        "screen_rows": rows,
+        "screen_actions": actions,
+        "license_version": __version__,
+        "license_modules": ["Setup", "Front Office", "CRM", "Channel Management", "Operations", "Invoice / Accounting"],
     })
 
 
@@ -213,6 +289,1153 @@ def _finance_context(request):
     if _permission_denied(request, selected, "operations.financial.manage"):
         return properties, selected, HttpResponseForbidden("Bu tesis için finans yetkiniz yok.")
     return properties, selected, None
+
+
+@login_required
+def daily_currency_rates(request):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    currency_form = CurrencyDefinitionForm(request.POST or None, prefix="currency")
+    rate_form = DailyCurrencyRateForm(request.POST or None, prefix="rate")
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        form = currency_form if action == "currency" else rate_form
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.property = selected
+            obj.save()
+            messages.success(request, "Döviz tanımı kaydedildi." if action == "currency" else "Günlük kur kaydedildi.")
+            return redirect(f"{reverse('operations:daily_currency_rates')}?property_id={selected.id}")
+    currencies = selected.currency_definitions.all() if selected else CurrencyDefinition.objects.none()
+    rates = selected.daily_currency_rates.all()[:100] if selected else DailyCurrencyRate.objects.none()
+    return render(request, "booking/operations/daily_currency_rates.html", {
+        "title": "Döviz Kurları", "properties": properties, "selected_property": selected,
+        "currency_form": currency_form, "rate_form": rate_form, "currencies": currencies, "rates": rates,
+    })
+
+
+def _apply_rental_quote(booking):
+    if not booking.rental_rate_id or not booking.pickup_at or not booking.dropoff_at:
+        return None
+    extra_ids = booking.extra_products if isinstance(booking.extra_products, list) else []
+    insurance_id = int(booking.insurance_package) if str(booking.insurance_package).isdigit() else None
+    quote = calculate_rental_quote(
+        rate=booking.rental_rate,
+        pickup_at=booking.pickup_at,
+        dropoff_at=booking.dropoff_at,
+        extra_product_ids=extra_ids,
+        insurance_package_id=insurance_id,
+        pickup_location=booking.pickup_location_ref,
+        dropoff_location=booking.dropoff_location_ref,
+        promo_code=booking.promo_code,
+        corporate_code=booking.corporate_code,
+        loyalty_code=booking.loyalty_code,
+        channel_code=booking.channel_reference,
+        vehicle_class=booking.vehicle_class,
+    )
+    booking.daily_rate = booking.rental_rate.daily_rate
+    booking.total_amount = quote.total_amount
+    booking.deposit_amount = quote.deposit_amount
+    booking.currency = quote.currency
+    return quote
+
+
+def _rental_search_values(request):
+    pickup = parse_datetime(request.POST.get("pickup_at") or request.GET.get("pickup_at") or "")
+    dropoff = parse_datetime(request.POST.get("dropoff_at") or request.GET.get("dropoff_at") or "")
+    if pickup and timezone.is_naive(pickup):
+        pickup = timezone.make_aware(pickup)
+    if dropoff and timezone.is_naive(dropoff):
+        dropoff = timezone.make_aware(dropoff)
+    return pickup, dropoff, request.POST.get("vehicle_class") or request.GET.get("vehicle_class") or ""
+
+
+def _parking_search_values(request):
+    start = parse_datetime(request.POST.get("start_at") or request.GET.get("start_at") or "")
+    end = parse_datetime(request.POST.get("end_at") or request.GET.get("end_at") or "")
+    if start and timezone.is_naive(start):
+        start = timezone.make_aware(start)
+    if end and timezone.is_naive(end):
+        end = timezone.make_aware(end)
+    return start, end
+
+
+def _scope_rental_operation_form(form, selected):
+    """Keep every FK choice inside the selected property boundary."""
+    if not selected:
+        return form
+    if "property" in form.fields:
+        form.fields.pop("property")
+    queryset_map = {
+        "vehicle": Vehicle.objects.filter(property=selected),
+        "connection": RentalChannelConnection.objects.filter(property=selected, is_active=True),
+        "device": ParkingDevice.objects.filter(property=selected, is_active=True),
+        "telemetry": VehicleTelemetryEvent.objects.filter(property=selected).select_related("vehicle")[:100],
+        "flight": RentalFlightStatus.objects.filter(booking__property=selected).select_related("booking")[:100],
+        "booking": VehicleRentalBooking.objects.filter(property=selected),
+        "rental_rate": VehicleRentalRate.objects.filter(vehicle__property=selected),
+        "pickup_location_ref": RentalLocation.objects.filter(property=selected, is_active=True),
+        "dropoff_location_ref": RentalLocation.objects.filter(property=selected, is_active=True),
+        "parking_lot": ParkingLot.objects.filter(property=selected),
+        "parking_space": ParkingSpace.objects.filter(parking_lot__property=selected),
+        "reservation": ParkingReservation.objects.filter(property=selected),
+        "handover": RentalHandover.objects.filter(booking__property=selected),
+        "invoice": Invoice.objects.filter(property=selected),
+        "gateway": PaymentGateway.objects.filter(property=selected),
+        "guest": Guest.objects.filter(property=selected),
+    }
+    for name, queryset in queryset_map.items():
+        if name in form.fields:
+            form.fields[name].queryset = queryset
+    return form
+
+
+@login_required
+def rental_operations(request):
+    """Dynamic operational back office for rental and parking workflows."""
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için araç kiralama ve otopark operasyon yetkiniz yok.")
+
+    entity = request.POST.get("entity") or request.GET.get("entity") or "locations"
+    module = "parking" if entity in {"parking_bookings", "parking_map", "parking_devices", "parking_subscriptions", "parking_access", "valet", "parking_penalties"} else "vehicle_rental"
+    if _module_license_denied(request, selected, module):
+        return HttpResponseForbidden("Bu tesis için ilgili modül lisansı aktif değil.")
+    form_classes = {
+        "rental_bookings": VehicleRentalBookingForm,
+        "parking_bookings": ParkingReservationForm,
+        "channel_connections": RentalChannelConnectionForm,
+        "channel_mappings": RentalChannelMappingForm,
+        "pricing_rules": RentalPricingRuleForm,
+        "telemetry": VehicleTelemetryEventForm,
+        "flight": RentalFlightStatusForm,
+        "parking_devices": ParkingDeviceForm,
+        "locations": RentalLocationForm,
+        "extras": RentalExtraProductForm,
+        "insurance": RentalInsurancePackageForm,
+        "handovers": RentalHandoverForm,
+        "handover_photos": RentalHandoverPhotoForm,
+        "damage": RentalDamageCaseForm,
+        "maintenance": VehicleMaintenanceRecordForm,
+        "fines": RentalFineForm,
+        "parking_subscriptions": ParkingSubscriptionForm,
+        "parking_access": ParkingAccessEventForm,
+        "valet": ParkingValetRecordForm,
+        "parking_penalties": ParkingPenaltyForm,
+        "contracts": RentalContractForm,
+        "payments": RentalPaymentForm,
+        "invoices": RentalInvoiceForm,
+        "driver_profiles": RentalDriverProfileForm,
+        "cancellation_policies": RentalCancellationPolicyForm,
+        "tax_rules": RentalTaxRuleForm,
+    }
+    edit_id = request.GET.get("edit_id") or request.POST.get("edit_id")
+    instance = None
+    if selected and edit_id and entity == "rental_bookings":
+        instance = VehicleRentalBooking.objects.filter(property=selected, pk=edit_id).first()
+    elif selected and edit_id and entity == "parking_bookings":
+        instance = ParkingReservation.objects.filter(property=selected, pk=edit_id).first()
+    form_class = form_classes.get(entity, RentalLocationForm)
+    form_kwargs = {"instance": instance}
+    if entity in {"rental_bookings", "parking_bookings"}:
+        form_kwargs["property_"] = selected
+    form = form_class(request.POST or None, request.FILES or None, **form_kwargs)
+    _scope_rental_operation_form(form, selected)
+    if request.method == "POST" and selected and entity == "privacy_requests":
+        request_id = request.POST.get("request_id")
+        status = request.POST.get("status")
+        data_request = RentalDataRequest.objects.select_related("booking", "driver_profile").filter(
+            property=selected, pk=request_id,
+        ).first()
+        if data_request and status in {RentalDataRequest.Status.COMPLETED, RentalDataRequest.Status.REJECTED}:
+            with transaction.atomic():
+                if status == RentalDataRequest.Status.COMPLETED and data_request.request_type == RentalDataRequest.RequestType.DELETION:
+                    booking = data_request.booking
+                    if booking:
+                        booking.customer_name = "Anonim müşteri"
+                        booking.customer_email = ""
+                        booking.customer_phone = ""
+                        booking.license_number = ""
+                        booking.driver_license_country = ""
+                        booking.privacy_consent_at = None
+                        booking.save(update_fields=["customer_name", "customer_email", "customer_phone", "license_number", "driver_license_country", "privacy_consent_at", "updated_at"])
+                        RentalAuditEvent.objects.create(property=selected, booking=booking, actor=request.user, action="privacy_data_deleted", source="backoffice")
+                    driver = data_request.driver_profile
+                    if driver:
+                        if driver.license_document:
+                            default_storage.delete(driver.license_document.name)
+                        driver.full_name = "Anonim müşteri"
+                        driver.email = ""
+                        driver.phone = ""
+                        driver.license_number = ""
+                        driver.identity_document_ref = ""
+                        driver.license_document = ""
+                        driver.notes = ""
+                        driver.save(update_fields=["full_name", "email", "phone", "license_number", "identity_document_ref", "license_document", "notes", "updated_at"])
+                data_request.status = status
+                data_request.completed_at = timezone.now()
+                data_request.save(update_fields=["status", "completed_at"])
+                RentalPrivacyEvent.objects.create(
+                    property=selected, booking=data_request.booking, driver_profile=data_request.driver_profile,
+                    event_type=RentalPrivacyEvent.EventType.DELETION_REQUEST if data_request.request_type == RentalDataRequest.RequestType.DELETION else RentalPrivacyEvent.EventType.DATA_EXPORT,
+                    policy_version=data_request.booking.privacy_policy_version if data_request.booking else "",
+                    requester_email=data_request.requester_email, source="backoffice", metadata={"status": status},
+                )
+            messages.success(request, "KVKK talebi sonuçlandırıldı.")
+        else:
+            messages.error(request, "KVKK talebi bulunamadı veya durum geçersiz.")
+        return redirect(f"{reverse('operations:rental_operations')}?property_id={selected.id}&entity=privacy_requests")
+    if request.method == "POST" and selected and request.POST.get("action") in {"capture_payment", "refund_payment", "manual_refund_payment"}:
+        payment = RentalPayment.objects.select_related("booking", "gateway").filter(
+            pk=request.POST.get("payment_id"), booking__property=selected,
+        ).first()
+        if not payment:
+            messages.error(request, "Ödeme kaydı bulunamadı.")
+        else:
+            try:
+                if request.POST["action"] == "capture_payment":
+                    capture_rental_payment(payment=payment, actor=request.user)
+                    messages.success(request, "Ödeme sağlayıcı üzerinden yakalandı.")
+                elif request.POST["action"] == "manual_refund_payment":
+                    record_manual_bank_refund(
+                        payment=payment, actor=request.user,
+                        refund_reference=request.POST.get("refund_reference", ""),
+                        note=request.POST.get("refund_note", ""),
+                    )
+                    messages.success(request, "Banka panelindeki iade ERP'ye islendi.")
+                else:
+                    refund_rental_payment(payment=payment, actor=request.user)
+                    messages.success(request, "Ödeme sağlayıcı üzerinden iade edildi.")
+            except (PaymentConfigurationError, PaymentProviderError) as exc:
+                messages.error(request, str(exc))
+        return redirect(f"{reverse('operations:rental_operations')}?property_id={selected.id}&entity=payments")
+    if request.method == "POST" and selected and form.is_valid():
+        obj = form.save(commit=False)
+        if hasattr(obj, "property_id"):
+            obj.property = selected
+        if entity in {"rental_bookings", "parking_bookings"}:
+            obj.created_by = request.user
+        if entity == "rental_bookings":
+            _apply_rental_quote(obj)
+        elif entity == "parking_bookings" and obj.parking_lot_id:
+            obj.amount = calculate_parking_quote(parking_lot=obj.parking_lot, start_at=obj.start_at, end_at=obj.end_at)
+        if isinstance(obj, RentalHandover):
+            obj.recorded_by = request.user
+        if isinstance(obj, RentalDamageCase):
+            obj.vehicle = obj.booking.vehicle
+        if isinstance(obj, VehicleMaintenanceRecord):
+            obj.property = selected
+        if isinstance(obj, RentalAuditEvent):
+            obj.property = selected
+        if entity == "rental_bookings":
+            save_rental_booking(obj)
+        elif entity == "parking_bookings":
+            save_parking_reservation(obj)
+        else:
+            obj.save()
+        if entity == "handovers" and isinstance(obj, RentalHandover) and obj.kind == RentalHandover.Kind.RETURN:
+            upsert_rental_settlement(booking=obj.booking, actor=request.user)
+        if entity in {"rentals", "rental_bookings"}:
+            queue_rental_notifications(obj)
+            if obj.prepayment_amount:
+                create_pending_rental_payment(booking=obj, amount=obj.prepayment_amount)
+        messages.success(request, "Operasyon kaydı başarıyla kaydedildi.")
+        return redirect(f"{reverse('operations:rental_operations')}?property_id={selected.id}&entity={entity}")
+
+    parking_map = []
+    if selected:
+        now = timezone.now()
+        active_statuses = [ParkingReservation.Status.PENDING, ParkingReservation.Status.CONFIRMED, ParkingReservation.Status.CHECKED_IN]
+        for lot in selected.parking_lots.prefetch_related("spaces"):
+            active_space_ids = set(ParkingReservation.objects.filter(
+                parking_lot=lot, parking_space__isnull=False, status__in=active_statuses,
+                start_at__lte=now, end_at__gt=now,
+            ).values_list("parking_space_id", flat=True))
+            spaces = list(lot.spaces.filter(is_active=True))
+            for space in spaces:
+                space.map_state = "occupied" if space.id in active_space_ids else space.status
+                space.map_label = {"occupied": "Dolu", "available": "Müsait", "maintenance": "Bakım", "blocked": "Bloke"}.get(space.map_state, space.map_state)
+            lot.map_spaces = spaces
+            lot.map_total = lot.capacity or len(spaces)
+            lot.map_occupied = len(active_space_ids)
+            lot.map_available = max(lot.map_total - lot.map_occupied, 0)
+            parking_map.append(lot)
+
+    context = {
+        "title": "Araç Kiralama ve Otopark Operasyonları",
+        "properties": properties,
+        "selected_property": selected,
+        "entity": entity,
+        "form": form,
+        "locations": RentalLocation.objects.filter(property=selected)[:100] if selected else RentalLocation.objects.none(),
+        "rental_bookings": VehicleRentalBooking.objects.filter(property=selected).select_related("vehicle", "rental_rate")[:100] if selected else VehicleRentalBooking.objects.none(),
+        "parking_bookings": ParkingReservation.objects.filter(property=selected).select_related("parking_lot", "parking_space")[:100] if selected else ParkingReservation.objects.none(),
+        "channel_connections": RentalChannelConnection.objects.filter(property=selected)[:100] if selected else RentalChannelConnection.objects.none(),
+        "channel_mappings": RentalChannelMapping.objects.filter(connection__property=selected).select_related("connection", "vehicle")[:100] if selected else RentalChannelMapping.objects.none(),
+        "pricing_rules": RentalPricingRule.objects.filter(property=selected)[:100] if selected else RentalPricingRule.objects.none(),
+        "telemetry": VehicleTelemetryEvent.objects.filter(property=selected).select_related("vehicle")[:100] if selected else VehicleTelemetryEvent.objects.none(),
+        "flight_statuses": RentalFlightStatus.objects.filter(booking__property=selected).select_related("booking")[:100] if selected else RentalFlightStatus.objects.none(),
+        "parking_devices": ParkingDevice.objects.filter(property=selected).select_related("parking_lot")[:100] if selected else ParkingDevice.objects.none(),
+        "extras": RentalExtraProduct.objects.filter(property=selected)[:100] if selected else RentalExtraProduct.objects.none(),
+        "insurance_packages": RentalInsurancePackage.objects.filter(property=selected)[:100] if selected else RentalInsurancePackage.objects.none(),
+        "handovers": RentalHandover.objects.filter(booking__property=selected).select_related("booking", "recorded_by")[:100] if selected else RentalHandover.objects.none(),
+        "damage_cases": RentalDamageCase.objects.filter(booking__property=selected).select_related("booking", "vehicle")[:100] if selected else RentalDamageCase.objects.none(),
+        "maintenance_records": VehicleMaintenanceRecord.objects.filter(property=selected).select_related("vehicle")[:100] if selected else VehicleMaintenanceRecord.objects.none(),
+        "fines": RentalFine.objects.filter(booking__property=selected).select_related("booking", "vehicle")[:100] if selected else RentalFine.objects.none(),
+        "parking_subscriptions": ParkingSubscription.objects.filter(property=selected).select_related("parking_lot")[:100] if selected else ParkingSubscription.objects.none(),
+        "access_events": ParkingAccessEvent.objects.filter(property=selected).select_related("parking_lot", "parking_space")[:100] if selected else ParkingAccessEvent.objects.none(),
+        "valet_records": ParkingValetRecord.objects.filter(parking_lot__property=selected).select_related("parking_lot", "reservation")[:100] if selected else ParkingValetRecord.objects.none(),
+        "parking_penalties": ParkingPenalty.objects.filter(parking_lot__property=selected).select_related("parking_lot")[:100] if selected else ParkingPenalty.objects.none(),
+        "contracts": RentalContract.objects.filter(booking__property=selected).select_related("booking")[:100] if selected else RentalContract.objects.none(),
+        "payments": RentalPayment.objects.filter(booking__property=selected).select_related("booking", "gateway")[:100] if selected else RentalPayment.objects.none(),
+        "rental_invoices": RentalInvoice.objects.filter(booking__property=selected).select_related("booking", "invoice")[:100] if selected else RentalInvoice.objects.none(),
+        "sync_events": RentalChannelSyncEvent.objects.filter(property=selected)[:100] if selected else RentalChannelSyncEvent.objects.none(),
+        "notifications": RentalNotification.objects.filter(booking__property=selected)[:100] if selected else RentalNotification.objects.none(),
+        "driver_profiles": RentalDriverProfile.objects.filter(property=selected).select_related("guest")[:100] if selected else RentalDriverProfile.objects.none(),
+        "cancellation_policies": RentalCancellationPolicy.objects.filter(property=selected)[:100] if selected else RentalCancellationPolicy.objects.none(),
+        "tax_rules": RentalTaxRule.objects.filter(property=selected)[:100] if selected else RentalTaxRule.objects.none(),
+        "privacy_requests": RentalDataRequest.objects.filter(property=selected).select_related("booking", "driver_profile")[:100] if selected else RentalDataRequest.objects.none(),
+        "parking_map": parking_map,
+    }
+    return render(request, "booking/operations/rental_operations.html", context)
+
+
+@login_required
+def rental_booking_detail(request, booking_id):
+    """Property-scoped rental detail and status control screen."""
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için kiralama detayına erişim yetkiniz yok.")
+    if _module_license_denied(request, selected, "vehicle_rental"):
+        return HttpResponseForbidden("Bu tesis için Araç Kiralama modül lisansı aktif değil.")
+    booking = VehicleRentalBooking.objects.select_related(
+        "vehicle", "rental_rate", "driver_profile", "cancellation_policy_ref",
+    ).prefetch_related("handovers", "damage_cases", "payments", "rental_invoices").filter(
+        property=selected, pk=booking_id,
+    ).first()
+    if not booking:
+        return HttpResponse("Kiralama kaydı bulunamadı.", status=404)
+    edit_form = VehicleRentalBookingForm(request.POST or None, instance=booking, property_=selected)
+    if request.method == "POST" and request.POST.get("action") == "save":
+        if edit_form.is_valid():
+            updated = edit_form.save(commit=False)
+            updated.property = selected
+            _apply_rental_quote(updated)
+            save_rental_booking(updated)
+            queue_first_party_reservation_event(booking=updated, entity="rentals", event_type="reservation_updated")
+            RentalAuditEvent.objects.create(property=selected, booking=updated, actor=request.user, action="booking_updated", source=updated.source)
+            messages.success(request, "Kiralama kaydı güncellendi.")
+            return redirect(request.path + f"?property_id={selected.id}")
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "invoice_settlement":
+            settlement = getattr(booking, "settlement", None)
+            if not settlement:
+                settlement = upsert_rental_settlement(booking=booking, actor=request.user)
+            try:
+                invoice = issue_settlement_invoice(settlement=settlement, actor=request.user)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(request, f"Settlement faturası oluşturuldu: {invoice.number}")
+            return redirect(request.path + f"?property_id={selected.id}")
+        status_map = {
+            "confirmed": VehicleRentalBooking.Status.CONFIRMED,
+            "active": VehicleRentalBooking.Status.ACTIVE,
+            "completed": VehicleRentalBooking.Status.COMPLETED,
+            "cancelled": VehicleRentalBooking.Status.CANCELLED,
+            "no_show": VehicleRentalBooking.Status.NO_SHOW,
+        }
+        if action in status_map:
+            booking.status = status_map[action]
+            if action == "cancelled":
+                booking.cancelled_at = timezone.now()
+            if action == "no_show":
+                booking.no_show_at = timezone.now()
+            booking.save(update_fields=["status", "cancelled_at", "no_show_at", "updated_at"])
+            queue_first_party_reservation_event(booking=booking, entity="rentals", event_type="reservation_status_changed")
+            RentalAuditEvent.objects.create(property=selected, booking=booking, actor=request.user, action=f"detail_status_{booking.status}", source=booking.source)
+            messages.success(request, "Kiralama durumu güncellendi.")
+            return redirect(request.path + f"?property_id={selected.id}")
+    return render(request, "booking/operations/rental_booking_detail.html", {
+        "title": f"Kiralama {booking.confirmation_code}",
+        "properties": properties,
+        "selected_property": selected,
+        "booking": booking,
+        "edit_form": edit_form,
+        "audit_events": booking.audit_events.select_related("actor")[:100],
+    })
+
+
+@login_required
+def fleet_reports(request):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis iÃ§in filo raporlarÄ± eriÅŸiminiz yok.")
+    if not selected:
+        return render(request, "booking/operations/fleet_reports.html", {"title": "Filo ve Otopark RaporlarÄ±", "properties": properties, "selected_property": selected})
+    today = timezone.localdate()
+    vehicles = selected.vehicles.filter(is_active=True)
+    rental_bookings = selected.vehicle_rental_bookings.all()
+    parking_bookings = selected.parking_reservations.all()
+    active_rentals = rental_bookings.filter(status__in=[VehicleRentalBooking.Status.CONFIRMED, VehicleRentalBooking.Status.ACTIVE])
+    active_parking = parking_bookings.filter(status__in=[ParkingReservation.Status.CONFIRMED, ParkingReservation.Status.CHECKED_IN])
+    revenue = rental_bookings.filter(status__in=[VehicleRentalBooking.Status.CONFIRMED, VehicleRentalBooking.Status.ACTIVE, VehicleRentalBooking.Status.COMPLETED]).aggregate(total=Sum("total_amount"))["total"] or 0
+    parking_revenue = parking_bookings.filter(status__in=[ParkingReservation.Status.CONFIRMED, ParkingReservation.Status.CHECKED_IN, ParkingReservation.Status.CHECKED_OUT]).aggregate(total=Sum("amount"))["total"] or 0
+    return render(request, "booking/operations/fleet_reports.html", {
+        "title": "Filo ve Otopark Raporları", "properties": properties, "selected_property": selected,
+        "today": today, "vehicle_count": vehicles.count(), "active_rentals": active_rentals.count(),
+        "available_vehicles": vehicles.filter(status="available").count(), "rental_revenue": revenue,
+        "parking_count": selected.parking_lots.filter(is_active=True).count(), "active_parking": active_parking.count(),
+        "parking_revenue": parking_revenue, "maintenance_due": VehicleMaintenanceRecord.objects.filter(property=selected, status__in=["planned", "overdue"]).count(),
+        "telemetry_events": VehicleTelemetryEvent.objects.filter(property=selected, occurred_at__date=today).count(),
+    })
+
+
+@login_required
+def vehicle_fleet(request, entity="vehicles", setup_only=False):
+    properties, selected = _selected_property(request)
+    if _permission_denied(request, selected, "operations.front_office.manage"):
+        return HttpResponseForbidden("Bu tesis için araç filosu yetkiniz yok.")
+    module = "parking" if entity in {"parking", "parking_reservations", "spaces"} else "vehicle_rental"
+    if _module_license_denied(request, selected, module):
+        return HttpResponseForbidden("Bu tesis için ilgili modül lisansı aktif değil.")
+
+    active_entity = request.POST.get("entity") or entity
+    form = VehicleForm(request.POST or None)
+    parking_lot_form = ParkingLotForm(request.POST or None)
+    parking_space_form = ParkingSpaceForm(request.POST or None, property_=selected)
+    vehicle_photo_form = VehiclePhotoForm(request.POST or None, request.FILES or None, property_=selected)
+    rental_rate_form = VehicleRentalRateForm(request.POST or None, property_=selected)
+    parking_reservation_form = ParkingReservationForm(request.POST or None, property_=selected)
+    rental_booking_form = VehicleRentalBookingForm(request.POST or None, property_=selected)
+    forms_by_entity = {
+        "vehicles": form, "parking": parking_lot_form, "spaces": parking_space_form,
+        "vehicle_photos": vehicle_photo_form,
+        "rental_rates": rental_rate_form, "parking_reservations": parking_reservation_form,
+        "rentals": rental_booking_form,
+    }
+    if request.method == "POST" and selected and request.POST.get("action") in {"confirm", "confirmed", "active", "completed", "cancelled", "no_show"}:
+        action = request.POST["action"]
+        booking_id = request.POST.get("booking_id")
+        if active_entity == "rentals":
+            booking = selected.vehicle_rental_bookings.filter(pk=booking_id).first()
+            if booking:
+                rental_status = {
+                    "confirm": VehicleRentalBooking.Status.CONFIRMED,
+                    "confirmed": VehicleRentalBooking.Status.CONFIRMED,
+                    "active": VehicleRentalBooking.Status.ACTIVE,
+                    "completed": VehicleRentalBooking.Status.COMPLETED,
+                    "cancelled": VehicleRentalBooking.Status.CANCELLED,
+                    "no_show": VehicleRentalBooking.Status.NO_SHOW,
+                }.get(action, VehicleRentalBooking.Status.PENDING)
+                booking.status = rental_status
+                if action == "cancelled":
+                    booking.cancelled_at = timezone.now()
+                if action == "no_show":
+                    booking.no_show_at = timezone.now()
+                booking.save(update_fields=["status", "cancelled_at", "no_show_at", "updated_at"])
+                RentalAuditEvent.objects.create(property=selected, booking=booking, actor=request.user, action=f"status_{rental_status}", source=booking.source)
+                messages.success(request, "Kiralama rezervasyon durumu güncellendi.")
+                return redirect(f"{reverse('operations:vehicle_rental_bookings')}?property_id={selected.id}")
+        if active_entity == "parking_reservations":
+            booking = selected.parking_reservations.filter(pk=booking_id).first()
+            if booking:
+                parking_status = {
+                    "confirm": ParkingReservation.Status.CONFIRMED,
+                    "confirmed": ParkingReservation.Status.CONFIRMED,
+                    "active": ParkingReservation.Status.CHECKED_IN,
+                    "completed": ParkingReservation.Status.CHECKED_OUT,
+                    "cancelled": ParkingReservation.Status.CANCELLED,
+                    "no_show": ParkingReservation.Status.NO_SHOW,
+                }.get(action, ParkingReservation.Status.PENDING)
+                booking.status = parking_status
+                booking.save(update_fields=["status", "updated_at"])
+                queue_first_party_reservation_event(booking=booking, entity="parking", event_type="reservation_status_changed")
+                RentalAuditEvent.objects.create(
+                    property=selected, actor=request.user, action=f"parking_status_{parking_status}",
+                    source=booking.source, payload={"parking_reservation_id": booking.id, "confirmation_code": booking.confirmation_code},
+                )
+                messages.success(request, "Otopark rezervasyon durumu güncellendi.")
+                return redirect(f"{reverse('operations:parking_reservations')}?property_id={selected.id}")
+    if request.method == "POST" and selected:
+        active_form = forms_by_entity.get(active_entity, form)
+        if active_form.is_valid():
+            obj = active_form.save(commit=False)
+            if active_entity == "vehicle_photos":
+                obj = vehicle_photo_form.save()
+            elif active_entity in {"vehicles", "parking", "parking_reservations", "rentals"}:
+                obj.property = selected
+                if active_entity == "rentals":
+                    _apply_rental_quote(obj)
+                elif active_entity == "parking_reservations" and obj.parking_lot_id:
+                    obj.amount = calculate_parking_quote(parking_lot=obj.parking_lot, start_at=obj.start_at, end_at=obj.end_at)
+            if active_entity in {"parking_reservations", "rentals"}:
+                obj.created_by = request.user
+            if active_entity == "rentals":
+                save_rental_booking(obj)
+            elif active_entity == "parking_reservations":
+                save_parking_reservation(obj)
+                queue_first_party_reservation_event(booking=obj, entity="parking", event_type="reservation_updated")
+            else:
+                obj.save()
+            if active_entity == "rentals":
+                queue_rental_notifications(obj)
+                if obj.prepayment_amount:
+                    create_pending_rental_payment(booking=obj, amount=obj.prepayment_amount)
+            messages.success(request, "Kayıt başarıyla kaydedildi.")
+            target = "vehicle_fleet" if active_entity in {"vehicles", "vehicle_photos"} else (
+                "parking_reservations" if active_entity in {"parking", "spaces", "parking_reservations"} else "vehicle_rental_bookings"
+            )
+            return redirect(f"{reverse(f'operations:{target}')}?property_id={selected.id}")
+
+    vehicles = selected.vehicles.all() if selected else Vehicle.objects.none()
+    vehicle_photos = VehiclePhoto.objects.filter(vehicle__property=selected).select_related("vehicle") if selected else VehiclePhoto.objects.none()
+    parking_lots = selected.parking_lots.prefetch_related("spaces") if selected else ParkingLot.objects.none()
+    parking_spaces = ParkingSpace.objects.filter(parking_lot__property=selected).select_related("parking_lot") if selected else ParkingSpace.objects.none()
+    rental_rates = VehicleRentalRate.objects.filter(vehicle__property=selected).select_related("vehicle") if selected else VehicleRentalRate.objects.none()
+    parking_reservations = selected.parking_reservations.select_related("parking_lot", "parking_space")[:100] if selected else ParkingReservation.objects.none()
+    rental_bookings = selected.vehicle_rental_bookings.select_related("vehicle", "rental_rate")[:100] if selected else VehicleRentalBooking.objects.none()
+    fleet_widget_rental_url = request.build_absolute_uri(
+        reverse("operations:fleet_widget", kwargs={"widget_key": selected.fleet_widget_key})
+    ) + "?entity=rentals" if selected else ""
+    fleet_widget_parking_url = request.build_absolute_uri(
+        reverse("operations:fleet_widget", kwargs={"widget_key": selected.fleet_widget_key})
+    ) + "?entity=parking" if selected else ""
+    fleet_widget_rental_embed = f'<iframe src="{fleet_widget_rental_url}" width="100%" height="720" loading="lazy" title="Araç kiralama"></iframe>' if selected else ""
+    fleet_widget_parking_embed = f'<iframe src="{fleet_widget_parking_url}" width="100%" height="720" loading="lazy" title="Otopark rezervasyonu"></iframe>' if selected else ""
+    return render(request, "booking/operations/vehicle_fleet.html", {
+        "title": "Araç Filosu ve Otopark", "properties": properties, "selected_property": selected,
+        "entity": active_entity, "setup_only": setup_only, "form": forms_by_entity.get(active_entity, form),
+        "vehicle_form": form, "parking_lot_form": parking_lot_form, "parking_space_form": parking_space_form,
+        "vehicle_photo_form": vehicle_photo_form, "vehicle_photos": vehicle_photos,
+        "rental_rate_form": rental_rate_form, "parking_reservation_form": parking_reservation_form,
+        "rental_booking_form": rental_booking_form, "vehicles": vehicles, "parking_lots": parking_lots,
+        "parking_spaces": parking_spaces, "rental_rates": rental_rates,
+        "parking_reservations": parking_reservations, "rental_bookings": rental_bookings,
+        "fleet_widget_rental_url": fleet_widget_rental_url,
+        "fleet_widget_parking_url": fleet_widget_parking_url,
+        "fleet_widget_rental_embed": fleet_widget_rental_embed,
+        "fleet_widget_parking_embed": fleet_widget_parking_embed,
+    })
+
+
+PUBLIC_PRIVACY_POLICY_VERSION = "2026-10"
+
+
+def _apply_public_rental_consent(booking, form):
+    """Persist only consent metadata; identity documents remain out of the public form."""
+    booking.privacy_consent_at = timezone.now()
+    booking.privacy_policy_version = PUBLIC_PRIVACY_POLICY_VERSION
+    booking.marketing_consent = bool(form.cleaned_data.get("marketing_consent"))
+    booking.data_retention_until = timezone.localdate() + timedelta(days=1825)
+def _record_public_rental_consent(booking):
+    RentalPrivacyEvent.objects.create(
+        property=booking.property,
+        booking=booking,
+        event_type=RentalPrivacyEvent.EventType.CONSENT,
+        policy_version=PUBLIC_PRIVACY_POLICY_VERSION,
+        consent_given=True,
+        requester_email=booking.customer_email,
+        source="public",
+    )
+
+
+def online_fleet_booking(request):
+    """Public, pending-only intake for parking and vehicle rental requests."""
+    property_id = request.POST.get("property_id") or request.GET.get("property_id")
+    selected = Property.objects.filter(id=property_id, is_active=True).first() if property_id else None
+    entity = request.POST.get("entity") or request.GET.get("entity") or "parking"
+    if selected and _module_license_denied(request, selected, "parking" if entity != "rentals" else "vehicle_rental"):
+        return HttpResponseForbidden("Bu tesis için ilgili modül lisansı aktif değil.")
+    parking_form = PublicParkingReservationForm(request.POST or None, property_=selected)
+    rental_form = PublicRentalBookingForm(request.POST or None, property_=selected)
+    if selected:
+        start, end = _parking_search_values(request)
+        parking_form.fields["parking_space"].queryset = available_parking_spaces(
+            property_=selected, start_at=start, end_at=end,
+        )
+        pickup, dropoff, vehicle_class = _rental_search_values(request)
+        rental_form.fields["vehicle"].queryset = available_rental_vehicles(
+            property_=selected, pickup_at=pickup, dropoff_at=dropoff, vehicle_class=vehicle_class,
+        )
+        rental_form.fields["rental_rate"].queryset = VehicleRentalRate.objects.filter(vehicle__property=selected, vehicle__is_active=True, vehicle__online_enabled=True, is_active=True)
+    active_form = rental_form if entity == "rentals" else parking_form
+    if request.method == "POST" and selected and active_form.is_valid():
+        obj = active_form.save(commit=False)
+        obj.property = selected
+        obj.source = ParkingReservation.Source.ONLINE
+        obj.status = ParkingReservation.Status.PENDING
+        if entity == "rentals":
+            _apply_rental_quote(obj)
+            _apply_public_rental_consent(obj, active_form)
+        elif obj.parking_lot_id:
+            obj.amount = calculate_parking_quote(parking_lot=obj.parking_lot, start_at=obj.start_at, end_at=obj.end_at)
+        if entity == "rentals":
+            save_rental_booking(obj)
+            _record_public_rental_consent(obj)
+            queue_property_first_party_event(
+                property_=selected, event_type="reservation_created",
+                payload={"entity": "rentals", "booking_id": obj.id, "confirmation_code": obj.confirmation_code,
+                         "status": obj.status, "vehicle_id": obj.vehicle_id, "total_amount": str(obj.total_amount),
+                         "currency": obj.currency, "source": obj.source},
+            )
+        else:
+            save_parking_reservation(obj)
+            queue_property_first_party_event(
+                property_=selected, event_type="reservation_created",
+                payload={"entity": "parking", "booking_id": obj.id, "confirmation_code": obj.confirmation_code,
+                         "status": obj.status, "parking_lot_id": obj.parking_lot_id, "amount": str(obj.amount),
+                         "currency": obj.currency, "source": obj.source},
+            )
+        if entity == "rentals":
+            queue_rental_notifications(obj)
+            if obj.prepayment_amount:
+                create_pending_rental_payment(booking=obj, amount=obj.prepayment_amount)
+        payment_url = reverse("operations:rental_payment_checkout", kwargs={"payment_token": obj.payment_token}) if entity == "rentals" and obj.prepayment_amount else ""
+        return render(request, "booking/online/fleet_booking_public.html", {
+            "selected_property": selected, "entity": entity, "submitted": True, "booking": obj, "payment_url": payment_url,
+            "manage_url": request.build_absolute_uri(reverse("operations:rental_booking_self_service", kwargs={"token": obj.public_manage_token})),
+        })
+    return render(request, "booking/online/fleet_booking_public.html", {
+        "selected_property": selected, "entity": entity, "parking_form": parking_form,
+        "vehicles": rental_form.fields["vehicle"].queryset.prefetch_related("photos") if selected else Vehicle.objects.none(),
+        "rental_form": rental_form, "form": active_form,
+    })
+
+
+def rental_booking_self_service(request, token):
+    """Allow a renter to view/cancel a pending booking and request privacy actions."""
+    booking = get_object_or_404(
+        VehicleRentalBooking.objects.select_related("property", "vehicle", "rental_rate"),
+        public_manage_token=token,
+    )
+    message = ""
+    if request.method == "POST":
+        requester_email = (request.POST.get("requester_email") or "").strip().lower()
+        if booking.customer_email and requester_email != booking.customer_email.strip().lower():
+            return HttpResponseForbidden("Rezervasyon e-postası doğrulanamadı.")
+        action = request.POST.get("action")
+        if action == "cancel" and booking.status in {VehicleRentalBooking.Status.PENDING, VehicleRentalBooking.Status.CONFIRMED}:
+            booking.status = VehicleRentalBooking.Status.CANCELLED
+            booking.cancelled_at = timezone.now()
+            booking.save(update_fields=["status", "cancelled_at", "updated_at"])
+            queue_first_party_reservation_event(booking=booking, entity="rentals", event_type="reservation_cancelled")
+            message = "Rezervasyon iptal talebiniz kaydedildi."
+        elif action in {"export", "deletion"}:
+            request_type = RentalDataRequest.RequestType.EXPORT if action == "export" else RentalDataRequest.RequestType.DELETION
+            data_request, created = RentalDataRequest.objects.get_or_create(
+                property=booking.property,
+                booking=booking,
+                requester_email=requester_email or booking.customer_email,
+                request_type=request_type,
+                status=RentalDataRequest.Status.PENDING,
+            )
+            if created:
+                RentalPrivacyEvent.objects.create(
+                    property=booking.property,
+                    booking=booking,
+                    event_type=(RentalPrivacyEvent.EventType.DATA_EXPORT if action == "export" else RentalPrivacyEvent.EventType.DELETION_REQUEST),
+                    policy_version=booking.privacy_policy_version,
+                    requester_email=data_request.requester_email,
+                    source="self_service",
+                )
+            message = "Talebiniz kaydedildi; tesis yöneticisi tarafından incelenecektir."
+    return render(request, "booking/online/rental_booking_self_service.html", {
+        "booking": booking,
+        "message": message,
+    })
+
+
+def _fleet_widget_origin_matches(request, property_):
+    configured = (property_.fleet_widget_domain or "").strip().lower().rstrip(".")
+    if not configured:
+        return not (request.META.get("HTTP_ORIGIN") or request.META.get("HTTP_REFERER"))
+    configured = configured.removeprefix("https://").removeprefix("http://").split("/")[0]
+    origin = request.META.get("HTTP_ORIGIN") or request.META.get("HTTP_REFERER")
+    if not origin:
+        return True
+    hostname = (urlparse(origin).hostname or "").lower().rstrip(".")
+    return hostname == configured or hostname.endswith(f".{configured}")
+
+
+@csrf_exempt
+@xframe_options_exempt
+def fleet_widget(request, widget_key):
+    """Public iframe intake for property-scoped parking and vehicle rentals."""
+    selected = Property.objects.select_related("settings").filter(
+        fleet_widget_key=widget_key, is_active=True
+    ).first()
+    if not selected or not _fleet_widget_origin_matches(request, selected):
+        return render(request, "booking/widget_denied.html", {"channel": None}, status=403)
+
+    entity = request.POST.get("entity") or request.GET.get("entity") or "parking"
+    if entity not in {"parking", "rentals"}:
+        entity = "parking"
+    if _module_license_denied(request, selected, "parking" if entity == "parking" else "vehicle_rental"):
+        return render(request, "booking/widget_denied.html", {"channel": None}, status=403)
+    parking_form = PublicParkingReservationForm(request.POST or None, property_=selected)
+    rental_form = PublicRentalBookingForm(request.POST or None, property_=selected)
+    start, end = _parking_search_values(request)
+    parking_form.fields["parking_lot"].queryset = selected.parking_lots.filter(
+        is_active=True, booking_enabled=True
+    )
+    parking_form.fields["parking_space"].queryset = available_parking_spaces(
+        property_=selected, start_at=start, end_at=end,
+    )
+    pickup, dropoff, vehicle_class = _rental_search_values(request)
+    rental_form.fields["vehicle"].queryset = available_rental_vehicles(
+        property_=selected, pickup_at=pickup, dropoff_at=dropoff, vehicle_class=vehicle_class,
+    )
+    rental_form.fields["rental_rate"].queryset = VehicleRentalRate.objects.filter(
+        vehicle__property=selected, vehicle__is_active=True,
+        vehicle__online_enabled=True, is_active=True,
+    )
+    active_form = rental_form if entity == "rentals" else parking_form
+    if request.method == "POST" and active_form.is_valid():
+        booking = active_form.save(commit=False)
+        booking.property = selected
+        booking.source = ParkingReservation.Source.ONLINE
+        booking.status = (
+            VehicleRentalBooking.Status.PENDING
+            if entity == "rentals" else ParkingReservation.Status.PENDING
+        )
+        if entity == "rentals":
+            _apply_rental_quote(booking)
+            _apply_public_rental_consent(booking, active_form)
+        elif booking.parking_lot_id:
+            booking.amount = calculate_parking_quote(parking_lot=booking.parking_lot, start_at=booking.start_at, end_at=booking.end_at)
+        if entity == "rentals":
+            save_rental_booking(booking)
+            _record_public_rental_consent(booking)
+            queue_property_first_party_event(
+                property_=selected, event_type="reservation_created",
+                payload={"entity": "rentals", "booking_id": booking.id, "confirmation_code": booking.confirmation_code,
+                         "status": booking.status, "vehicle_id": booking.vehicle_id, "total_amount": str(booking.total_amount),
+                         "currency": booking.currency, "source": booking.source},
+            )
+        else:
+            save_parking_reservation(booking)
+            queue_property_first_party_event(
+                property_=selected, event_type="reservation_created",
+                payload={"entity": "parking", "booking_id": booking.id, "confirmation_code": booking.confirmation_code,
+                         "status": booking.status, "parking_lot_id": booking.parking_lot_id, "amount": str(booking.amount),
+                         "currency": booking.currency, "source": booking.source},
+            )
+        if entity == "rentals":
+            queue_rental_notifications(booking)
+            if booking.prepayment_amount:
+                create_pending_rental_payment(booking=booking, amount=booking.prepayment_amount)
+        payment_url = reverse("operations:rental_payment_checkout", kwargs={"payment_token": booking.payment_token}) if entity == "rentals" and booking.prepayment_amount else ""
+        return render(request, "booking/online/fleet_widget.html", {
+            "selected_property": selected, "entity": entity,
+            "submitted": True, "booking": booking, "payment_url": payment_url,
+            "manage_url": request.build_absolute_uri(reverse("operations:rental_booking_self_service", kwargs={"token": booking.public_manage_token})),
+        })
+
+    return render(request, "booking/online/fleet_widget.html", {
+        "selected_property": selected, "entity": entity,
+        "parking_form": parking_form, "rental_form": rental_form,
+        "form": active_form,
+        "parking_lots": parking_form.fields["parking_lot"].queryset,
+        "vehicles": rental_form.fields["vehicle"].queryset.prefetch_related("photos"),
+    })
+
+
+@csrf_exempt
+def fleet_availability_api(request, widget_key):
+    """JSON availability endpoint for the web/mobile rental and parking engine."""
+    selected = Property.objects.filter(fleet_widget_key=widget_key, is_active=True).first()
+    if not selected or not _fleet_widget_origin_matches(request, selected):
+        return JsonResponse({"detail": "Widget access denied."}, status=403)
+    entity = request.GET.get("entity", "rentals")
+    if _module_license_denied(request, selected, "parking" if entity == "parking" else "vehicle_rental"):
+        return JsonResponse({"detail": "Module license inactive."}, status=403)
+    if entity == "parking":
+        start, end = _parking_search_values(request)
+        lots = selected.parking_lots.filter(is_active=True, booking_enabled=True)
+        spaces = available_parking_spaces(property_=selected, start_at=start, end_at=end)
+        return JsonResponse({
+            "entity": "parking",
+            "lots": [{"id": lot.id, "code": lot.code, "name": lot.name, "currency": lot.currency} for lot in lots],
+            "spaces": [{"id": space.id, "lot_id": space.parking_lot_id, "code": space.code, "type": space.space_type} for space in spaces],
+        })
+    pickup, dropoff, vehicle_class = _rental_search_values(request)
+    vehicles = available_rental_vehicles(property_=selected, pickup_at=pickup, dropoff_at=dropoff, vehicle_class=vehicle_class).prefetch_related("photos", "rental_rates")
+    return JsonResponse({
+        "entity": "rentals",
+        "vehicles": [{
+            "id": vehicle.id, "code": vehicle.code, "name": vehicle.name,
+            "class": vehicle.vehicle_class, "brand": vehicle.brand,
+            "model": vehicle.model_name, "photos": [photo.image.url for photo in vehicle.photos.filter(show_online=True)],
+            "rates": [{"id": rate.id, "name": rate.name, "daily": str(rate.daily_rate), "currency": rate.currency} for rate in vehicle.rental_rates.filter(is_active=True)],
+        } for vehicle in vehicles],
+    })
+
+
+@csrf_exempt
+def fleet_booking_api(request, widget_key):
+    """Create a property-scoped pending fleet booking from JSON."""
+    if request.method != "POST":
+        return JsonResponse({"detail": "POST required."}, status=405)
+    selected = Property.objects.filter(fleet_widget_key=widget_key, is_active=True).first()
+    if not selected or not _fleet_widget_origin_matches(request, selected):
+        return JsonResponse({"detail": "Widget access denied."}, status=403)
+    try:
+        payload = json.loads(request.body or b"{}")
+    except (TypeError, ValueError):
+        return JsonResponse({"detail": "Invalid JSON."}, status=400)
+    entity = payload.get("entity", "rentals")
+    if _module_license_denied(request, selected, "parking" if entity == "parking" else "vehicle_rental"):
+        return JsonResponse({"detail": "Module license inactive."}, status=403)
+    data = QueryDict("", mutable=True)
+    for key, value in payload.items():
+        if key == "extra_products" and isinstance(value, list):
+            data.setlist(key, [str(item) for item in value])
+        elif value is not None:
+            data[key] = str(value)
+    if entity == "rentals":
+        defaults = {
+            "status": VehicleRentalBooking.Status.PENDING, "source": ParkingReservation.Source.ONLINE,
+            "daily_rate": "0", "total_amount": "0", "deposit_amount": "0", "currency": "TRY",
+            "additional_driver_count": "0", "locale": "tr-TR", "prepayment_amount": "0",
+        }
+    else:
+        defaults = {
+            "status": ParkingReservation.Status.PENDING, "source": ParkingReservation.Source.ONLINE,
+            "payment_status": ParkingReservation.PaymentStatus.UNPAID, "amount": "0", "currency": "TRY",
+        }
+    for key, value in defaults.items():
+        data.setdefault(key, str(value))
+    if entity == "parking":
+        form = PublicParkingReservationForm(data=data, property_=selected)
+    else:
+        form = PublicRentalBookingForm(data=data, property_=selected)
+    if not form.is_valid():
+        return JsonResponse({"detail": "Invalid booking.", "errors": form.errors.get_json_data()}, status=400)
+    booking = form.save(commit=False)
+    booking.property = selected
+    booking.source = ParkingReservation.Source.ONLINE
+    booking.status = ParkingReservation.Status.PENDING if entity == "parking" else VehicleRentalBooking.Status.PENDING
+    if entity == "parking" and booking.parking_lot_id:
+        booking.amount = calculate_parking_quote(parking_lot=booking.parking_lot, start_at=booking.start_at, end_at=booking.end_at)
+    elif entity == "rentals":
+        _apply_rental_quote(booking)
+        _apply_public_rental_consent(booking, form)
+    if entity == "rentals":
+        save_rental_booking(booking)
+        _record_public_rental_consent(booking)
+        queue_property_first_party_event(
+            property_=selected, event_type="reservation_created",
+            payload={"entity": "rentals", "booking_id": booking.id, "confirmation_code": booking.confirmation_code,
+                     "status": booking.status, "vehicle_id": booking.vehicle_id, "total_amount": str(booking.total_amount),
+                     "currency": booking.currency, "source": booking.source},
+        )
+    else:
+        save_parking_reservation(booking)
+        queue_property_first_party_event(
+            property_=selected, event_type="reservation_created",
+            payload={"entity": "parking", "booking_id": booking.id, "confirmation_code": booking.confirmation_code,
+                     "status": booking.status, "parking_lot_id": booking.parking_lot_id, "amount": str(booking.amount),
+                     "currency": booking.currency, "source": booking.source},
+        )
+    if entity == "rentals":
+        queue_rental_notifications(booking)
+        if booking.prepayment_amount:
+            create_pending_rental_payment(booking=booking, amount=booking.prepayment_amount)
+    response = {"entity": entity, "confirmation_code": booking.confirmation_code, "status": booking.status}
+    if entity == "rentals" and booking.prepayment_amount:
+        response["payment_url"] = request.build_absolute_uri(reverse("operations:rental_payment_checkout", kwargs={"payment_token": booking.payment_token}))
+    return JsonResponse(response, status=201)
+
+
+@csrf_exempt
+def fleet_channel_webhook(request, widget_key):
+    """Receive signed channel-manager events without exposing booking secrets."""
+    if request.method != "POST":
+        return JsonResponse({"detail": "POST required."}, status=405)
+    selected = Property.objects.filter(fleet_widget_key=widget_key, is_active=True).first()
+    secret = getattr(django_settings, "FLEET_CHANNEL_WEBHOOK_SECRET", "")
+    signature = request.headers.get("X-Fleet-Signature", "")
+    expected = hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest() if secret else ""
+    if not selected or not secret or not signature or not hmac.compare_digest(expected, signature):
+        return JsonResponse({"detail": "Invalid webhook."}, status=403)
+    try:
+        payload = json.loads(request.body or b"{}")
+    except (TypeError, ValueError):
+        return JsonResponse({"detail": "Invalid JSON."}, status=400)
+    webhook_event, created = _register_fleet_webhook(selected, "channel_manager", payload)
+    if not created:
+        return JsonResponse({"received": True, "duplicate": True, "event_id": webhook_event.id})
+    event = RentalChannelSyncEvent.objects.create(
+        property=selected,
+        channel=str(payload.get("channel") or "unknown")[:80],
+        event_type=str(payload.get("event_type") or "inventory_update")[:40],
+        external_reference=str(payload.get("external_reference") or "")[:180],
+        status=str(payload.get("status") or "received")[:20],
+        payload=payload,
+        error_message=str(payload.get("error_message") or "")[:4000],
+    )
+    _complete_fleet_webhook(webhook_event)
+    return JsonResponse({"received": True, "event_id": event.id})
+
+
+def _signed_fleet_payload(request, widget_key):
+    """Validate a fleet integration payload and return (property, payload, error)."""
+    if request.method != "POST":
+        return None, None, JsonResponse({"detail": "POST required."}, status=405)
+    selected = Property.objects.filter(fleet_widget_key=widget_key, is_active=True).first()
+    secret = getattr(django_settings, "FLEET_CHANNEL_WEBHOOK_SECRET", "")
+    signature = request.headers.get("X-Fleet-Signature", "")
+    expected = hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest() if secret else ""
+    if not selected or not secret or not signature or not hmac.compare_digest(expected, signature):
+        return None, None, JsonResponse({"detail": "Invalid webhook."}, status=403)
+    try:
+        payload = json.loads(request.body or b"{}")
+    except (TypeError, ValueError):
+        return None, None, JsonResponse({"detail": "Invalid JSON."}, status=400)
+    return selected, payload, None
+
+
+def _register_fleet_webhook(property_, provider, payload):
+    """Register a verified webhook and report whether it is a duplicate."""
+    event_id = str(payload.get("event_id") or payload.get("id") or "").strip()
+    if not event_id:
+        event_id = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    event, created = WebhookEvent.objects.get_or_create(
+        property=property_, provider=provider, event_id=event_id,
+        defaults={
+            "event_type": str(payload.get("event_type") or "")[:80],
+            "signature_verified": True,
+            "payload": payload,
+        },
+    )
+    return event, created
+
+
+def _complete_fleet_webhook(event):
+    event.status = "processed"
+    event.processed_at = timezone.now()
+    event.save(update_fields=["status", "processed_at"])
+
+
+def _fail_fleet_webhook(event, message):
+    event.status = "rejected"
+    event.error_message = str(message)[:4000]
+    event.processed_at = timezone.now()
+    event.save(update_fields=["status", "error_message", "processed_at"])
+
+
+@csrf_exempt
+def fleet_telemetry_webhook(request, widget_key):
+    selected, payload, error = _signed_fleet_payload(request, widget_key)
+    if error:
+        return error
+    webhook_event, created = _register_fleet_webhook(selected, "telematics", payload)
+    if not created:
+        return JsonResponse({"received": True, "duplicate": True, "event_id": webhook_event.id})
+    vehicle = selected.vehicles.filter(
+        Q(id=payload.get("vehicle_id")) | Q(code=str(payload.get("vehicle_code") or ""))
+    ).first()
+    if not vehicle:
+        return JsonResponse({"detail": "Vehicle not found."}, status=404)
+    occurred_at = parse_datetime(str(payload.get("occurred_at") or "")) or timezone.now()
+    event = VehicleTelemetryEvent.objects.create(
+        property=selected, vehicle=vehicle, source=str(payload.get("source") or "telematics")[:80],
+        occurred_at=occurred_at, latitude=payload.get("latitude"), longitude=payload.get("longitude"),
+        mileage=payload.get("mileage"), speed=payload.get("speed"), payload=payload,
+    )
+    _complete_fleet_webhook(webhook_event)
+    return JsonResponse({"received": True, "event_id": event.id})
+
+
+@csrf_exempt
+def fleet_parking_device_webhook(request, widget_key):
+    selected, payload, error = _signed_fleet_payload(request, widget_key)
+    if error:
+        return error
+    webhook_event, created = _register_fleet_webhook(selected, "parking_device", payload)
+    if not created:
+        return JsonResponse({"received": True, "duplicate": True, "event_id": webhook_event.id})
+    device = selected.parking_devices.filter(is_active=True).filter(
+        Q(id=payload.get("device_id")) | Q(name=str(payload.get("device_name") or ""))
+    ).first()
+    if not device:
+        _fail_fleet_webhook(webhook_event, "Active parking device not found.")
+        return JsonResponse({"detail": "Parking device not found."}, status=404)
+    kind = str(payload.get("event_type") or "").strip().lower()
+    if kind not in {ParkingAccessEvent.Kind.ENTRY, ParkingAccessEvent.Kind.EXIT}:
+        _fail_fleet_webhook(webhook_event, "event_type must be entry or exit.")
+        return JsonResponse({"detail": "Invalid parking event type."}, status=400)
+    parking_space = device.parking_lot.spaces.filter(is_active=True).filter(
+        Q(id=payload.get("parking_space_id")) | Q(code=str(payload.get("parking_space_code") or ""))
+    ).first() if device.parking_lot_id else None
+    device.last_seen_at = timezone.now()
+    device.save(update_fields=["last_seen_at"])
+    event = ParkingAccessEvent.objects.create(
+        property=selected, parking_lot=device.parking_lot,
+        parking_space=parking_space,
+        kind=kind,
+        vehicle_plate=str(payload.get("plate_number") or "")[:32],
+        occurred_at=parse_datetime(str(payload.get("occurred_at") or "")) or timezone.now(),
+        anpr_reference=f"device:{device.id}", metadata=payload,
+    )
+    _complete_fleet_webhook(webhook_event)
+    return JsonResponse({"received": True, "event_id": event.id})
+
+
+@csrf_exempt
+def fleet_flight_webhook(request, widget_key):
+    selected, payload, error = _signed_fleet_payload(request, widget_key)
+    if error:
+        return error
+    webhook_event, created = _register_fleet_webhook(selected, "flight_provider", payload)
+    if not created:
+        return JsonResponse({"received": True, "duplicate": True, "event_id": webhook_event.id})
+    booking = selected.vehicle_rental_bookings.filter(
+        Q(id=payload.get("booking_id")) | Q(confirmation_code=str(payload.get("confirmation_code") or ""))
+    ).first()
+    if not booking:
+        return JsonResponse({"detail": "Rental booking not found."}, status=404)
+    status_obj, _ = RentalFlightStatus.objects.update_or_create(
+        booking=booking,
+        defaults={
+            "flight_number": str(payload.get("flight_number") or "")[:40],
+            "airport_code": str(payload.get("airport_code") or "")[:8],
+            "scheduled_arrival_at": parse_datetime(str(payload.get("scheduled_arrival_at") or "")),
+            "estimated_arrival_at": parse_datetime(str(payload.get("estimated_arrival_at") or "")),
+            "status": str(payload.get("status") or "unknown")[:32],
+            "source": str(payload.get("source") or "flight_provider")[:80],
+            "last_checked_at": timezone.now(), "payload": payload,
+        },
+    )
+    _complete_fleet_webhook(webhook_event)
+    return JsonResponse({"received": True, "flight_status_id": status_obj.id})
+
+
+def rental_payment_checkout(request, payment_token):
+    booking = VehicleRentalBooking.objects.select_related("property").filter(
+        payment_token=payment_token, property__is_active=True,
+    ).first()
+    if not booking:
+        return JsonResponse({"detail": "Rental booking not found."}, status=404)
+    gateway = booking.property.payment_gateways.filter(active=True).order_by("-default_gate", "id").first()
+    if not gateway:
+        return JsonResponse({"detail": "No active payment gateway is configured."}, status=503)
+    try:
+        _, result = start_rental_checkout(
+            booking=booking, gateway=gateway,
+            success_url=request.build_absolute_uri(reverse("operations:rental_payment_result", kwargs={"payment_token": payment_token})),
+            cancel_url=request.build_absolute_uri(reverse("operations:rental_payment_result", kwargs={"payment_token": payment_token})),
+        )
+    except (PaymentConfigurationError, PaymentProviderError) as exc:
+        return JsonResponse({"detail": str(exc)}, status=503)
+    if result.get("checkout_method") == "post":
+        return HttpResponse(render_checkout(result), content_type="text/html; charset=utf-8")
+    return redirect(result["checkout_url"])
+
+
+@csrf_exempt
+def rental_payment_result(request, payment_token):
+    booking = VehicleRentalBooking.objects.select_related("property").filter(payment_token=payment_token, property__is_active=True).first()
+    if not booking:
+        return JsonResponse({"detail": "Rental booking not found."}, status=404)
+    payment = booking.payments.order_by("-created_at").first()
+    if request.method == "POST" and payment and payment.gateway:
+        provider = (payment.gateway.payment_model or "").strip().lower()
+        payload = request.POST
+        if provider == "nestpay_halkbank":
+            store_key = (payment.gateway.configuration or {}).get("store_key_env", "")
+            store_key = __import__("os").environ.get(store_key, "") if store_key else getattr(django_settings, "PAYMENT_NESTPAY_STORE_KEY", "")
+            verified = verify_nestpay_response(payload, store_key)
+        elif provider == "cpay_stb":
+            password_env = (payment.gateway.configuration or {}).get("merchant_password_env", "")
+            password = __import__("os").environ.get(password_env, "") if password_env else getattr(django_settings, "PAYMENT_CPAY_MERCHANT_PASSWORD", "")
+            verified = verify_cpay_response(payload, password)
+        else:
+            verified = False
+        if not verified:
+            payment.status = RentalPayment.Status.FAILED
+            payment.metadata = {**(payment.metadata or {}), "provider_result": dict(payload), "verification": "failed"}
+            payment.save(update_fields=["status", "metadata", "updated_at"])
+            return JsonResponse({"detail": "Payment verification failed."}, status=400)
+        payment.status = RentalPayment.Status.CAPTURED
+        payment.provider_reference = (
+            payload.get("TransId") or payload.get("cPayPaymentRef") or payment.provider_reference
+        )[:180]
+        payment.metadata = {**(payment.metadata or {}), "provider_result": dict(payload), "verification": "passed"}
+        payment.save(update_fields=["status", "provider_reference", "metadata", "updated_at"])
+    return JsonResponse({"booking": booking.confirmation_code, "payment_status": payment.status if payment else "unpaid"})
+
+
+@csrf_exempt
+def rental_payment_webhook(request):
+    if request.method != "POST" or not django_settings.PAYMENT_STRIPE_WEBHOOK_SECRET:
+        return JsonResponse({"detail": "Webhook is not configured."}, status=400)
+    signature = request.headers.get("Stripe-Signature", "")
+    timestamp = next((part.split("=", 1)[1] for part in signature.split(",") if part.startswith("t=")), "")
+    signatures = [part.split("=", 1)[1] for part in signature.split(",") if part.startswith("v1=")]
+    expected = hmac.new(django_settings.PAYMENT_STRIPE_WEBHOOK_SECRET.encode(), f"{timestamp}.".encode() + request.body, hashlib.sha256).hexdigest()
+    if not timestamp or not any(hmac.compare_digest(expected, value) for value in signatures):
+        return JsonResponse({"detail": "Invalid signature."}, status=400)
+    try:
+        event = json.loads(request.body)
+        external_id = event.get("data", {}).get("object", {}).get("id", "")
+        payment = RentalPayment.objects.get(provider_reference=external_id)
+    except (ValueError, RentalPayment.DoesNotExist):
+        return JsonResponse({"detail": "Unknown rental payment."}, status=400)
+    if event.get("type") == "checkout.session.completed":
+        payment.status = RentalPayment.Status.CAPTURED
+        payment.metadata = event
+        payment.save(update_fields=["status", "metadata", "updated_at"])
+    return JsonResponse({"received": True})
+
+
+@login_required
+def front_cash(request):
+    properties, selected, denied = _finance_context(request)
+    if denied:
+        return denied
+    shift_form = CashierShiftForm(request.POST or None, prefix="shift")
+    transaction_form = FrontCashTransactionForm(request.POST or None, prefix="transaction")
+    if request.method == "POST" and selected:
+        action = request.POST.get("action")
+        if action == "transaction" and transaction_form.is_valid():
+            transaction = transaction_form.save(commit=False)
+            transaction.property = selected
+            transaction.posted_by = request.user
+            transaction.save()
+            messages.success(request, "Kasa hareketi kaydedildi.")
+        elif action == "open_shift" and shift_form.is_valid():
+            shift = shift_form.save(commit=False)
+            shift.property = selected
+            shift.cashier = request.user
+            shift.status = CashierShift.Status.OPEN
+            shift.save()
+            messages.success(request, "Ön kasa vardiyası açıldı.")
+        elif action == "close_shift":
+            shift = selected.cashier_shifts.filter(status=CashierShift.Status.OPEN, cashier=request.user).first()
+            if shift:
+                shift.closing_balance = request.POST.get("closing_balance") or None
+                shift.closing_note = request.POST.get("closing_note", "").strip()
+                shift.closed_at = timezone.now()
+                shift.closed_by = request.user
+                shift.status = CashierShift.Status.CLOSED
+                shift.save(update_fields=["closing_balance", "closing_note", "closed_at", "closed_by", "status"])
+                messages.success(request, "Ön kasa vardiyası kapatıldı.")
+            else:
+                messages.error(request, "Kapatılacak açık vardiya bulunamadı.")
+        return redirect(f"{reverse('operations:front_cash')}?property_id={selected.id}")
+    shifts = selected.cashier_shifts.select_related("cashier", "closed_by")[:50] if selected else CashierShift.objects.none()
+    transactions = selected.front_cash_transactions.select_related("posted_by", "guest")[:50] if selected else FrontCashTransaction.objects.none()
+    open_shift = selected.cashier_shifts.filter(status=CashierShift.Status.OPEN, cashier=request.user).first() if selected else None
+    return render(request, "booking/operations/front_cash.html", {
+        "title": "Ön Kasa", "properties": properties, "selected_property": selected,
+        "shift_form": shift_form, "transaction_form": transaction_form, "shifts": shifts, "transactions": transactions, "open_shift": open_shift,
+    })
 
 
 @login_required
@@ -741,15 +1964,9 @@ def online_settings(request):
     if _permission_denied(request, selected, "operations.online_settings.manage"):
         return HttpResponseForbidden("Bu tesis için online booking ayarlarına erişiminiz yok.")
     settings_obj = OnlineBookingSettings.objects.get_or_create(property=selected)[0] if selected else None
-    photo_form = RoomPhotoForm()
-    if selected:
-        photo_form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
-        photo_form.fields["unit"].queryset = selected.units.filter(is_active=True)
+    photo_form = HotelPhotoForm()
     if request.method == "POST" and settings_obj and request.POST.get("action") == "photo":
-        photo_form = RoomPhotoForm(request.POST, request.FILES)
-        if selected:
-            photo_form.fields["unit_type"].queryset = selected.unit_types.filter(is_active=True)
-            photo_form.fields["unit"].queryset = selected.units.filter(is_active=True)
+        photo_form = HotelPhotoForm(request.POST, request.FILES)
         if photo_form.is_valid():
             photo = photo_form.save(commit=False)
             photo.property = selected
@@ -790,7 +2007,7 @@ def online_settings(request):
             return redirect(f"{reverse('operations:online_settings')}?property_id={selected.id}")
         for field in [f.name for f in OnlineBookingSettings._meta.fields if isinstance(f, BooleanField)]:
             setattr(settings_obj, field, request.POST.get(field) == "on")
-        for field in ["seo_title", "seo_description", "meta_keywords", "domain", "facebook_url", "instagram_url", "whatsapp_url", "google_business_url", "payment_provider", "payment_public_key"]:
+        for field in ["seo_title", "seo_description", "meta_keywords", "canonical_url", "og_title", "og_image_url", "google_analytics_id", "google_tag_manager_id", "google_maps_cid", "domain", "facebook_url", "instagram_url", "whatsapp_url", "google_business_url", "payment_provider", "payment_public_key"]:
             setattr(settings_obj, field, request.POST.get(field, "").strip())
         try:
             settings_obj.deposit_percent = max(0, min(100, float(request.POST.get("deposit_percent") or 0)))
@@ -807,7 +2024,7 @@ def online_settings(request):
         "services": selected.online_services.all() if selected else PropertyService.objects.none(),
         "service_requests": ServiceRequest.objects.filter(reservation__property=selected).select_related("reservation", "reservation__guest", "service")[:50] if selected else ServiceRequest.objects.none(),
         "photo_form": photo_form,
-        "photos": RoomPhoto.objects.filter(property=selected).select_related("unit_type", "unit") if selected else RoomPhoto.objects.none(),
+        "photos": HotelPhoto.objects.filter(property=selected) if selected else HotelPhoto.objects.none(),
         "service_status_choices": ServiceRequest.Status.choices,
         "payment_provider_choices": OnlineBookingSettings.PaymentProvider.choices,
     })
@@ -1075,7 +2292,7 @@ def hotel_dictionaries(request):
     form_map = {
         "room_group": (RoomGroup, RoomGroupForm), "bed_type": (BedType, BedTypeForm),
         "room_view": (RoomView, RoomViewForm), "room_location": (RoomLocation, RoomLocationForm),
-        "room_photo": (RoomPhoto, RoomPhotoForm),
+        "room_photo": (RoomPhoto, RoomPhotoForm), "hotel_photo": (HotelPhoto, HotelPhotoForm),
         "board_type": (BoardType, BoardTypeForm), "rate_type": (RateType, RateTypeForm),
     }
     active = request.POST.get("entity") or request.GET.get("entity", "board_type")
@@ -1102,7 +2319,7 @@ def hotel_dictionaries(request):
         "title": "Hotel Dictionaries",
         "properties": properties, "selected_property": selected, "active_entity": active,
         "form": form, "lists": lists, "selected_items": lists[active],
-        "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "room_photo": "Oda fotoğrafı", "board_type": "Board Type", "rate_type": "Rate Type"},
+        "entity_labels": {"room_group": "Oda grubu", "bed_type": "Yatak tipi", "room_view": "Manzara", "room_location": "Konum", "room_photo": "Oda fotoğrafı", "hotel_photo": "Otel fotoğrafı", "board_type": "Board Type", "rate_type": "Rate Type"},
     })
 
 

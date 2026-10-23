@@ -16,11 +16,31 @@
   <span class="hotel-module-nav-label">RESEPSİYON</span>
   <a href="{% url 'operations:room_rack' %}">Room Rack</a>
 </nav>
-{% elif request.resolver_match.url_name == 'front_office' or request.resolver_match.url_name == 'call_requests' %}
+{% elif request.resolver_match.url_name == 'vehicle_fleet' %}
+<nav class="hotel-module-nav" aria-label="Araç filosu modülü">
+  <span class="hotel-module-nav-label">ARAÇ FİLOSU</span>
+  <a href="{% url 'operations:vehicle_fleet' %}">Araç Filosu</a>
+</nav>
+{% elif request.resolver_match.url_name == 'parking_reservations' or request.resolver_match.url_name == 'parking_management' %}
+<nav class="hotel-module-nav" aria-label="Otopark modülü">
+  <span class="hotel-module-nav-label">OTOPARK</span>
+  <a href="{% url 'operations:parking_management' %}">Otopark Yönetimi</a>
+</nav>
+{% elif request.resolver_match.url_name == 'vehicle_rental_bookings' or request.resolver_match.url_name == 'vehicle_rentals_management' %}
+<nav class="hotel-module-nav" aria-label="Araç kiralama modülü">
+  <span class="hotel-module-nav-label">ARAÇ KİRALAMA</span>
+  <a href="{% url 'operations:vehicle_rentals_management' %}">Araç Kiralama</a>
+</nav>
+{% elif request.resolver_match.url_name == 'front_office' or request.resolver_match.url_name == 'call_requests' or request.resolver_match.url_name == 'front_office_status' or request.resolver_match.url_name == 'group_reservations' or request.resolver_match.url_name == 'tour_operator_integrations' or request.resolver_match.url_name == 'room_type_availability' or request.resolver_match.url_name == 'available_rooms' or request.resolver_match.url_name == 'quick_room_assignment' or request.resolver_match.url_name == 'quick_posting' or request.resolver_match.url_name == 'folio_balances' or request.resolver_match.url_name == 'front_cash' or request.resolver_match.url_name == 'credit_accounts' or request.resolver_match.url_name == 'daily_currency_rates' or request.resolver_match.url_name == 'folio_routing' or request.resolver_match.url_name == 'guest_cards' or request.resolver_match.url_name == 'guest_medical_daily' or request.resolver_match.url_name == 'closed_room_list' or request.resolver_match.url_name == 'lost_and_found' or request.resolver_match.url_name == 'hotel_phone_book' or request.resolver_match.url_name == 'police_lists' or request.resolver_match.url_name == 'offline_backup' or request.resolver_match.url_name == 'park_entry' %}
 <nav class="hotel-module-nav" aria-label="Ön büro modülü">
   <span class="hotel-module-nav-label">ÖN BÜRO</span>
   <a href="{% url 'operations:front_office' %}">Front Office Listeleri</a>
   <a href="{% url 'operations:call_requests' %}">Çağrı Listesi</a>
+  <a href="{% url 'operations:guest_cards' %}">Misafir Kartları</a>
+  <a href="{% url 'operations:group_reservations' %}">Grup Rezervasyonları</a>
+  <a href="{% url 'operations:front_cash' %}">Ön Kasa</a>
+  <a href="{% url 'operations:daily_currency_rates' %}">Döviz Kurları</a>
+  <a href="{% url 'operations:folio_balances' %}">Folyo Bakiyeleri</a>
 </nav>
 {% elif request.resolver_match.url_name == 'business_channel_list' or request.resolver_match.url_name == 'business_channel_rate_rules' or request.resolver_match.url_name == 'business_price_parity' %}
 <nav class="hotel-module-nav" aria-label="Kanal yönetimi modülü">
@@ -36,10 +56,11 @@
   <a href="{% url 'reservations:business_rate_plans' %}">Rate Planlar</a>
   <a href="{% url 'reservations:business_rate_calendar' %}">Fiyat Takvimi</a>
 </nav>
-{% elif request.resolver_match.url_name == 'crm_guests' %}
+{% elif request.resolver_match.url_name == 'crm_guests' or request.resolver_match.url_name == 'crm_marketing' or request.resolver_match.url_name == 'guest_cards' %}
 <nav class="hotel-module-nav" aria-label="CRM modülü">
   <span class="hotel-module-nav-label">CRM</span>
   <a href="{% url 'operations:crm_guests' %}">Misafir Profilleri</a>
+  <a href="{% url 'operations:crm_marketing' %}">Pazarlama</a>
 </nav>
 {% elif request.resolver_match.url_name == 'crm_marketing' %}
 <nav class="hotel-module-nav" aria-label="Satış ve pazarlama modülü">
@@ -58,7 +79,16 @@
   <a href="{% url 'operations:hotel_dictionaries' %}">Otel Sözlükleri</a>
   <a href="{% url 'operations:room_master' %}">Oda Tanımları</a>
 </nav>
-{% elif request.resolver_match.url_name == 'accounting_definitions' or request.resolver_match.url_name == 'invoices' or request.resolver_match.url_name == 'invoice_detail' or request.resolver_match.url_name == 'invoice_preview' or request.resolver_match.url_name == 'payment_gateways' or request.resolver_match.url_name == 'payment_gateway_detail' or request.resolver_match.url_name == 'night_audit' %}
+{% elif request.resolver_match.url_name == 'end_of_day_log_2' or request.resolver_match.url_name == 'archived_end_of_day_reports' or request.resolver_match.url_name == 'night_audit_html_reports' or request.resolver_match.url_name == 'end_of_year' or request.resolver_match.url_name == 'reservation_updates' or request.resolver_match.url_name == 'night_audit' %}
+<nav class="hotel-module-nav" aria-label="Gün sonu modülü">
+  <span class="hotel-module-nav-label">GÜN SONU</span>
+  <a href="{% url 'operations:night_audit' %}">Gün Sonu</a>
+  <a href="{% url 'operations:end_of_day_log_2' %}">Gün Sonu Logları</a>
+  <a href="{% url 'operations:archived_end_of_day_reports' %}">Arşiv Raporları</a>
+  <a href="{% url 'operations:night_audit_html_reports' %}">Night Audit Raporları</a>
+  <a href="{% url 'operations:reservation_updates' %}">Rezervasyon Güncellemeleri</a>
+</nav>
+{% elif request.resolver_match.url_name == 'accounting_definitions' or request.resolver_match.url_name == 'invoices' or request.resolver_match.url_name == 'invoice_detail' or request.resolver_match.url_name == 'invoice_preview' or request.resolver_match.url_name == 'payment_gateways' or request.resolver_match.url_name == 'payment_gateway_detail' %}
 <nav class="hotel-module-nav" aria-label="Muhasebe modülü">
   <span class="hotel-module-nav-label">MUHASEBE</span>
   <a href="{% url 'operations:accounting_definitions' %}">Muhasebe Tanımları</a>

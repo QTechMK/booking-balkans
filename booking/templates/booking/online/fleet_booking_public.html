@@ -1,0 +1,33 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Araç ve Otopark | {{ selected_property.name|default:'Booking Balkans' }}</title>
+  <link rel="stylesheet" href="{% static 'css/hotel-manager.css' %}">
+</head>
+<body class="hotel-erp-app public-booking-app">
+  <header class="public-booking-header">
+    <div class="public-booking-brand"><span class="hotel-erp-brand-mark">BB</span><strong>Booking Balkans</strong></div>
+    <div class="public-booking-property">{{ selected_property.name|default:'Araç ve Otopark' }}</div>
+    <div class="public-booking-actions"><span>TR</span><span>{{ selected_property.currency|default:'TRY' }}</span></div>
+  </header>
+  <main class="hotel-erp-page online-fleet-page">
+    <div class="hotel-erp-heading">
+      <span class="hotel-erp-kicker">ONLINE SERVICES</span>
+      <h1>{{ selected_property.name|default:'Araç ve Otopark' }}</h1>
+      <p>Otopark alanı veya araç kiralama için tarih, lokasyon ve sürücü bilgilerinizi girin.</p>
+    </div>
+    {% if submitted %}
+      <section class="hotel-definition-panel"><div class="definition-heading"><h2>Talebiniz alındı</h2><span>İşlem tesis onayına gönderildi.</span></div><div class="p-3"><p>Rezervasyon kodunuz: <strong>{{ booking.confirmation_code }}</strong></p>{% if payment_url %}<p><a class="btn btn-primary" href="{{ payment_url }}">Ödemeye devam et</a></p>{% endif %}{% if manage_url %}<p><a class="btn btn-outline-primary" href="{{ manage_url }}">Rezervasyonumu yönet</a></p>{% endif %}<p class="text-muted">Tesis onayından sonra kesin durum ve ödeme bilgisi paylaşılacaktır.</p></div></section>
+    {% elif not selected_property %}
+      <section class="hotel-definition-panel"><div class="p-3"><p>Geçerli bir tesis seçilmedi.</p></div></section>
+    {% else %}
+      <nav class="hotel-definition-tabs" aria-label="Online hizmetler"><a class="{% if entity != 'rentals' %}active{% endif %}" href="?property_id={{ selected_property.id }}&amp;entity=parking">Otopark rezervasyonu</a><a class="{% if entity == 'rentals' %}active{% endif %}" href="?property_id={{ selected_property.id }}&amp;entity=rentals">Araç kiralama</a></nav>
+      {% if entity == 'rentals' %}<section class="online-vehicle-cards"><h2>Online kiralamaya açık araçlar</h2><div class="vehicle-card-grid">{% for vehicle in vehicles %}<article class="vehicle-card">{% with photo=vehicle.photos.all|first %}{% if photo %}<img src="{{ photo.image.url }}" alt="{{ photo.alt_text|default:vehicle.name }}">{% else %}<div class="vehicle-card-placeholder">Araç görseli yok</div>{% endif %}{% endwith %}<div><h3>{{ vehicle.name }}</h3><p>{{ vehicle.brand }} {{ vehicle.model_name }} · {{ vehicle.transmission|default:'-' }} · {{ vehicle.passenger_capacity }} kişi</p><strong>{% if vehicle.daily_rate %}{{ vehicle.daily_rate }} {{ vehicle.rate_currency }} / gün{% else %}Fiyat tesis tarafından belirlenecek{% endif %}</strong></div></article>{% empty %}<p class="text-muted">Şu anda online kiralamaya açık araç yok.</p>{% endfor %}</div></section>{% endif %}
+      <section class="hotel-definition-panel"><div class="definition-heading"><h2>{% if entity == 'rentals' %}Araç kiralama talebi{% else %}Otopark rezervasyonu{% endif %}</h2><span>Bilgiler tesisin gerçek kapasitesi ve araç seçenekleriyle doğrulanır.</span></div><form method="post" class="definition-form-grid">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="entity" value="{{ entity }}">{% for field in form %}<div class="definition-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}<button class="btn btn-primary definition-submit">Rezervasyon talebi gönder</button></form></section>
+    {% endif %}
+  </main>
+</body>
+</html>

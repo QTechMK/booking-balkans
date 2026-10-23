@@ -1,32 +1,29 @@
-{% extends 'booking/admin_base.html' %}
-{% block content %}
-<main class="hotel-erp-page hotel-planned-screen">
-  <div class="hotel-erp-toolbar">
-    <div class="hotel-erp-heading">
-      <span class="hotel-erp-kicker">{{ planned_screen.module_label }}</span>
-      <h1>{{ planned_screen.title }}</h1>
-    </div>
-    <form method="get" class="hotel-erp-property">
-      <label for="property_id">Tesis</label>
-      <select class="form-select form-select-sm" id="property_id" name="property_id" onchange="this.form.submit()">
-        {% for property in properties %}<option value="{{ property.id }}" {% if selected_property.id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}
-      </select>
-    </form>
+{% extends 'booking/operations/_shell.html' %}
+{% block operations_content %}
+<div class="hotel-definition-workspace">
+  <div class="hotel-definition-toolbar">
+    <div><strong>{{ planned_screen.title }}</strong><span>{{ planned_screen.description }}</span></div>
+    <div class="d-flex gap-2">{% for action in screen_actions %}<a class="btn btn-outline-primary btn-sm" href="{{ action.url }}">{{ action.label }}</a>{% endfor %}</div>
   </div>
-  <section class="hotel-erp-content">
-    <div class="card hotel-planned-card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ planned_screen.title }}</strong>
-          <div class="small text-muted">{{ planned_screen.description }}</div>
-        </div>
-        <span class="badge text-bg-warning">Hazırlanıyor</span>
-      </div>
-      <div class="card-body">
-        <p class="mb-2">Bu ekranın URL’si ve modül bağlantısı hazırlandı. İş kuralları, formlar, filtreler ve kayıt işlemleri ilgili geliştirme adımında eklenecek.</p>
-        <div class="alert alert-info mb-0">ElektraWeb ekran eşlemesi tamamlandı; bu alan sonraki sprintte işlevsel hale getirilecektir.</div>
-      </div>
+  {% if planned_nav %}<nav class="hotel-definition-tabs" aria-label="{{ planned_screen.module_label }} sekmeleri">{% for item in planned_nav %}<a href="{{ item.url }}{% if selected_property %}?property_id={{ selected_property.id }}{% endif %}" {% if item.label == planned_screen.label %}class="is-active"{% endif %}>{{ item.label }}</a>{% endfor %}</nav>{% endif %}
+  {% if planned_screen.label == 'Licence Info' %}
+  <section class="license-info-panel">
+    <div class="license-info-grid">
+      <div><span>Uygulama sürümü</span><strong>{{ license_version }}</strong></div>
+      <div><span>Tesis</span><strong>{{ selected_property.name|default:'Tesis seçilmedi' }}</strong></div>
+      <div><span>Lisans durumu</span><strong class="license-status">Aktif</strong></div>
     </div>
+    <div class="license-info-block"><h2>Aktif modüller</h2><div class="license-module-list">{% for module in license_modules %}<span>{{ module }}</span>{% endfor %}</div></div>
+    <div class="license-info-block"><h2>Bilgi</h2><p>Bu ekran yalnızca tesisin uygulama ve modül lisans bilgilerini gösterir. Lisans değişikliği veya satın alma işlemi bu ekrandan yapılmaz.</p></div>
   </section>
-</main>
-{% endblock content %}
+  {% else %}
+  <section class="hotel-definition-panel">
+    <div class="definition-heading"><h2>{{ planned_screen.title }}</h2><span>{{ selected_property.name|default:'Tesis seçilmedi' }} · gerçek tesis verileri</span></div>
+    <div class="hotel-grid-scroll"><table class="table table-sm align-middle"><thead><tr><th>Kayıt</th><th>Açıklama</th><th>Durum</th><th></th></tr></thead><tbody>
+      {% for row in screen_rows %}<tr><td><strong>{{ row.label }}</strong></td><td>{{ row.meta }}</td><td>{{ row.status }}</td><td>{% if row.url %}<a class="btn btn-sm btn-outline-primary" href="{{ row.url }}">Detay</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="text-center py-5 text-muted">Bu tesis için henüz kayıt bulunmuyor.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  <section class="hotel-definition-panel"><div class="definition-heading"><h2>İşlem notu</h2><span>Bu sekme ortak dashboard yapısına bağlandı.</span></div><div class="alert alert-info mb-0">Liste verileri seçili tesisten okunur. Yeni kayıt veya ayrıntılı düzenleme gereken ekranlarda ilgili aktif form bağlantısı üstte gösterilir.</div></section>
+  {% endif %}
+</div>
+{% endblock operations_content %}

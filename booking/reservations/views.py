@@ -27,6 +27,8 @@ from django.views.decorators.csrf import csrf_exempt
 from booking.tenancy.models import Membership
 from booking.tenancy.models import Property
 from booking.tenancy.models import RatePlan
+from booking.tenancy.models import RatePlanChannel
+from booking.tenancy.models import RatePlanSeason
 from booking.tenancy.models import DailyRate
 from booking.tenancy.models import Inventory
 from booking.tenancy.models import Unit
@@ -50,6 +52,8 @@ from .forms import BusinessInventoryForm
 from .forms import BusinessBulkDailyRateForm
 from .forms import BusinessBulkInventoryForm
 from .forms import BusinessRatePlanForm
+from .forms import RatePlanChannelForm
+from .forms import RatePlanSeasonForm
 from .forms import BusinessUnitForm
 from .forms import BusinessUnitTypeForm
 from .forms import BusinessChannelRateRuleForm
@@ -661,12 +665,35 @@ def business_rate_plans(request):
         return HttpResponseForbidden("Bu tesis iÃ§in fiyat tanÄ±mlarÄ± yetkiniz yok.")
     edit_rate_plan = selected_property.rate_plans.filter(id=request.GET.get("edit_rate_plan")).first() if selected_property else None
     form = BusinessRatePlanForm(instance=edit_rate_plan, prefix="rate")
+    season_form = RatePlanSeasonForm(prefix="season")
+    channel_form = RatePlanChannelForm(prefix="channel", property_=selected_property)
     if selected_property:
         form.fields["unit_type"].queryset = selected_property.unit_types.all()
         form.fields["board_type"].queryset = BoardType.objects.filter(property=selected_property, is_active=True)
         form.fields["rate_type"].queryset = RateType.objects.filter(property=selected_property, is_active=True)
     if request.method == "POST" and selected_property:
-        if request.POST.get("entity") == "rate_delete":
+        entity = request.POST.get("entity")
+        if entity == "season":
+            season_form = RatePlanSeasonForm(request.POST, prefix="season")
+            if season_form.is_valid():
+                season = season_form.save(commit=False)
+                rate_plan = selected_property.rate_plans.filter(id=request.POST.get("rate_plan_id")).first()
+                if rate_plan:
+                    season.rate_plan = rate_plan
+                    season.save()
+                    messages.success(request, "Sezon planı kaydedildi.")
+            return redirect(f"{reverse('reservations:business_rate_plans')}?property_id={selected_property.id}")
+        if entity == "channel":
+            channel_form = RatePlanChannelForm(request.POST, prefix="channel", property_=selected_property)
+            if channel_form.is_valid():
+                link = channel_form.save(commit=False)
+                rate_plan = selected_property.rate_plans.filter(id=request.POST.get("rate_plan_id")).first()
+                if rate_plan:
+                    link.rate_plan = rate_plan
+                    link.save()
+                    messages.success(request, "Kanal eşlemesi kaydedildi.")
+            return redirect(f"{reverse('reservations:business_rate_plans')}?property_id={selected_property.id}")
+        if entity == "rate_delete":
             obj = selected_property.rate_plans.filter(id=request.POST.get("object_id")).first()
             if obj:
                 try:
@@ -683,8 +710,8 @@ def business_rate_plans(request):
             obj.property = selected_property
             obj.save()
             return redirect(f"{reverse('reservations:business_rate_plans')}?property_id={selected_property.id}")
-    rate_plans = selected_property.rate_plans.select_related("unit_type") if selected_property else RatePlan.objects.none()
-    return render(request, "booking/business/rates.html", {"properties": properties, "selected_property": selected_property, "form": form, "rate_plans": rate_plans})
+    rate_plans = selected_property.rate_plans.select_related("unit_type").prefetch_related("seasons", "channel_links__channel") if selected_property else RatePlan.objects.none()
+    return render(request, "booking/business/rates.html", {"title": "Rate Plan Yönetimi", "properties": properties, "selected_property": selected_property, "form": form, "season_form": season_form, "channel_form": channel_form, "rate_plans": rate_plans})
 
 
 @login_required
@@ -693,6 +720,8 @@ def business_rate_calendar(request):
     if _business_permission_denied(request, selected_property, "operations.hotel.dictionaries.manage"):
         return HttpResponseForbidden("Bu tesis iÃ§in fiyat takvimi yetkiniz yok.")
     rate_plan_id = request.POST.get("rate_plan_id") or request.GET.get("rate_plan_id")
+    calendar_start = parse_date(request.GET.get("start", "")) or timezone.localdate()
+    calendar_end = calendar_start + timedelta(days=30)
     rate_plans = selected_property.rate_plans.filter(is_active=True) if selected_property else RatePlan.objects.none()
     selected_rate_plan = rate_plans.filter(id=rate_plan_id).first() if rate_plan_id else rate_plans.first()
     daily_form = BusinessDailyRateForm(prefix="rate")
@@ -751,9 +780,24 @@ def business_rate_calendar(request):
                     )
                     current += timedelta(days=1)
                 return redirect(f"{reverse('reservations:business_rate_calendar')}?property_id={selected_property.id}&rate_plan_id={rate_plan_id or ''}")
-    daily_rates = selected_rate_plan.daily_rates.order_by("-date")[:31] if selected_rate_plan else DailyRate.objects.none()
-    inventory_days = selected_property.inventory_days.select_related("unit_type").order_by("-date")[:31] if selected_property else Inventory.objects.none()
-    return render(request, "booking/business/rate_calendar.html", {"properties": properties, "selected_property": selected_property, "rate_plans": rate_plans, "selected_rate_plan": selected_rate_plan, "daily_form": daily_form, "inventory_form": inventory_form, "bulk_rate_form": bulk_rate_form, "bulk_inventory_form": bulk_inventory_form, "daily_rates": daily_rates, "inventory_days": inventory_days})
+    daily_rates = selected_rate_plan.daily_rates.filter(date__range=(calendar_start, calendar_end)) if selected_rate_plan else DailyRate.objects.none()
+    inventory_days = selected_property.inventory_days.select_related("unit_type").filter(date__range=(calendar_start, calendar_end)) if selected_property else Inventory.objects.none()
+    rate_by_date = {item.date: item for item in daily_rates}
+    inventory_by_date = {}
+    for item in inventory_days:
+        cell = inventory_by_date.setdefault(item.date, {"total_capacity": 0, "blocked_capacity": 0, "is_closed": False})
+        cell["total_capacity"] += item.total_capacity
+        cell["blocked_capacity"] += item.blocked_capacity
+        cell["is_closed"] = cell["is_closed"] or item.is_closed
+    calendar_cells = []
+    for day_offset in range((calendar_end - calendar_start).days + 1):
+        current = calendar_start + timedelta(days=day_offset)
+        rate = rate_by_date.get(current)
+        stock = inventory_by_date.get(current, {})
+        total_capacity = stock.get("total_capacity")
+        blocked_capacity = stock.get("blocked_capacity")
+        calendar_cells.append({"date": current, "rate": rate, "total_capacity": total_capacity, "blocked_capacity": blocked_capacity, "available_capacity": (total_capacity - blocked_capacity) if total_capacity is not None and blocked_capacity is not None else None, "is_closed": (rate.is_closed if rate else False) or stock.get("is_closed", False)})
+    return render(request, "booking/business/rate_calendar.html", {"properties": properties, "selected_property": selected_property, "rate_plans": rate_plans, "selected_rate_plan": selected_rate_plan, "daily_form": daily_form, "inventory_form": inventory_form, "bulk_rate_form": bulk_rate_form, "bulk_inventory_form": bulk_inventory_form, "daily_rates": daily_rates, "inventory_days": inventory_days, "calendar_start": calendar_start, "calendar_end": calendar_end, "calendar_cells": calendar_cells})
 
 
 @login_required
@@ -918,14 +962,21 @@ def business_reservation_calendar(request):
         else Reservation.objects.none()
     )
     calendar_days = [start + timedelta(days=index) for index in range((end - start).days + 1)]
-    calendar_rows = [
-        {"reservation": reservation, "occupied_dates": [reservation.check_in + timedelta(days=index) for index in range((reservation.check_out - reservation.check_in).days)]}
-        for reservation in reservations
-    ]
+    reservations = list(reservations.prefetch_related("items__unit_type"))
+    room_type_rows = []
+    unit_types = selected_property.unit_types.prefetch_related("units").order_by("name") if selected_property else UnitType.objects.none()
+    for unit_type in unit_types:
+        matching = [reservation for reservation in reservations if any(item.unit_type_id == unit_type.id for item in reservation.items.all())]
+        cells = []
+        for day in calendar_days:
+            day_reservations = [reservation for reservation in matching if reservation.check_in <= day < reservation.check_out]
+            cells.append({"date": day, "reservation_count": len(day_reservations), "arrival": any(reservation.check_in == day for reservation in day_reservations), "departure": any(reservation.check_out == day for reservation in matching)})
+        room_type_rows.append({"unit_type": unit_type, "unit_count": unit_type.units.filter(is_active=True).count(), "cells": cells})
+    window_days = max(1, (end - start).days + 1)
     return render(
         request,
         "booking/business/reservations/calendar.html",
-        {"properties": properties, "selected_property": selected_property, "reservations": reservations, "calendar_days": calendar_days, "calendar_rows": calendar_rows, "start": start, "end": end},
+        {"properties": properties, "selected_property": selected_property, "reservations": reservations, "calendar_days": calendar_days, "room_type_rows": room_type_rows, "reservation_count": len(reservations), "start": start, "end": end, "previous_start": start - timedelta(days=window_days), "previous_end": start - timedelta(days=1), "next_start": end + timedelta(days=1), "next_end": end + timedelta(days=window_days)},
     )
 @login_required
 def business_channel_list(request):

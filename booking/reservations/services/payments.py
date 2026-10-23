@@ -23,6 +23,8 @@ def create_checkout(*, provider, reservation, amount, success_url, cancel_url):
         return _stripe_checkout(reservation, amount, success_url, cancel_url)
     if provider == "paypal":
         return _paypal_checkout(reservation, amount, success_url, cancel_url)
+    if provider in {"nestpay_halkbank", "cpay_stb"}:
+        raise PaymentConfigurationError("Bank checkout requires the property payment gateway configuration.")
     raise PaymentConfigurationError("Unsupported payment provider.")
 
 

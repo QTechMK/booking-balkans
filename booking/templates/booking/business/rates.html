@@ -1,11 +1,6 @@
-{% extends 'booking/admin_base.html' %}
-{% block content %}
-<main class="hotel-erp-page hotel-rates-page">
-  <div class="hotel-erp-toolbar">
-    <div class="hotel-erp-heading"><span class="hotel-erp-kicker">PRICING / INVENTORY</span><h1>Rate plan yönetimi</h1></div>
-    <form method="get" class="hotel-erp-property"><label for="property_id">Tesis</label><select class="form-select form-select-sm" id="property_id" name="property_id" onchange="this.submit()">{% for property in properties %}<option value="{{ property.id }}" {% if property.id == selected_property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select></form>
-  </div>
-  <div class="hotel-erp-content">
+{% extends 'booking/operations/_shell.html' %}
+{% block operations_content %}
+<div class="hotel-rates-page">
     <div class="hotel-rates-grid">
       <section class="card">
         <div class="card-header"><h2 class="card-title">{% if request.GET.edit_rate_plan %}Rate plan düzenle{% else %}Yeni rate plan{% endif %}</h2></div>
@@ -18,6 +13,20 @@
         <div class="table-responsive hotel-grid-scroll"><table class="table table-sm align-middle"><thead><tr><th>Ad</th><th>Kod</th><th>Oda tipi</th><th>Pansiyon</th><th>Para</th><th class="text-end">İşlem</th></tr></thead><tbody>{% for item in rate_plans %}<tr><td class="fw-semibold">{{ item.name }}</td><td>{{ item.code }}</td><td>{{ item.unit_type.name }}</td><td>{{ item.get_meal_plan_display }}</td><td>{{ item.currency }}</td><td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" href="?property_id={{ selected_property.id }}&edit_rate_plan={{ item.id }}">Düzenle</a><form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="entity" value="rate_delete"><input type="hidden" name="object_id" value="{{ item.id }}"><button class="btn btn-sm btn-outline-danger" onclick="return confirm('Bu rate plan silinsin mi?')">Sil</button></form></td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Kayıt yok.</td></tr>{% endfor %}</tbody></table></div>
       </section>
     </div>
-  </div>
-</main>
-{% endblock content %}
+    <div class="hotel-rates-grid mt-3">
+      <section class="card">
+        <div class="card-header"><h2 class="card-title">Sezon planı ekle</h2></div>
+        <div class="card-body">
+          <form method="post" class="hotel-dense-form">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="entity" value="season"><div class="hotel-dense-field"><label>Rate plan</label><select class="form-select" name="rate_plan_id" required><option value="">Seçiniz</option>{% for item in rate_plans %}<option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>{% endfor %}</select></div>{% for field in season_form %}<div class="hotel-dense-field"><label>{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}<button class="btn btn-primary">Sezonu kaydet</button></form>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-header"><h2 class="card-title">Kanal eşlemesi ekle</h2></div>
+        <div class="card-body">
+          <form method="post" class="hotel-dense-form">{% csrf_token %}<input type="hidden" name="property_id" value="{{ selected_property.id }}"><input type="hidden" name="entity" value="channel"><div class="hotel-dense-field"><label>Rate plan</label><select class="form-select" name="rate_plan_id" required><option value="">Seçiniz</option>{% for item in rate_plans %}<option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>{% endfor %}</select></div>{% for field in channel_form %}<div class="hotel-dense-field"><label>{{ field.label }}</label>{{ field }}{% if field.errors %}<small class="text-danger">{{ field.errors|striptags }}</small>{% endif %}</div>{% endfor %}<button class="btn btn-primary">Eşlemeyi kaydet</button></form>
+        </div>
+      </section>
+    </div>
+    <section class="card mt-3"><div class="card-header"><h2 class="card-title">Sezon ve kanal bağlantıları</h2></div><div class="table-responsive hotel-grid-scroll"><table class="table table-sm align-middle"><thead><tr><th>Rate plan</th><th>Sezonlar</th><th>Kanal eşlemeleri</th></tr></thead><tbody>{% for item in rate_plans %}<tr><td><strong>{{ item.name }}</strong><div class="small text-muted">{{ item.code }}</div></td><td>{% for season in item.seasons.all %}<span class="badge text-bg-light me-1">{{ season.name }} · {{ season.valid_from|date:'d.m.Y' }}–{{ season.valid_until|date:'d.m.Y' }} · x{{ season.price_factor }}</span>{% empty %}<span class="text-muted">Tanımlı değil</span>{% endfor %}</td><td>{% for link in item.channel_links.all %}<span class="badge text-bg-light me-1">{{ link.channel.name }}{% if link.external_code %} · {{ link.external_code }}{% endif %}</span>{% empty %}<span class="text-muted">Tanımlı değil</span>{% endfor %}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted py-4">Önce bir rate plan oluşturun.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock operations_content %}
